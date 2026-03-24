@@ -1,65 +1,136 @@
 import { motion } from "framer-motion";
-import { ArrowUpRight } from "lucide-react";
+
+const skills = [
+  { name: "TypeScript", level: 95 },
+  { name: "React / Next.js", level: 90 },
+  { name: "Node.js", level: 92 },
+  { name: "Python", level: 85 },
+  { name: "AWS / Cloud", level: 88 },
+  { name: "Blockchain / Web3", level: 80 },
+];
 
 const stats = [
-  { label: "Years Experience", value: "10+" },
-  { label: "Companies Led", value: "3" },
-  { label: "Successful Exit", value: "1" },
+  { value: "10+", label: "years_exp" },
+  { value: "3", label: "companies_led" },
+  { value: "1", label: "exit" },
 ];
 
 const About = () => {
   return (
-    <section id="about" className="py-24 lg:py-40">
-      <div className="container">
-        <div className="grid lg:grid-cols-12 gap-16 lg:gap-8">
-          {/* Left column - decorative */}
-          <div className="lg:col-span-4">
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
-            >
-              <span className="font-body text-xs tracking-[0.4em] uppercase text-muted-foreground block mb-8">
-                01 — About
-              </span>
-              <div className="flex flex-col gap-6">
-                {stats.map((stat) => (
-                  <div key={stat.label} className="border-l-2 border-primary pl-6">
-                    <span className="font-display text-4xl font-bold block">{stat.value}</span>
-                    <span className="font-body text-sm text-muted-foreground">{stat.label}</span>
-                  </div>
+    <section id="about" className="py-24 lg:py-40 relative">
+      <div className="absolute inset-0 scanline pointer-events-none" />
+      <div className="container relative z-10">
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
+          <span className="font-mono text-xs text-primary/60 tracking-widest block mb-2">
+            {'// section:about'}
+          </span>
+          <h2 className="font-display text-4xl lg:text-6xl font-bold mb-4">
+            <span className="text-foreground">About</span>{" "}
+            <span className="text-primary text-glow">me</span>
+          </h2>
+        </motion.div>
+
+        <div className="grid lg:grid-cols-2 gap-16 mt-12">
+          {/* Left - bio */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <div className="border border-border bg-card p-6 lg:p-8 relative">
+              <div className="absolute top-0 left-0 right-0 h-8 bg-muted border-b border-border flex items-center px-4 gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-destructive/60" />
+                <span className="w-2.5 h-2.5 rounded-full bg-primary/40" />
+                <span className="w-2.5 h-2.5 rounded-full bg-primary/60" />
+                <span className="font-mono text-[10px] text-muted-foreground ml-3">about.md</span>
+              </div>
+              <div className="mt-8 font-mono text-sm text-muted-foreground leading-relaxed space-y-4">
+                <p>
+                  I'm a hands-on engineering leader, CTO, and former co-founder
+                  with a passion for designing robust, scalable software solutions.
+                </p>
+                <p>
+                  Over the past decade, I've consistently delivered impactful technology
+                  in fast-moving startup environments, Fortune 500 companies, and
+                  emerging sectors like <span className="text-primary">blockchain</span> and{" "}
+                  <span className="text-accent text-glow-accent">AI/ML</span>.
+                </p>
+                <p>
+                  Currently focused on building next-gen platforms that push the
+                  boundaries of what's possible with modern web tech.
+                </p>
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-4 mt-6">
+              {stats.map((stat, i) => (
+                <motion.div
+                  key={stat.label}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.4 + i * 0.1, duration: 0.5 }}
+                  className="border border-border bg-card p-4 text-center"
+                >
+                  <span className="font-display text-3xl font-bold text-primary text-glow block">
+                    {stat.value}
+                  </span>
+                  <span className="font-mono text-[10px] text-muted-foreground tracking-wider">
+                    {stat.label}
+                  </span>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Right - skills */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
+            <div className="border border-border bg-card p-6 lg:p-8 relative">
+              <div className="absolute top-0 left-0 right-0 h-8 bg-muted border-b border-border flex items-center px-4 gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-destructive/60" />
+                <span className="w-2.5 h-2.5 rounded-full bg-primary/40" />
+                <span className="w-2.5 h-2.5 rounded-full bg-primary/60" />
+                <span className="font-mono text-[10px] text-muted-foreground ml-3">skills.config</span>
+              </div>
+              <div className="mt-8 space-y-6">
+                {skills.map((skill, i) => (
+                  <motion.div
+                    key={skill.name}
+                    initial={{ opacity: 0, x: 20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.4 + i * 0.08, duration: 0.4 }}
+                  >
+                    <div className="flex justify-between mb-1.5">
+                      <span className="font-mono text-xs text-foreground/80">{skill.name}</span>
+                      <span className="font-mono text-xs text-primary">{skill.level}%</span>
+                    </div>
+                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        whileInView={{ width: `${skill.level}%` }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.6 + i * 0.08, duration: 0.8, ease: "easeOut" }}
+                        className="h-full bg-gradient-to-r from-primary to-accent rounded-full"
+                      />
+                    </div>
+                  </motion.div>
                 ))}
               </div>
-            </motion.div>
-          </div>
-
-          {/* Right column - content */}
-          <div className="lg:col-span-7 lg:col-start-6">
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
-            >
-              <h2 className="font-display text-4xl lg:text-6xl font-bold mb-8 leading-tight">
-                I build things
-                <br />
-                <span className="italic font-normal text-primary">that matter.</span>
-              </h2>
-              <p className="font-body text-lg text-muted-foreground leading-relaxed mb-8 max-w-xl">
-                I'm a hands-on engineering leader, CTO, and former co-founder with a passion for designing robust, scalable software solutions. Over the past decade, I've consistently delivered impactful technology in fast-moving startup environments, Fortune 500 companies, and emerging sectors like blockchain and AI/ML.
-              </p>
-              <a
-                href="https://pratik.pa.tel/_files/ugd/d18f1b_7a4fc93fe56f4edb9c1d3fd318c0dd46.pdf"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 font-body text-sm font-semibold text-foreground border-b-2 border-primary pb-1 hover:text-primary transition-colors"
-              >
-                Download Resume <ArrowUpRight className="w-4 h-4" />
-              </a>
-            </motion.div>
-          </div>
+            </div>
+          </motion.div>
         </div>
       </div>
     </section>

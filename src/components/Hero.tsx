@@ -1,64 +1,189 @@
 import { motion } from "framer-motion";
-import heroPattern from "@/assets/hero-pattern.jpg";
+import { useEffect, useState } from "react";
+
+const roles = [
+  "Software Engineer",
+  "CTO & Co-founder",
+  "System Architect",
+  "Open Source Builder",
+];
 
 const Hero = () => {
+  const [roleIndex, setRoleIndex] = useState(0);
+  const [displayText, setDisplayText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const currentRole = roles[roleIndex];
+    let timeout: NodeJS.Timeout;
+
+    if (!isDeleting && displayText.length < currentRole.length) {
+      timeout = setTimeout(() => setDisplayText(currentRole.slice(0, displayText.length + 1)), 80);
+    } else if (!isDeleting && displayText.length === currentRole.length) {
+      timeout = setTimeout(() => setIsDeleting(true), 2000);
+    } else if (isDeleting && displayText.length > 0) {
+      timeout = setTimeout(() => setDisplayText(displayText.slice(0, -1)), 40);
+    } else if (isDeleting && displayText.length === 0) {
+      setIsDeleting(false);
+      setRoleIndex((prev) => (prev + 1) % roles.length);
+    }
+
+    return () => clearTimeout(timeout);
+  }, [displayText, isDeleting, roleIndex]);
+
   return (
-    <section className="relative min-h-screen flex flex-col justify-end pb-16 lg:pb-24 overflow-hidden">
-      {/* Background image with overlay */}
-      <div className="absolute inset-0">
-        <img src={heroPattern} alt="" className="w-full h-full object-cover" width={1920} height={1080} />
-        <div className="absolute inset-0 bg-foreground/70" />
+    <section className="relative min-h-screen flex items-center overflow-hidden grid-bg">
+      {/* Floating geometric elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
+          className="absolute -top-32 -right-32 w-96 h-96 border border-primary/10 rounded-full"
+        />
+        <motion.div
+          animate={{ rotate: -360 }}
+          transition={{ duration: 45, repeat: Infinity, ease: "linear" }}
+          className="absolute -bottom-20 -left-20 w-72 h-72 border border-accent/10 rounded-full"
+        />
+        <motion.div
+          animate={{ y: [0, -20, 0] }}
+          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-1/4 right-1/4 w-2 h-2 bg-primary rounded-full opacity-60"
+        />
+        <motion.div
+          animate={{ y: [0, 15, 0] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-2/3 left-1/3 w-1.5 h-1.5 bg-accent rounded-full opacity-40"
+        />
       </div>
 
-      {/* Large name */}
-      <div className="container relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 60 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <p className="text-background/60 font-body text-sm tracking-[0.4em] uppercase mb-6">
-            Software Engineer · CTO · Builder
-          </p>
-          <h1 className="font-display text-6xl sm:text-8xl lg:text-[10rem] font-bold leading-[0.85] tracking-tight text-background">
-            Pratik
-            <br />
-            <span className="italic font-normal text-primary">Patel</span>
-          </h1>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6, duration: 1 }}
-          className="mt-12 flex items-end justify-between"
-        >
-          <p className="text-background/70 font-body text-base lg:text-lg max-w-sm leading-relaxed">
-            Building the future through code — one scalable system at a time.
-          </p>
-          <a
-            href="#about"
-            className="hidden lg:block text-background/40 font-body text-xs tracking-[0.3em] uppercase hover:text-background transition-colors"
-          >
-            Scroll to explore ↓
-          </a>
-        </motion.div>
-      </div>
-
-      {/* Photo floating element */}
+      {/* Terminal-like status bar */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.4, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-        className="absolute top-1/2 right-8 lg:right-24 -translate-y-1/2 z-10"
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 1.2, duration: 0.6 }}
+        className="absolute top-24 left-8 hidden lg:flex flex-col gap-4 font-mono text-[10px] text-muted-foreground"
       >
-        <div className="w-36 h-36 sm:w-48 sm:h-48 lg:w-64 lg:h-64 rounded-2xl overflow-hidden shadow-2xl rotate-3 border-2 border-background/10">
-          <img
-            src="https://static.wixstatic.com/media/d18f1b_523801a612634d4c8898d6555dd2e481~mv2.png/v1/fill/w_556,h_556,fp_0.49_0.51,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/me_enhanced.png"
-            alt="Pratik Patel"
-            className="w-full h-full object-cover"
-          />
+        <div className="flex items-center gap-2">
+          <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
+          <span>SYSTEM ONLINE</span>
         </div>
+        <div className="flex items-center gap-2">
+          <span className="w-1.5 h-1.5 bg-accent rounded-full" />
+          <span>NYC, USA</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-1.5 h-1.5 bg-primary/50 rounded-full" />
+          <span>10+ YRS EXP</span>
+        </div>
+      </motion.div>
+
+      <div className="container relative z-10">
+        <div className="max-w-4xl">
+          {/* Prefix */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            className="font-mono text-xs text-primary/60 mb-6 tracking-widest"
+          >
+            {'>'} initializing portfolio...
+          </motion.div>
+
+          {/* Name */}
+          <motion.h1
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            className="font-display text-6xl sm:text-8xl lg:text-9xl font-bold leading-[0.9] tracking-tighter"
+          >
+            <span className="text-foreground">Pratik</span>
+            <br />
+            <span className="text-primary text-glow">Patel</span>
+          </motion.h1>
+
+          {/* Typing role */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5, duration: 0.5 }}
+            className="mt-8 font-mono text-lg sm:text-xl text-muted-foreground"
+          >
+            <span className="text-primary/50">$ </span>
+            <span className="text-foreground/80">{displayText}</span>
+            <span className="text-primary cursor-blink ml-0.5">▊</span>
+          </motion.div>
+
+          {/* Bio */}
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8, duration: 0.6 }}
+            className="mt-8 font-mono text-sm text-muted-foreground max-w-lg leading-relaxed"
+          >
+            Building the future through code — one scalable system at a time.
+            CTO, former co-founder, and hands-on engineering leader.
+          </motion.p>
+
+          {/* CTA row */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1, duration: 0.6 }}
+            className="mt-10 flex flex-wrap items-center gap-4"
+          >
+            <a
+              href="#contact"
+              className="font-mono text-sm bg-primary text-primary-foreground px-6 py-3 hover:bg-primary/90 transition-colors box-glow"
+            >
+              ./contact --init
+            </a>
+            <a
+              href="https://pratik.pa.tel/_files/ugd/d18f1b_7a4fc93fe56f4edb9c1d3fd318c0dd46.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-mono text-sm border border-primary/30 text-primary px-6 py-3 hover:bg-primary/10 transition-colors"
+            >
+              cat resume.pdf
+            </a>
+          </motion.div>
+        </div>
+
+        {/* Photo */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8, rotate: 5 }}
+          animate={{ opacity: 1, scale: 1, rotate: 0 }}
+          transition={{ delay: 0.6, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+          className="absolute bottom-0 right-0 lg:right-12 hidden md:block"
+        >
+          <div className="relative">
+            <div className="w-56 h-56 lg:w-72 lg:h-72 overflow-hidden border border-primary/20 box-glow">
+              <img
+                src="https://static.wixstatic.com/media/d18f1b_523801a612634d4c8898d6555dd2e481~mv2.png/v1/fill/w_556,h_556,fp_0.49_0.51,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/me_enhanced.png"
+                alt="Pratik Patel"
+                className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
+              />
+            </div>
+            <div className="absolute -bottom-3 -right-3 font-mono text-[10px] text-primary/40 border border-primary/10 px-2 py-1 bg-background">
+              v3.0.1
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Scroll indicator */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.5, duration: 0.5 }}
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+      >
+        <span className="font-mono text-[10px] text-muted-foreground tracking-widest">SCROLL</span>
+        <motion.div
+          animate={{ y: [0, 8, 0] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+          className="w-px h-8 bg-gradient-to-b from-primary/50 to-transparent"
+        />
       </motion.div>
     </section>
   );

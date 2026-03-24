@@ -1,28 +1,51 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X } from "lucide-react";
+import { Terminal, X } from "lucide-react";
 
 const links = [
-  { label: "About", href: "#about" },
-  { label: "Writing", href: "#writing" },
-  { label: "Contact", href: "#contact" },
+  { label: "about()", href: "#about" },
+  { label: "writing()", href: "#writing" },
+  { label: "contact()", href: "#contact" },
 ];
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 50);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 mix-blend-difference">
-        <div className="container flex items-center justify-between h-20">
-          <a href="#" className="font-display text-xl font-bold text-white">
-            PP
+      <nav
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+          scrolled ? "bg-background/80 backdrop-blur-xl border-b border-border" : ""
+        }`}
+      >
+        <div className="container flex items-center justify-between h-16">
+          <a href="#" className="font-mono text-sm text-primary flex items-center gap-2 glitch-hover">
+            <Terminal className="w-4 h-4" />
+            <span>pratik.exe</span>
           </a>
+          <div className="hidden md:flex items-center gap-8">
+            {links.map((link) => (
+              <a
+                key={link.label}
+                href={link.href}
+                className="font-mono text-xs text-muted-foreground hover:text-primary transition-colors"
+              >
+                {link.label}
+              </a>
+            ))}
+          </div>
           <button
             onClick={() => setOpen(true)}
-            className="text-white hover:opacity-70 transition-opacity"
+            className="md:hidden font-mono text-xs text-primary border border-primary/30 px-3 py-1.5 hover:bg-primary/10 transition-colors"
           >
-            <Menu className="w-6 h-6" />
+            [menu]
           </button>
         </div>
       </nav>
@@ -30,28 +53,28 @@ const Navbar = () => {
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ clipPath: "circle(0% at calc(100% - 3rem) 2.5rem)" }}
-            animate={{ clipPath: "circle(150% at calc(100% - 3rem) 2.5rem)" }}
-            exit={{ clipPath: "circle(0% at calc(100% - 3rem) 2.5rem)" }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed inset-0 z-[100] bg-foreground flex items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-xl flex items-center justify-center scanline"
           >
             <button
               onClick={() => setOpen(false)}
-              className="absolute top-6 right-8 text-background hover:opacity-70 transition-opacity"
+              className="absolute top-5 right-6 text-primary hover:text-foreground transition-colors"
             >
               <X className="w-6 h-6" />
             </button>
-            <div className="flex flex-col items-center gap-8">
+            <div className="flex flex-col items-center gap-6">
               {links.map((link, i) => (
                 <motion.a
                   key={link.label}
                   href={link.href}
                   onClick={() => setOpen(false)}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 + i * 0.1, duration: 0.5 }}
-                  className="text-background font-display text-5xl lg:text-7xl font-bold hover:text-primary transition-colors"
+                  initial={{ opacity: 0, x: -30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 + i * 0.1, duration: 0.4 }}
+                  className="font-display text-4xl font-bold text-foreground hover:text-primary transition-colors"
                 >
                   {link.label}
                 </motion.a>

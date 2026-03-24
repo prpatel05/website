@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Github, Linkedin, Twitter, BookOpen, Code2 } from "lucide-react";
+import { Github, Linkedin, Twitter, BookOpen, Code2, Mail, Phone } from "lucide-react";
 
 const socials = [
   { name: "LinkedIn", url: "https://www.linkedin.com/in/prpatel05/", icon: Linkedin },
@@ -12,61 +12,95 @@ const socials = [
 const Contact = () => {
   return (
     <section id="contact" className="py-24 lg:py-40 relative overflow-hidden">
+      <div className="absolute inset-0 scanline pointer-events-none" />
       <div className="container relative z-10">
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="max-w-3xl"
+          transition={{ duration: 0.6 }}
         >
-          <span className="font-body text-xs tracking-[0.4em] uppercase text-muted-foreground block mb-4">
-            03 — Contact
+          <span className="font-mono text-xs text-primary/60 tracking-widest block mb-2">
+            {'// section:contact'}
           </span>
-          <h2 className="font-display text-5xl lg:text-7xl font-bold leading-tight mb-8">
-            Let's build
-            <br />
-            <span className="italic font-normal text-primary">something great.</span>
+          <h2 className="font-display text-5xl lg:text-7xl font-bold mb-6">
+            <span className="text-foreground">Let's</span>{" "}
+            <span className="text-primary text-glow">connect</span>
           </h2>
-          <p className="font-body text-lg text-muted-foreground max-w-md mb-12">
-            Always open to interesting conversations and new opportunities.
+          <p className="font-mono text-sm text-muted-foreground max-w-md mb-12">
+            Always open to interesting conversations, new opportunities,
+            and building things that matter.
           </p>
+        </motion.div>
 
-          <div className="space-y-4 mb-16">
+        <div className="grid lg:grid-cols-2 gap-12">
+          {/* Direct contact */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+            className="space-y-4"
+          >
             <a
               href="mailto:pratik@pa.tel"
-              className="font-display text-2xl lg:text-4xl font-bold hover:text-primary transition-colors block"
+              className="group flex items-center gap-4 border border-border bg-card p-5 hover:border-primary/40 hover:box-glow transition-all duration-500"
             >
-              pratik@pa.tel
+              <Mail className="w-5 h-5 text-primary shrink-0" />
+              <div>
+                <span className="font-mono text-[10px] text-muted-foreground block">email</span>
+                <span className="font-mono text-sm text-foreground group-hover:text-primary transition-colors">
+                  pratik@pa.tel
+                </span>
+              </div>
             </a>
             <a
               href="tel:+15186369399"
-              className="font-body text-lg text-muted-foreground hover:text-foreground transition-colors block"
+              className="group flex items-center gap-4 border border-border bg-card p-5 hover:border-primary/40 hover:box-glow transition-all duration-500"
             >
-              518-636-9399
+              <Phone className="w-5 h-5 text-accent shrink-0" />
+              <div>
+                <span className="font-mono text-[10px] text-muted-foreground block">phone</span>
+                <span className="font-mono text-sm text-foreground group-hover:text-accent transition-colors">
+                  518-636-9399
+                </span>
+              </div>
             </a>
-          </div>
+          </motion.div>
 
-          <div className="flex items-center gap-4">
-            {socials.map((s) => (
-              <a
+          {/* Social grid */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+            className="grid grid-cols-3 sm:grid-cols-5 gap-3"
+          >
+            {socials.map((s, i) => (
+              <motion.a
                 key={s.name}
                 href={s.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                title={s.name}
-                className="w-12 h-12 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all"
+                initial={{ opacity: 0, scale: 0.8 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.4 + i * 0.05, duration: 0.3 }}
+                className="group flex flex-col items-center gap-2 border border-border bg-card p-4 hover:border-primary/40 hover:box-glow transition-all duration-500"
               >
-                <s.icon className="w-5 h-5" />
-              </a>
+                <s.icon className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                <span className="font-mono text-[10px] text-muted-foreground group-hover:text-primary transition-colors">
+                  {s.name}
+                </span>
+              </motion.a>
             ))}
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
 
-      {/* Large decorative text */}
-      <div className="absolute bottom-0 right-0 font-display text-[12rem] lg:text-[20rem] font-bold text-foreground/[0.03] leading-none select-none pointer-events-none">
-        PP
+      {/* Background decoration */}
+      <div className="absolute bottom-0 right-0 font-mono text-[10rem] lg:text-[18rem] font-bold text-primary/[0.03] leading-none select-none pointer-events-none">
+        {'/>'}
       </div>
     </section>
   );
