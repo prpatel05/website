@@ -6,16 +6,16 @@ import Contact from "@/components/Contact";
 
 const Index = () => {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       <Navbar />
       <Hero />
       <About />
       <BlogPreview />
       <Contact />
       <footer className="py-6 border-t border-border">
-        <div className="container flex flex-col sm:flex-row items-center justify-between gap-4 text-muted-foreground text-xs font-body">
-          <span>© {new Date().getFullYear()} Pratik Patel</span>
-          <span className="tracking-[0.2em] uppercase">Built with purpose</span>
+        <div className="container flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-[10px] text-muted-foreground tracking-widest">
+          <span>© {new Date().getFullYear()} PRATIK PATEL</span>
+          <span className="text-primary/40">BUILT WITH PURPOSE // v3.0</span>
         </div>
       </footer>
     </div>
