@@ -1,4 +1,5 @@
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { useRef } from "react";
 
 const skills = [
   { name: "TypeScript", level: 95 },
@@ -16,10 +17,22 @@ const stats = [
 ];
 
 const About = () => {
+  const sectionRef = useRef<HTMLElement>(null);
+
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start end", "end start"],
+  });
+
+  const leftX = useTransform(scrollYProgress, [0, 0.4], ["-60px", "0px"]);
+  const rightX = useTransform(scrollYProgress, [0, 0.4], ["60px", "0px"]);
+  const sectionOpacity = useTransform(scrollYProgress, [0, 0.15], [0, 1]);
+  const scanlineY = useTransform(scrollYProgress, [0, 1], ["0%", "20%"]);
+
   return (
-    <section id="about" className="py-24 lg:py-40 relative">
-      <div className="absolute inset-0 scanline pointer-events-none" />
-      <div className="container relative z-10">
+    <section ref={sectionRef} id="about" className="py-24 lg:py-40 relative overflow-hidden">
+      <motion.div className="absolute inset-0 scanline pointer-events-none" style={{ y: scanlineY }} />
+      <motion.div className="container relative z-10" style={{ opacity: sectionOpacity }}>
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
@@ -36,103 +49,107 @@ const About = () => {
         </motion.div>
 
         <div className="grid lg:grid-cols-2 gap-16 mt-12">
-          {/* Left - bio */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            <div className="border border-border bg-card p-6 lg:p-8 relative">
-              <div className="absolute top-0 left-0 right-0 h-8 bg-muted border-b border-border flex items-center px-4 gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-destructive/60" />
-                <span className="w-2.5 h-2.5 rounded-full bg-primary/40" />
-                <span className="w-2.5 h-2.5 rounded-full bg-primary/60" />
-                <span className="font-mono text-[10px] text-muted-foreground ml-3">about.md</span>
+          {/* Left - bio with parallax slide-in */}
+          <motion.div style={{ x: leftX }}>
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              <div className="border border-border bg-card p-6 lg:p-8 relative">
+                <div className="absolute top-0 left-0 right-0 h-8 bg-muted border-b border-border flex items-center px-4 gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-destructive/60" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-primary/40" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-primary/60" />
+                  <span className="font-mono text-[10px] text-muted-foreground ml-3">about.md</span>
+                </div>
+                <div className="mt-8 font-mono text-sm text-muted-foreground leading-relaxed space-y-4">
+                  <p>
+                    I'm a hands-on engineering leader, CTO, and former co-founder
+                    with a passion for designing robust, scalable software solutions.
+                  </p>
+                  <p>
+                    Over the past decade, I've consistently delivered impactful technology
+                    in fast-moving startup environments, Fortune 500 companies, and
+                    emerging sectors like <span className="text-primary">blockchain</span> and{" "}
+                    <span className="text-accent text-glow-accent">AI/ML</span>.
+                  </p>
+                  <p>
+                    Currently focused on building next-gen platforms that push the
+                    boundaries of what's possible with modern web tech.
+                  </p>
+                </div>
               </div>
-              <div className="mt-8 font-mono text-sm text-muted-foreground leading-relaxed space-y-4">
-                <p>
-                  I'm a hands-on engineering leader, CTO, and former co-founder
-                  with a passion for designing robust, scalable software solutions.
-                </p>
-                <p>
-                  Over the past decade, I've consistently delivered impactful technology
-                  in fast-moving startup environments, Fortune 500 companies, and
-                  emerging sectors like <span className="text-primary">blockchain</span> and{" "}
-                  <span className="text-accent text-glow-accent">AI/ML</span>.
-                </p>
-                <p>
-                  Currently focused on building next-gen platforms that push the
-                  boundaries of what's possible with modern web tech.
-                </p>
-              </div>
-            </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-4 mt-6">
-              {stats.map((stat, i) => (
-                <motion.div
-                  key={stat.label}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.4 + i * 0.1, duration: 0.5 }}
-                  className="border border-border bg-card p-4 text-center"
-                >
-                  <span className="font-display text-3xl font-bold text-primary text-glow block">
-                    {stat.value}
-                  </span>
-                  <span className="font-mono text-[10px] text-muted-foreground tracking-wider">
-                    {stat.label}
-                  </span>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Right - skills */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-          >
-            <div className="border border-border bg-card p-6 lg:p-8 relative">
-              <div className="absolute top-0 left-0 right-0 h-8 bg-muted border-b border-border flex items-center px-4 gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-destructive/60" />
-                <span className="w-2.5 h-2.5 rounded-full bg-primary/40" />
-                <span className="w-2.5 h-2.5 rounded-full bg-primary/60" />
-                <span className="font-mono text-[10px] text-muted-foreground ml-3">skills.config</span>
-              </div>
-              <div className="mt-8 space-y-6">
-                {skills.map((skill, i) => (
+              {/* Stats */}
+              <div className="grid grid-cols-3 gap-4 mt-6">
+                {stats.map((stat, i) => (
                   <motion.div
-                    key={skill.name}
-                    initial={{ opacity: 0, x: 20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
+                    key={stat.label}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    transition={{ delay: 0.4 + i * 0.08, duration: 0.4 }}
+                    transition={{ delay: 0.4 + i * 0.1, duration: 0.5 }}
+                    className="border border-border bg-card p-4 text-center"
                   >
-                    <div className="flex justify-between mb-1.5">
-                      <span className="font-mono text-xs text-foreground/80">{skill.name}</span>
-                      <span className="font-mono text-xs text-primary">{skill.level}%</span>
-                    </div>
-                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        whileInView={{ width: `${skill.level}%` }}
-                        viewport={{ once: true }}
-                        transition={{ delay: 0.6 + i * 0.08, duration: 0.8, ease: "easeOut" }}
-                        className="h-full bg-gradient-to-r from-primary to-accent rounded-full"
-                      />
-                    </div>
+                    <span className="font-display text-3xl font-bold text-primary text-glow block">
+                      {stat.value}
+                    </span>
+                    <span className="font-mono text-[10px] text-muted-foreground tracking-wider">
+                      {stat.label}
+                    </span>
                   </motion.div>
                 ))}
               </div>
-            </div>
+            </motion.div>
+          </motion.div>
+
+          {/* Right - skills with parallax slide-in */}
+          <motion.div style={{ x: rightX }}>
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+            >
+              <div className="border border-border bg-card p-6 lg:p-8 relative">
+                <div className="absolute top-0 left-0 right-0 h-8 bg-muted border-b border-border flex items-center px-4 gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-destructive/60" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-primary/40" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-primary/60" />
+                  <span className="font-mono text-[10px] text-muted-foreground ml-3">skills.config</span>
+                </div>
+                <div className="mt-8 space-y-6">
+                  {skills.map((skill, i) => (
+                    <motion.div
+                      key={skill.name}
+                      initial={{ opacity: 0, x: 20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.4 + i * 0.08, duration: 0.4 }}
+                    >
+                      <div className="flex justify-between mb-1.5">
+                        <span className="font-mono text-xs text-foreground/80">{skill.name}</span>
+                        <span className="font-mono text-xs text-primary">{skill.level}%</span>
+                      </div>
+                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          whileInView={{ width: `${skill.level}%` }}
+                          viewport={{ once: true }}
+                          transition={{ delay: 0.6 + i * 0.08, duration: 0.8, ease: "easeOut" }}
+                          className="h-full bg-gradient-to-r from-primary to-accent rounded-full"
+                        />
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
           </motion.div>
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 };

@@ -1,5 +1,5 @@
-import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { useEffect, useState, useRef } from "react";
 
 const roles = [
   "Software Engineer",
@@ -12,6 +12,19 @@ const Hero = () => {
   const [roleIndex, setRoleIndex] = useState(0);
   const [displayText, setDisplayText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start start", "end start"],
+  });
+
+  const bgY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
+  const textY = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
+  const photoY = useTransform(scrollYProgress, [0, 1], ["0%", "-20%"]);
+  const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+  const scale = useTransform(scrollYProgress, [0, 1], [1, 0.92]);
+  const statusX = useTransform(scrollYProgress, [0, 1], ["0px", "-40px"]);
 
   useEffect(() => {
     const currentRole = roles[roleIndex];
@@ -32,9 +45,9 @@ const Hero = () => {
   }, [displayText, isDeleting, roleIndex]);
 
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden grid-bg">
-      {/* Floating geometric elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+    <section ref={sectionRef} className="relative min-h-screen flex items-center overflow-hidden grid-bg">
+      {/* Parallax floating geometric elements */}
+      <motion.div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ y: bgY }}>
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
@@ -55,13 +68,25 @@ const Hero = () => {
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
           className="absolute top-2/3 left-1/3 w-1.5 h-1.5 bg-accent rounded-full opacity-40"
         />
-      </div>
+        {/* Extra parallax particles */}
+        <motion.div
+          animate={{ x: [0, 10, 0], y: [0, -10, 0] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-1/3 left-1/4 w-1 h-1 bg-primary/40 rounded-full"
+        />
+        <motion.div
+          animate={{ x: [0, -8, 0], y: [0, 12, 0] }}
+          transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-1/2 right-1/3 w-1 h-8 bg-gradient-to-b from-primary/20 to-transparent"
+        />
+      </motion.div>
 
-      {/* Terminal-like status bar */}
+      {/* Terminal-like status bar with parallax */}
       <motion.div
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 1.2, duration: 0.6 }}
+        style={{ x: statusX, opacity }}
         className="absolute top-24 left-8 hidden lg:flex flex-col gap-4 font-mono text-[10px] text-muted-foreground"
       >
         <div className="flex items-center gap-2">
@@ -78,9 +103,8 @@ const Hero = () => {
         </div>
       </motion.div>
 
-      <div className="container relative z-10">
+      <motion.div className="container relative z-10" style={{ y: textY, opacity, scale }}>
         <div className="max-w-4xl">
-          {/* Prefix */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -90,7 +114,6 @@ const Hero = () => {
             {'>'} initializing portfolio...
           </motion.div>
 
-          {/* Name */}
           <motion.h1
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
@@ -102,7 +125,6 @@ const Hero = () => {
             <span className="text-primary text-glow">Patel</span>
           </motion.h1>
 
-          {/* Typing role */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -114,7 +136,6 @@ const Hero = () => {
             <span className="text-primary cursor-blink ml-0.5">▊</span>
           </motion.div>
 
-          {/* Bio */}
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -125,7 +146,6 @@ const Hero = () => {
             CTO, former co-founder, and hands-on engineering leader.
           </motion.p>
 
-          {/* CTA row */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -149,11 +169,12 @@ const Hero = () => {
           </motion.div>
         </div>
 
-        {/* Photo */}
+        {/* Photo with parallax */}
         <motion.div
           initial={{ opacity: 0, scale: 0.8, rotate: 5 }}
           animate={{ opacity: 1, scale: 1, rotate: 0 }}
           transition={{ delay: 0.6, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+          style={{ y: photoY }}
           className="absolute bottom-0 right-0 lg:right-12 hidden md:block"
         >
           <div className="relative">
@@ -169,13 +190,14 @@ const Hero = () => {
             </div>
           </div>
         </motion.div>
-      </div>
+      </motion.div>
 
       {/* Scroll indicator */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.5, duration: 0.5 }}
+        style={{ opacity }}
         className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
       >
         <span className="font-mono text-[10px] text-muted-foreground tracking-widest">SCROLL</span>

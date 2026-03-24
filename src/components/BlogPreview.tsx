@@ -1,13 +1,24 @@
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { posts } from "@/data/blog-posts";
+import { useRef } from "react";
 
 const BlogPreview = () => {
+  const sectionRef = useRef<HTMLElement>(null);
+
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start end", "end start"],
+  });
+
+  const gridY = useTransform(scrollYProgress, [0, 1], ["0%", "-15%"]);
+  const sectionOpacity = useTransform(scrollYProgress, [0, 0.15], [0, 1]);
+
   return (
-    <section id="writing" className="py-24 lg:py-40 relative">
-      <div className="absolute inset-0 grid-bg pointer-events-none opacity-50" />
-      <div className="container relative z-10">
+    <section ref={sectionRef} id="writing" className="py-24 lg:py-40 relative overflow-hidden">
+      <motion.div className="absolute inset-0 grid-bg pointer-events-none opacity-50" style={{ y: gridY }} />
+      <motion.div className="container relative z-10" style={{ opacity: sectionOpacity }}>
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
@@ -35,10 +46,10 @@ const BlogPreview = () => {
           {posts.map((post, i) => (
             <motion.div
               key={post.slug}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
+              initial={{ opacity: 0, y: 40, scale: 0.97 }}
+              whileInView={{ opacity: 1, y: 0, scale: 1 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.6, delay: i * 0.15, ease: [0.22, 1, 0.36, 1] }}
             >
               <Link
                 to={`/blog/${post.slug}`}
@@ -78,7 +89,7 @@ const BlogPreview = () => {
             </motion.div>
           ))}
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 };

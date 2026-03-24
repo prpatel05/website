@@ -1,5 +1,6 @@
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { Github, Linkedin, Twitter, BookOpen, Code2, Mail, Phone } from "lucide-react";
+import { useRef } from "react";
 
 const socials = [
   { name: "LinkedIn", url: "https://www.linkedin.com/in/prpatel05/", icon: Linkedin },
@@ -10,10 +11,20 @@ const socials = [
 ];
 
 const Contact = () => {
+  const sectionRef = useRef<HTMLElement>(null);
+
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start end", "end start"],
+  });
+
+  const decorY = useTransform(scrollYProgress, [0, 1], ["100px", "-60px"]);
+  const sectionOpacity = useTransform(scrollYProgress, [0, 0.2], [0, 1]);
+
   return (
-    <section id="contact" className="py-24 lg:py-40 relative overflow-hidden">
+    <section ref={sectionRef} id="contact" className="py-24 lg:py-40 relative overflow-hidden">
       <div className="absolute inset-0 scanline pointer-events-none" />
-      <div className="container relative z-10">
+      <motion.div className="container relative z-10" style={{ opacity: sectionOpacity }}>
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
@@ -36,10 +47,10 @@ const Contact = () => {
         <div className="grid lg:grid-cols-2 gap-12">
           {/* Direct contact */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: 0.2, duration: 0.5 }}
+            transition={{ delay: 0.2, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             className="space-y-4"
           >
             <a
@@ -70,10 +81,10 @@ const Contact = () => {
 
           {/* Social grid */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: 0.3, duration: 0.5 }}
+            transition={{ delay: 0.3, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             className="grid grid-cols-3 sm:grid-cols-5 gap-3"
           >
             {socials.map((s, i) => (
@@ -82,10 +93,11 @@ const Contact = () => {
                 href={s.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                whileInView={{ opacity: 1, scale: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: 0.4 + i * 0.05, duration: 0.3 }}
+                transition={{ delay: 0.4 + i * 0.07, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                whileHover={{ y: -4, transition: { duration: 0.2 } }}
                 className="group flex flex-col items-center gap-2 border border-border bg-card p-4 hover:border-primary/40 hover:box-glow transition-all duration-500"
               >
                 <s.icon className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -96,12 +108,15 @@ const Contact = () => {
             ))}
           </motion.div>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Background decoration */}
-      <div className="absolute bottom-0 right-0 font-mono text-[10rem] lg:text-[18rem] font-bold text-primary/[0.03] leading-none select-none pointer-events-none">
+      {/* Background decoration with parallax */}
+      <motion.div
+        style={{ y: decorY }}
+        className="absolute bottom-0 right-0 font-mono text-[10rem] lg:text-[18rem] font-bold text-primary/[0.03] leading-none select-none pointer-events-none"
+      >
         {'/>'}
-      </div>
+      </motion.div>
     </section>
   );
 };
