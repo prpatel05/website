@@ -13,6 +13,7 @@ const Index = () => {
       <About />
       <BlogPreview />
       <Contact />
+      <InteractiveTerminal />
       <footer className="py-6 border-t border-border">
         <div className="container flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-[10px] text-muted-foreground tracking-widest">
           <span>© {new Date().getFullYear()} PRATIK PATEL</span>
