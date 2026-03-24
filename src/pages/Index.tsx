@@ -3,6 +3,7 @@ import Hero from "@/components/Hero";
 import About from "@/components/About";
 import BlogPreview from "@/components/BlogPreview";
 import Contact from "@/components/Contact";
+import InteractiveTerminal from "@/components/InteractiveTerminal";
 
 const Index = () => {
   return (
