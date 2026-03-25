@@ -40,7 +40,7 @@ const Contact = () => {
           </h2>
           <p className="font-mono text-sm text-muted-foreground max-w-md mb-12">
             Always open to interesting conversations, new opportunities,
-            and building things that matter.
+            and building things that matter. Based in Washington, DC — open to remote.
           </p>
         </motion.div>
 
@@ -73,7 +73,7 @@ const Contact = () => {
               <div>
                 <span className="font-mono text-[10px] text-muted-foreground block">phone</span>
                 <span className="font-mono text-sm text-foreground group-hover:text-accent transition-colors">
-                  518-636-9399
+                  (518) 636-9399
                 </span>
               </div>
             </a>

@@ -118,7 +118,7 @@ const InteractiveTerminal = () => {
 
         case "resume":
           addLines([{ type: "system", text: "→ Downloading resume.pdf..." }]);
-          window.open("https://pratik.pa.tel/_files/ugd/d18f1b_7a4fc93fe56f4edb9c1d3fd318c0dd46.pdf", "_blank");
+          window.open("/pratik-patel-resume.pdf", "_blank");
           break;
 
         case "socials":
@@ -136,12 +136,13 @@ const InteractiveTerminal = () => {
         case "skills":
           addLines([
             { type: "system", text: "┌─ Tech Stack ─────────────────────────┐" },
-            { type: "output", text: "  TypeScript     ████████████████████░ 95%" },
-            { type: "output", text: "  Node.js        ██████████████████░░░ 92%" },
-            { type: "output", text: "  React/Next.js  ██████████████████░░░ 90%" },
-            { type: "output", text: "  AWS/Cloud      █████████████████░░░░ 88%" },
-            { type: "output", text: "  Python         █████████████████░░░░ 85%" },
-            { type: "output", text: "  Blockchain     ████████████████░░░░░ 80%" },
+            { type: "output", text: "  TypeScript/JS  ████████████████████░ 95%" },
+            { type: "output", text: "  React/Next.js  ██████████████████░░░ 92%" },
+            { type: "output", text: "  Node.js/Bun    ██████████████████░░░ 90%" },
+            { type: "output", text: "  AWS/Cloud      ██████████████████░░░ 92%" },
+            { type: "output", text: "  AI/ML/LLMs     █████████████████░░░░ 88%" },
+            { type: "output", text: "  Python/Go      █████████████████░░░░ 85%" },
+            { type: "output", text: "  Blockchain     █████████████████░░░░ 85%" },
             { type: "system", text: "└──────────────────────────────────────┘" },
           ]);
           break;
@@ -150,9 +151,9 @@ const InteractiveTerminal = () => {
           addLines([
             { type: "output", text: ASCII_LOGO },
             { type: "system", text: "  Pratik Patel" },
-            { type: "output", text: "  Software Engineer · CTO · Builder" },
-            { type: "output", text: "  10+ years building scalable systems" },
-            { type: "output", text: "  pratik@pa.tel | 518-636-9399" },
+            { type: "output", text: "  CTO & Chief Architect · 3x Company Builder" },
+            { type: "output", text: "  11+ years · AI · Cloud · Web3" },
+            { type: "output", text: "  Washington, DC | pratik@pa.tel" },
           ]);
           break;
 
@@ -164,8 +165,8 @@ const InteractiveTerminal = () => {
             { type: "output", text: "  Shell:    pratik.sh v3.0" },
             { type: "output", text: "  Theme:    Cyberpunk Dark" },
             { type: "output", text: "  Font:     JetBrains Mono" },
-            { type: "output", text: "  Uptime:   10+ years" },
-            { type: "output", text: `  Location: NYC, USA` },
+            { type: "output", text: "  Uptime:   11+ years" },
+            { type: "output", text: `  Location: Washington, DC` },
           ]);
           break;
 

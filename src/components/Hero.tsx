@@ -2,10 +2,10 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 
 const roles = [
-  "Software Engineer",
-  "CTO & Co-founder",
-  "System Architect",
-  "Open Source Builder",
+  "CTO & Chief Architect",
+  "AI · Cloud · Web3",
+  "3x Company Builder",
+  "Startup Co-Founder (Acquired)",
 ];
 
 const Hero = () => {
@@ -68,7 +68,6 @@ const Hero = () => {
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
           className="absolute top-2/3 left-1/3 w-1.5 h-1.5 bg-accent rounded-full opacity-40"
         />
-        {/* Extra parallax particles */}
         <motion.div
           animate={{ x: [0, 10, 0], y: [0, -10, 0] }}
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
@@ -95,11 +94,11 @@ const Hero = () => {
         </div>
         <div className="flex items-center gap-2">
           <span className="w-1.5 h-1.5 bg-accent rounded-full" />
-          <span>NYC, USA</span>
+          <span>WASHINGTON, DC</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="w-1.5 h-1.5 bg-primary/50 rounded-full" />
-          <span>10+ YRS EXP</span>
+          <span>11+ YRS EXP</span>
         </div>
       </motion.div>
 
@@ -142,8 +141,9 @@ const Hero = () => {
             transition={{ delay: 0.8, duration: 0.6 }}
             className="mt-8 font-mono text-sm text-muted-foreground max-w-lg leading-relaxed"
           >
-            Building the future through code — one scalable system at a time.
-            CTO, former co-founder, and hands-on engineering leader.
+            Technology executive and hands-on architect with 11+ years building
+            and scaling engineering organizations. Three-time company builder
+            with a successful acquisition under the belt.
           </motion.p>
 
           <motion.div
@@ -159,7 +159,7 @@ const Hero = () => {
               ./contact --init
             </a>
             <a
-              href="https://pratik.pa.tel/_files/ugd/d18f1b_7a4fc93fe56f4edb9c1d3fd318c0dd46.pdf"
+              href="/pratik-patel-resume.pdf"
               target="_blank"
               rel="noopener noreferrer"
               className="font-mono text-sm border border-primary/30 text-primary px-6 py-3 hover:bg-primary/10 transition-colors"
