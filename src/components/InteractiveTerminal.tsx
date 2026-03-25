@@ -165,8 +165,8 @@ const InteractiveTerminal = () => {
             { type: "output", text: "  Shell:    pratik.sh v3.0" },
             { type: "output", text: "  Theme:    Cyberpunk Dark" },
             { type: "output", text: "  Font:     JetBrains Mono" },
-            { type: "output", text: "  Uptime:   10+ years" },
-            { type: "output", text: `  Location: NYC, USA` },
+            { type: "output", text: "  Uptime:   11+ years" },
+            { type: "output", text: `  Location: Washington, DC` },
           ]);
           break;
 
