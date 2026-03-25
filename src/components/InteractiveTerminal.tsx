@@ -151,9 +151,9 @@ const InteractiveTerminal = () => {
           addLines([
             { type: "output", text: ASCII_LOGO },
             { type: "system", text: "  Pratik Patel" },
-            { type: "output", text: "  Software Engineer · CTO · Builder" },
-            { type: "output", text: "  10+ years building scalable systems" },
-            { type: "output", text: "  pratik@pa.tel | 518-636-9399" },
+            { type: "output", text: "  CTO & Chief Architect · 3x Company Builder" },
+            { type: "output", text: "  11+ years · AI · Cloud · Web3" },
+            { type: "output", text: "  Washington, DC | pratik@pa.tel" },
           ]);
           break;
 
