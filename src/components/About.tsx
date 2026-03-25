@@ -2,18 +2,20 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 
 const skills = [
-  { name: "TypeScript", level: 95 },
-  { name: "React / Next.js", level: 90 },
-  { name: "Node.js", level: 92 },
-  { name: "Python", level: 85 },
-  { name: "AWS / Cloud", level: 88 },
-  { name: "Blockchain / Web3", level: 80 },
+  { name: "TypeScript / JavaScript", level: 95 },
+  { name: "React / Next.js", level: 92 },
+  { name: "Node.js / Bun", level: 90 },
+  { name: "AWS / Cloud / Infra", level: 92 },
+  { name: "AI / ML / LLMs", level: 88 },
+  { name: "Python / Go", level: 85 },
+  { name: "Blockchain / Web3", level: 85 },
 ];
 
 const stats = [
-  { value: "10+", label: "years_exp" },
-  { value: "3", label: "companies_led" },
-  { value: "1", label: "exit" },
+  { value: "11+", label: "years_exp" },
+  { value: "3x", label: "companies_built" },
+  { value: "1", label: "acquisition" },
+  { value: "50K+", label: "users_shipped" },
 ];
 
 const About = () => {
@@ -66,24 +68,30 @@ const About = () => {
                 </div>
                 <div className="mt-8 font-mono text-sm text-muted-foreground leading-relaxed space-y-4">
                   <p>
-                    I'm a hands-on engineering leader, CTO, and former co-founder
-                    with a passion for designing robust, scalable software solutions.
+                    Technology executive and hands-on architect with 11+ years
+                    building and scaling engineering organizations and shipping
+                    products to hundreds of thousands of users.
                   </p>
                   <p>
-                    Over the past decade, I've consistently delivered impactful technology
-                    in fast-moving startup environments, Fortune 500 companies, and
-                    emerging sectors like <span className="text-primary">blockchain</span> and{" "}
-                    <span className="text-accent text-glow-accent">AI/ML</span>.
+                    Three-time company builder: grew a 30-person engineering org at{" "}
+                    <span className="text-primary">AWS</span>, co-founded and sold a
+                    blockchain studio via acquisition by{" "}
+                    <span className="text-accent text-glow-accent">Dapper Labs</span>,
+                    and took a healthtech startup from napkin sketch to 50K+ users as
+                    founding CTO.
                   </p>
                   <p>
-                    Currently focused on building next-gen platforms that push the
-                    boundaries of what's possible with modern web tech.
+                    Currently Chief Architect at{" "}
+                    <span className="text-primary">Tarobase (poof.new)</span>,
+                    building AI-powered tools for vibe-coded dApps. Proven ability
+                    to set technical strategy, recruit world-class teams, and raise
+                    venture capital.
                   </p>
                 </div>
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-3 gap-4 mt-6">
+              <div className="grid grid-cols-4 gap-4 mt-6">
                 {stats.map((stat, i) => (
                   <motion.div
                     key={stat.label}
@@ -93,7 +101,7 @@ const About = () => {
                     transition={{ delay: 0.4 + i * 0.1, duration: 0.5 }}
                     className="border border-border bg-card p-4 text-center"
                   >
-                    <span className="font-display text-3xl font-bold text-primary text-glow block">
+                    <span className="font-display text-2xl lg:text-3xl font-bold text-primary text-glow block">
                       {stat.value}
                     </span>
                     <span className="font-mono text-[10px] text-muted-foreground tracking-wider">
@@ -120,7 +128,7 @@ const About = () => {
                   <span className="w-2.5 h-2.5 rounded-full bg-primary/60" />
                   <span className="font-mono text-[10px] text-muted-foreground ml-3">skills.config</span>
                 </div>
-                <div className="mt-8 space-y-6">
+                <div className="mt-8 space-y-5">
                   {skills.map((skill, i) => (
                     <motion.div
                       key={skill.name}

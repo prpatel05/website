@@ -118,7 +118,7 @@ const InteractiveTerminal = () => {
 
         case "resume":
           addLines([{ type: "system", text: "→ Downloading resume.pdf..." }]);
-          window.open("https://pratik.pa.tel/_files/ugd/d18f1b_7a4fc93fe56f4edb9c1d3fd318c0dd46.pdf", "_blank");
+          window.open("/pratik-patel-resume.pdf", "_blank");
           break;
 
         case "socials":
