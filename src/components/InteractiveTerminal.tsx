@@ -136,12 +136,13 @@ const InteractiveTerminal = () => {
         case "skills":
           addLines([
             { type: "system", text: "┌─ Tech Stack ─────────────────────────┐" },
-            { type: "output", text: "  TypeScript     ████████████████████░ 95%" },
-            { type: "output", text: "  Node.js        ██████████████████░░░ 92%" },
-            { type: "output", text: "  React/Next.js  ██████████████████░░░ 90%" },
-            { type: "output", text: "  AWS/Cloud      █████████████████░░░░ 88%" },
-            { type: "output", text: "  Python         █████████████████░░░░ 85%" },
-            { type: "output", text: "  Blockchain     ████████████████░░░░░ 80%" },
+            { type: "output", text: "  TypeScript/JS  ████████████████████░ 95%" },
+            { type: "output", text: "  React/Next.js  ██████████████████░░░ 92%" },
+            { type: "output", text: "  Node.js/Bun    ██████████████████░░░ 90%" },
+            { type: "output", text: "  AWS/Cloud      ██████████████████░░░ 92%" },
+            { type: "output", text: "  AI/ML/LLMs     █████████████████░░░░ 88%" },
+            { type: "output", text: "  Python/Go      █████████████████░░░░ 85%" },
+            { type: "output", text: "  Blockchain     █████████████████░░░░ 85%" },
             { type: "system", text: "└──────────────────────────────────────┘" },
           ]);
           break;
