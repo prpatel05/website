@@ -101,7 +101,7 @@ const About = () => {
                     transition={{ delay: 0.4 + i * 0.1, duration: 0.5 }}
                     className="border border-border bg-card p-4 text-center"
                   >
-                    <span className="font-display text-2xl lg:text-3xl font-bold text-primary text-glow block">
+                    <span className="font-display text-xl sm:text-2xl lg:text-3xl font-bold text-primary text-glow block">
                       {stat.value}
                     </span>
                     <span className="font-mono text-[10px] text-muted-foreground tracking-wider">

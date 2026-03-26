@@ -274,7 +274,7 @@ const InteractiveTerminal = () => {
               className="fixed inset-x-2 sm:inset-x-4 bottom-2 sm:bottom-4 top-auto z-[201] max-w-2xl mx-auto sm:inset-x-auto sm:bottom-8 sm:w-full"
               onClick={() => inputRef.current?.focus()}
             >
-              <div className="border border-border bg-card shadow-2xl overflow-hidden flex flex-col max-h-[70vh]">
+              <div className="border border-border bg-card shadow-2xl overflow-hidden flex flex-col max-h-[60vh] sm:max-h-[70vh]">
                 {/* Title bar */}
                 <div className="h-9 bg-muted border-b border-border flex items-center px-4 gap-2 shrink-0">
                   <button onClick={() => setOpen(false)} className="w-3 h-3 rounded-full bg-destructive/60 hover:bg-destructive transition-colors" />

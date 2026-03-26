@@ -57,15 +57,15 @@ const BlogPreview = () => {
               >
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-3">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3">
                       <span className="font-mono text-[10px] text-muted-foreground">
                         {post.date}
                       </span>
-                      <span className="text-border">|</span>
+                      <span className="text-border hidden sm:inline">|</span>
                       <span className="font-mono text-[10px] text-muted-foreground">
                         {post.readTime}
                       </span>
-                      {post.tags.map((tag) => (
+                      {post.tags.slice(0, 2).map((tag) => (
                         <span
                           key={tag}
                           className="font-mono text-[10px] text-primary/60 border border-primary/20 px-2 py-0.5"

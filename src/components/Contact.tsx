@@ -34,7 +34,7 @@ const Contact = () => {
           <span className="font-mono text-xs text-primary/60 tracking-widest block mb-2">
             {'// section:contact'}
           </span>
-          <h2 className="font-display text-5xl lg:text-7xl font-bold mb-6">
+          <h2 className="font-display text-3xl sm:text-5xl lg:text-7xl font-bold mb-6">
             <span className="text-foreground">Let's</span>{" "}
             <span className="text-primary text-glow">connect</span>
           </h2>

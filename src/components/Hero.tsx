@@ -162,7 +162,7 @@ const Hero = () => {
               href="/pratik-patel-resume.pdf"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-mono text-sm border border-primary/30 text-primary px-6 py-3 hover:bg-primary/10 transition-colors"
+              className="font-mono text-sm border border-primary/30 text-primary px-6 py-3 hover:bg-primary/10 transition-colors text-center"
             >
               cat resume.pdf
             </a>
