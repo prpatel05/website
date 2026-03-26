@@ -37,7 +37,7 @@ const ASCII_LOGO = `
 const InteractiveTerminal = () => {
   const [open, setOpen] = useState(false);
   const [lines, setLines] = useState<TerminalLine[]>([
-    { type: "system", text: "Welcome to pratik.sh v3.0.1" },
+    { type: "system", text: "Welcome to pratik.pa.tel v3.0.1" },
     { type: "system", text: 'Type "help" for available commands.' },
     { type: "output", text: "" },
   ]);
@@ -162,7 +162,7 @@ const InteractiveTerminal = () => {
             { type: "system", text: "  pratik@portfolio" },
             { type: "system", text: "  ─────────────────" },
             { type: "output", text: "  OS:       React 18 + Vite" },
-            { type: "output", text: "  Shell:    pratik.sh v3.0" },
+            { type: "output", text: "  Shell:    pratik.pa.tel v3.0" },
             { type: "output", text: "  Theme:    Cyberpunk Dark" },
             { type: "output", text: "  Font:     JetBrains Mono" },
             { type: "output", text: "  Uptime:   11+ years" },
@@ -271,9 +271,9 @@ const InteractiveTerminal = () => {
                   <button onClick={() => setOpen(false)} className="w-3 h-3 rounded-full bg-destructive/60 hover:bg-destructive transition-colors" />
                   <span className="w-3 h-3 rounded-full bg-primary/40" />
                   <span className="w-3 h-3 rounded-full bg-primary/60" />
-                  <span className="font-mono text-[10px] text-muted-foreground ml-3 flex-1 text-center">
-                    pratik.sh — bash
-                  </span>
+                   <span className="font-mono text-[10px] text-muted-foreground ml-3 flex-1 text-center">
+                     pratik.pa.tel — bash
+                   </span>
                   <button
                     onClick={() => setOpen(false)}
                     className="text-muted-foreground hover:text-foreground transition-colors"

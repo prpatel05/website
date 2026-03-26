@@ -29,7 +29,7 @@ const Navbar = () => {
         <div className="container flex items-center justify-between h-16">
           <a href="#" className="font-mono text-sm text-primary flex items-center gap-2 glitch-hover">
             <Terminal className="w-4 h-4" />
-            <span>pratik.exe</span>
+            <span>pratik.pa.tel</span>
           </a>
           <div className="hidden md:flex items-center gap-8">
             {links.map((link) => (
