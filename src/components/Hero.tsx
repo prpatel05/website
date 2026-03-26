@@ -45,7 +45,7 @@ const Hero = () => {
   }, [displayText, isDeleting, roleIndex]);
 
   return (
-    <section ref={sectionRef} className="relative min-h-screen flex items-center overflow-hidden grid-bg">
+    <section ref={sectionRef} className="relative min-h-screen flex items-center overflow-hidden grid-bg px-4 sm:px-0">
       {/* Parallax floating geometric elements */}
       <motion.div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ y: bgY }}>
         <motion.div
