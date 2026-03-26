@@ -53,11 +53,6 @@ const InteractiveTerminal = () => {
     if (open) inputRef.current?.focus();
   }, [open]);
 
-  useEffect(() => {
-    const handleScroll = () => setShowButton(window.scrollY > 300);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
