@@ -128,7 +128,7 @@ const Hero = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5, duration: 0.5 }}
-            className="mt-8 font-mono text-lg sm:text-xl text-muted-foreground"
+            className="mt-6 sm:mt-8 font-mono text-base sm:text-xl text-muted-foreground"
           >
             <span className="text-primary/50">$ </span>
             <span className="text-foreground/80">{displayText}</span>
