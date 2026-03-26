@@ -36,7 +36,7 @@ const ASCII_LOGO = `
 
 const InteractiveTerminal = () => {
   const [open, setOpen] = useState(false);
-  const [showButton, setShowButton] = useState(false);
+  const [showButton] = useState(true);
   const [lines, setLines] = useState<TerminalLine[]>([
     { type: "system", text: "Welcome to pratik.pa.tel v3.0.1" },
     { type: "system", text: 'Type "help" for available commands.' },
