@@ -271,9 +271,9 @@ const InteractiveTerminal = () => {
                   <button onClick={() => setOpen(false)} className="w-3 h-3 rounded-full bg-destructive/60 hover:bg-destructive transition-colors" />
                   <span className="w-3 h-3 rounded-full bg-primary/40" />
                   <span className="w-3 h-3 rounded-full bg-primary/60" />
-                  <span className="font-mono text-[10px] text-muted-foreground ml-3 flex-1 text-center">
-                    pratik.sh — bash
-                  </span>
+                   <span className="font-mono text-[10px] text-muted-foreground ml-3 flex-1 text-center">
+                     pratik.pa.tel — bash
+                   </span>
                   <button
                     onClick={() => setOpen(false)}
                     className="text-muted-foreground hover:text-foreground transition-colors"
