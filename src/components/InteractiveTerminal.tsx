@@ -162,7 +162,7 @@ const InteractiveTerminal = () => {
             { type: "system", text: "  pratik@portfolio" },
             { type: "system", text: "  ─────────────────" },
             { type: "output", text: "  OS:       React 18 + Vite" },
-            { type: "output", text: "  Shell:    pratik.sh v3.0" },
+            { type: "output", text: "  Shell:    pratik.pa.tel v3.0" },
             { type: "output", text: "  Theme:    Cyberpunk Dark" },
             { type: "output", text: "  Font:     JetBrains Mono" },
             { type: "output", text: "  Uptime:   11+ years" },
