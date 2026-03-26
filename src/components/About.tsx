@@ -32,7 +32,7 @@ const About = () => {
   const scanlineY = useTransform(scrollYProgress, [0, 1], ["0%", "20%"]);
 
   return (
-    <section ref={sectionRef} id="about" className="py-24 lg:py-40 relative overflow-hidden">
+    <section ref={sectionRef} id="about" className="py-16 sm:py-24 lg:py-40 relative overflow-hidden">
       <motion.div className="absolute inset-0 scanline pointer-events-none" style={{ y: scanlineY }} />
       <motion.div className="container relative z-10" style={{ opacity: sectionOpacity }}>
         <motion.div
