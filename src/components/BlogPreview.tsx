@@ -16,7 +16,7 @@ const BlogPreview = () => {
   const sectionOpacity = useTransform(scrollYProgress, [0, 0.15], [0, 1]);
 
   return (
-    <section ref={sectionRef} id="writing" className="py-24 lg:py-40 relative overflow-hidden">
+    <section ref={sectionRef} id="writing" className="py-16 sm:py-24 lg:py-40 relative overflow-hidden">
       <motion.div className="absolute inset-0 grid-bg pointer-events-none opacity-50" style={{ y: gridY }} />
       <motion.div className="container relative z-10" style={{ opacity: sectionOpacity }}>
         <motion.div
