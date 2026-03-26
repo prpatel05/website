@@ -243,15 +243,22 @@ const InteractiveTerminal = () => {
   return (
     <>
       {/* Toggle button */}
-      <motion.button
-        onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-50 w-12 h-12 bg-card border border-border flex items-center justify-center text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 group"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        title="Open terminal (Ctrl+K)"
-      >
-        <Terminal className="w-5 h-5" />
-      </motion.button>
+      <AnimatePresence>
+        {showButton && !open && (
+          <motion.button
+            onClick={() => setOpen(true)}
+            className="fixed bottom-6 right-6 z-50 w-12 h-12 bg-card border border-border flex items-center justify-center text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 group"
+            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 20 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            title="Open terminal (Ctrl+K)"
+          >
+            <Terminal className="w-5 h-5" />
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* Terminal overlay */}
       <AnimatePresence>
