@@ -44,7 +44,7 @@ const About = () => {
           <span className="font-mono text-xs text-primary/60 tracking-widest block mb-2">
             {'// section:about'}
           </span>
-          <h2 className="font-display text-4xl lg:text-6xl font-bold mb-4">
+          <h2 className="font-display text-3xl sm:text-4xl lg:text-6xl font-bold mb-4">
             <span className="text-foreground">About</span>{" "}
             <span className="text-primary text-glow">me</span>
           </h2>
