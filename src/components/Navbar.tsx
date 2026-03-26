@@ -6,7 +6,7 @@ const links = [
   { label: "about()", href: "#about" },
   { label: "writing()", href: "#writing" },
   { label: "contact()", href: "#contact" },
-  { label: "resume()", href: "/pratik-patel-resume.pdf", external: true },
+  { label: "resume()", href: `${import.meta.env.BASE_URL}resume.pdf`, external: true },
 ];
 
 const Navbar = () => {

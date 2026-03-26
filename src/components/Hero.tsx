@@ -159,7 +159,7 @@ const Hero = () => {
               ./contact --init
             </a>
             <a
-              href="/pratik-patel-resume.pdf"
+              href={`${import.meta.env.BASE_URL}resume.pdf`}
               target="_blank"
               rel="noopener noreferrer"
               className="font-mono text-sm border border-primary/30 text-primary px-6 py-3 hover:bg-primary/10 transition-colors text-center"

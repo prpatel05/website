@@ -120,7 +120,7 @@ const InteractiveTerminal = () => {
 
         case "resume":
           addLines([{ type: "system", text: "→ Downloading resume.pdf..." }]);
-          window.open("/pratik-patel-resume.pdf", "_blank");
+          window.open(`${import.meta.env.BASE_URL}resume.pdf`, "_blank");
           break;
 
         case "socials":

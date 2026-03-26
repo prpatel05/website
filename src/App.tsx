@@ -32,7 +32,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter basename="/website">
         <AnimatedRoutes />
       </BrowserRouter>
     </TooltipProvider>
