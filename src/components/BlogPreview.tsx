@@ -29,7 +29,7 @@ const BlogPreview = () => {
             {'// section:blog'}
           </span>
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-12">
-            <h2 className="font-display text-4xl lg:text-6xl font-bold">
+            <h2 className="font-display text-3xl sm:text-4xl lg:text-6xl font-bold">
               <span className="text-foreground">Recent</span>{" "}
               <span className="text-accent text-glow-accent">writes</span>
             </h2>
