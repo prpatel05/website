@@ -6,6 +6,7 @@ const links = [
   { label: "about()", href: "#about" },
   { label: "writing()", href: "#writing" },
   { label: "contact()", href: "#contact" },
+  { label: "resume()", href: "/pratik-patel-resume.pdf", external: true },
 ];
 
 const Navbar = () => {
@@ -35,6 +36,7 @@ const Navbar = () => {
               <a
                 key={link.label}
                 href={link.href}
+                {...(link.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                 className="font-mono text-xs text-muted-foreground hover:text-primary transition-colors"
               >
                 {link.label}
