@@ -154,7 +154,7 @@ const Hero = () => {
           >
             <a
               href="#contact"
-              className="font-mono text-sm bg-primary text-primary-foreground px-6 py-3 hover:bg-primary/90 transition-colors box-glow"
+              className="font-mono text-sm bg-primary text-primary-foreground px-6 py-3 hover:bg-primary/90 transition-colors box-glow text-center"
             >
               ./contact --init
             </a>
