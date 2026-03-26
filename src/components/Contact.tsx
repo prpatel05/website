@@ -22,7 +22,7 @@ const Contact = () => {
   const sectionOpacity = useTransform(scrollYProgress, [0, 0.2], [0, 1]);
 
   return (
-    <section ref={sectionRef} id="contact" className="py-24 lg:py-40 relative overflow-hidden">
+    <section ref={sectionRef} id="contact" className="py-16 sm:py-24 lg:py-40 relative overflow-hidden">
       <div className="absolute inset-0 scanline pointer-events-none" />
       <motion.div className="container relative z-10" style={{ opacity: sectionOpacity }}>
         <motion.div
