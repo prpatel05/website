@@ -139,7 +139,7 @@ const Hero = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8, duration: 0.6 }}
-            className="mt-8 font-mono text-sm text-muted-foreground max-w-lg leading-relaxed"
+            className="mt-6 sm:mt-8 font-mono text-xs sm:text-sm text-muted-foreground max-w-lg leading-relaxed"
           >
             Technology executive and hands-on architect with 11+ years building
             and scaling engineering organizations. Three-time company builder
