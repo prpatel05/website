@@ -91,7 +91,7 @@ const About = () => {
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-4 gap-4 mt-6">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-6">
                 {stats.map((stat, i) => (
                   <motion.div
                     key={stat.label}
