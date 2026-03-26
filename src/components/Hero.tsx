@@ -45,7 +45,7 @@ const Hero = () => {
   }, [displayText, isDeleting, roleIndex]);
 
   return (
-    <section ref={sectionRef} className="relative min-h-screen flex items-center overflow-hidden grid-bg">
+    <section ref={sectionRef} className="relative min-h-screen flex items-center overflow-hidden grid-bg px-4 sm:px-0">
       {/* Parallax floating geometric elements */}
       <motion.div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ y: bgY }}>
         <motion.div
@@ -117,7 +117,7 @@ const Hero = () => {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-            className="font-display text-6xl sm:text-8xl lg:text-9xl font-bold leading-[0.9] tracking-tighter"
+            className="font-display text-5xl sm:text-7xl lg:text-9xl font-bold leading-[0.9] tracking-tighter"
           >
             <span className="text-foreground">Pratik</span>
             <br />
@@ -128,7 +128,7 @@ const Hero = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5, duration: 0.5 }}
-            className="mt-8 font-mono text-lg sm:text-xl text-muted-foreground"
+            className="mt-6 sm:mt-8 font-mono text-base sm:text-xl text-muted-foreground"
           >
             <span className="text-primary/50">$ </span>
             <span className="text-foreground/80">{displayText}</span>
@@ -139,7 +139,7 @@ const Hero = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8, duration: 0.6 }}
-            className="mt-8 font-mono text-sm text-muted-foreground max-w-lg leading-relaxed"
+            className="mt-6 sm:mt-8 font-mono text-xs sm:text-sm text-muted-foreground max-w-lg leading-relaxed"
           >
             Technology executive and hands-on architect with 11+ years building
             and scaling engineering organizations. Three-time company builder
@@ -150,11 +150,11 @@ const Hero = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1, duration: 0.6 }}
-            className="mt-10 flex flex-wrap items-center gap-4"
+            className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4"
           >
             <a
               href="#contact"
-              className="font-mono text-sm bg-primary text-primary-foreground px-6 py-3 hover:bg-primary/90 transition-colors box-glow"
+              className="font-mono text-sm bg-primary text-primary-foreground px-6 py-3 hover:bg-primary/90 transition-colors box-glow text-center"
             >
               ./contact --init
             </a>
@@ -162,7 +162,7 @@ const Hero = () => {
               href="/pratik-patel-resume.pdf"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-mono text-sm border border-primary/30 text-primary px-6 py-3 hover:bg-primary/10 transition-colors"
+              className="font-mono text-sm border border-primary/30 text-primary px-6 py-3 hover:bg-primary/10 transition-colors text-center"
             >
               cat resume.pdf
             </a>

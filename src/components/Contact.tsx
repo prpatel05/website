@@ -22,7 +22,7 @@ const Contact = () => {
   const sectionOpacity = useTransform(scrollYProgress, [0, 0.2], [0, 1]);
 
   return (
-    <section ref={sectionRef} id="contact" className="py-24 lg:py-40 relative overflow-hidden">
+    <section ref={sectionRef} id="contact" className="py-16 sm:py-24 lg:py-40 relative overflow-hidden">
       <div className="absolute inset-0 scanline pointer-events-none" />
       <motion.div className="container relative z-10" style={{ opacity: sectionOpacity }}>
         <motion.div
@@ -34,7 +34,7 @@ const Contact = () => {
           <span className="font-mono text-xs text-primary/60 tracking-widest block mb-2">
             {'// section:contact'}
           </span>
-          <h2 className="font-display text-5xl lg:text-7xl font-bold mb-6">
+          <h2 className="font-display text-3xl sm:text-5xl lg:text-7xl font-bold mb-6">
             <span className="text-foreground">Let's</span>{" "}
             <span className="text-primary text-glow">connect</span>
           </h2>

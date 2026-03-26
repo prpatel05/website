@@ -32,7 +32,7 @@ const About = () => {
   const scanlineY = useTransform(scrollYProgress, [0, 1], ["0%", "20%"]);
 
   return (
-    <section ref={sectionRef} id="about" className="py-24 lg:py-40 relative overflow-hidden">
+    <section ref={sectionRef} id="about" className="py-16 sm:py-24 lg:py-40 relative overflow-hidden">
       <motion.div className="absolute inset-0 scanline pointer-events-none" style={{ y: scanlineY }} />
       <motion.div className="container relative z-10" style={{ opacity: sectionOpacity }}>
         <motion.div
@@ -44,7 +44,7 @@ const About = () => {
           <span className="font-mono text-xs text-primary/60 tracking-widest block mb-2">
             {'// section:about'}
           </span>
-          <h2 className="font-display text-4xl lg:text-6xl font-bold mb-4">
+          <h2 className="font-display text-3xl sm:text-4xl lg:text-6xl font-bold mb-4">
             <span className="text-foreground">About</span>{" "}
             <span className="text-primary text-glow">me</span>
           </h2>
@@ -91,7 +91,7 @@ const About = () => {
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-4 gap-4 mt-6">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-6">
                 {stats.map((stat, i) => (
                   <motion.div
                     key={stat.label}
@@ -101,7 +101,7 @@ const About = () => {
                     transition={{ delay: 0.4 + i * 0.1, duration: 0.5 }}
                     className="border border-border bg-card p-4 text-center"
                   >
-                    <span className="font-display text-2xl lg:text-3xl font-bold text-primary text-glow block">
+                    <span className="font-display text-xl sm:text-2xl lg:text-3xl font-bold text-primary text-glow block">
                       {stat.value}
                     </span>
                     <span className="font-mono text-[10px] text-muted-foreground tracking-wider">
