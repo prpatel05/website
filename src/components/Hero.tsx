@@ -117,7 +117,7 @@ const Hero = () => {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-            className="font-display text-6xl sm:text-8xl lg:text-9xl font-bold leading-[0.9] tracking-tighter"
+            className="font-display text-5xl sm:text-7xl lg:text-9xl font-bold leading-[0.9] tracking-tighter"
           >
             <span className="text-foreground">Pratik</span>
             <br />
