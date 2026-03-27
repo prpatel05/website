@@ -13,4 +13,4 @@ bun run dev
 
 The site is automatically deployed to GitHub Pages on every push to `main` via GitHub Actions.
 
-**Live:** https://prpatel05.github.io/website/
+**Live:** https://pratik.pa.tel/
