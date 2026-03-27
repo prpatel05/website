@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Clock, Calendar } from "lucide-react";
 import { getPostBySlug } from "@/data/blog-posts";
 import NotFound from "./NotFound";
+import SEO from "@/components/SEO";
 
 const renderMarkdown = (content: string) => {
   const lines = content.split("\n");
@@ -80,8 +81,41 @@ const BlogPost = () => {
 
   if (!post) return <NotFound />;
 
+  const ogImage = post.image.startsWith("/")
+    ? `https://pratik.pa.tel${post.image}`
+    : post.image;
+
+  const blogPostJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: post.title,
+    description: post.subtitle,
+    datePublished: post.dateISO,
+    image: ogImage,
+    url: `https://pratik.pa.tel/blog/${post.slug}`,
+    author: {
+      "@type": "Person",
+      name: "Pratik Patel",
+      url: "https://pratik.pa.tel",
+    },
+    publisher: {
+      "@type": "Person",
+      name: "Pratik Patel",
+      url: "https://pratik.pa.tel",
+    },
+    keywords: post.tags.join(", "),
+  };
+
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title={`${post.title} — Pratik Patel`}
+        description={post.subtitle}
+        canonical={`https://pratik.pa.tel/blog/${post.slug}`}
+        ogImage={ogImage}
+        ogType="article"
+        jsonLd={blogPostJsonLd}
+      />
       {/* Header */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="container flex items-center h-16">

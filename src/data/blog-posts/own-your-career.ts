@@ -5,9 +5,10 @@ export const ownYourCareer: BlogPost = {
   title: "Own Your Career",
   subtitle: "5 Lessons to Drive Your Promotions",
   date: "2025.02",
+  dateISO: "2025-02-15",
   readTime: "6 min",
   tags: ["growth", "engineering"],
-  image: "https://static.wixstatic.com/media/d18f1b_d83ba35b2f924796ab362adb52e9465f~mv2.webp/v1/fill/w_740,h_740,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/d18f1b_d83ba35b2f924796ab362adb52e9465f~mv2.webp",
+  image: "/images/blog-own-your-career.webp",
   content: `Early in my career, I made a huge mistake. I thought if I worked hard and hit all my deadlines, my manager would naturally recognize my efforts and drive my career forward. Promotions, salary bumps, new opportunities—they'd all come, right?
 
 Wrong. 🚫

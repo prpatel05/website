@@ -180,7 +180,7 @@ const Hero = () => {
           <div className="relative">
             <div className="w-56 h-56 lg:w-72 lg:h-72 overflow-hidden border border-primary/20 box-glow">
               <img
-                src="https://static.wixstatic.com/media/d18f1b_523801a612634d4c8898d6555dd2e481~mv2.png/v1/fill/w_556,h_556,fp_0.49_0.51,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/me_enhanced.png"
+                src="/images/headshot.png"
                 alt="Pratik Patel"
                 className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
               />

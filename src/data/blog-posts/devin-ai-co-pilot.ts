@@ -5,9 +5,10 @@ export const devinAiCoPilot: BlogPost = {
   title: "A Real-World Coding Story: Devin AI as My Co-Pilot",
   subtitle: "What happens when you hand off a real task to an AI teammate",
   date: "2025.02",
+  dateISO: "2025-02-20",
   readTime: "7 min",
   tags: ["ai", "engineering", "productivity"],
-  image: "https://static.wixstatic.com/media/d18f1b_59d9a5a544cd4ff09e2e03eb3921d59b~mv2.webp/v1/fill/w_740,h_740,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/d18f1b_59d9a5a544cd4ff09e2e03eb3921d59b~mv2.webp",
+  image: "/images/blog-devin-ai.webp",
   content: `I recently took **Devin AI** for a spin on a real development task, and the experience felt like something between magic and mentorship. I had a straightforward job: **implement an API endpoint to generate user access tokens for a third-party service**. Normally I'd crank this out in ~15 minutes of coding. This time, I decided to hand it off to my new "AI teammate" and see what happened. Here's how it went, step by step.
 
 ## The Task & Initial Plan 🚀

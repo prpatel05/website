@@ -2,10 +2,16 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { posts } from "@/data/blog-posts";
+import SEO from "@/components/SEO";
 
 const Blog = () => {
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Blog — Pratik Patel"
+        description="Articles on engineering leadership, AI, career growth, and technical architecture by Pratik Patel, CTO & Chief Architect."
+        canonical="https://pratik.pa.tel/blog"
+      />
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="container flex items-center h-16">
           <Link

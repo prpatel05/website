@@ -5,9 +5,10 @@ export const thePowerOfSayingNo: BlogPost = {
   title: "The Power of Saying No",
   subtitle: "And How It Can Save Your Sanity",
   date: "2025.02",
+  dateISO: "2025-02-10",
   readTime: "4 min",
   tags: ["leadership", "career"],
-  image: "https://static.wixstatic.com/media/d18f1b_f04531a4585c430880bbd355f2dd7f98~mv2.webp/v1/fill/w_740,h_740,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/d18f1b_f04531a4585c430880bbd355f2dd7f98~mv2.webp",
+  image: "/images/blog-power-of-no.webp",
   content: `Early in my career, I was _that_ engineer. The "Yes Person™."
 
 "Can you take on this extra feature?" _Yes!_
