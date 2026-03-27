@@ -13,6 +13,11 @@ import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
 
+const ResumePdfRedirect = () => {
+  window.location.replace(`${import.meta.env.BASE_URL}resume.pdf`);
+  return null;
+};
+
 const AnimatedRoutes = () => {
   const location = useLocation();
 
@@ -22,6 +27,7 @@ const AnimatedRoutes = () => {
         <Route path="/" element={<PageTransition><Index /></PageTransition>} />
         <Route path="/blog" element={<PageTransition><Blog /></PageTransition>} />
         <Route path="/blog/:slug" element={<PageTransition><BlogPost /></PageTransition>} />
+        <Route path="/resume" element={<ResumePdfRedirect />} />
         <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
       </Routes>
     </AnimatePresence>
