@@ -8,7 +8,7 @@ export const tenXEngineerMyth: BlogPost = {
   dateISO: "2026-04-15",
   readTime: "6 min",
   tags: ["engineering", "leadership", "career", "teams"],
-  image: "/images/blog-10x-engineer.jpg",
+  image: "/images/blog-10x-engineer.png",
   content: `The "10x engineer" is one of tech's most persistent myths. You know the archetype: the lone genius who cranks out code at superhuman speed, headphones on, hooded up, fueled by caffeine and pure talent.
 
 I've worked with hundreds of engineers across startups and big tech. I've never met one.
