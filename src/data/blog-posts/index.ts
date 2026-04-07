@@ -1,4 +1,5 @@
 export type { BlogPost } from "./types";
+import { tenXEngineerMyth } from "./10x-engineer-myth";
 import { shipItYourself } from "./ship-it-yourself";
 import { fromCopilotsToColleagues } from "./from-copilots-to-colleagues";
 import { thePowerOfSayingNo } from "./the-power-of-saying-no";
@@ -7,6 +8,7 @@ import { devinAiCoPilot } from "./devin-ai-co-pilot";
 import type { BlogPost } from "./types";
 
 export const posts: BlogPost[] = [
+  tenXEngineerMyth,
   shipItYourself,
   fromCopilotsToColleagues,
   devinAiCoPilot,
