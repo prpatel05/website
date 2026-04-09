@@ -11,7 +11,7 @@ export const fromCopilotsToColleagues: BlogPost = {
   image: "/images/blog-copilots-to-colleagues.webp",
   content: `A little over a year ago, I wrote about my first experience using **Devin AI** as a coding co-pilot. The takeaway was clear: AI wasn't replacing engineers, but it was becoming a surprisingly capable junior teammate. Fast forward to today, and that framing already feels quaint. The AI agents I work with now aren't co-pilots. They're closer to **colleagues**.
 
-Here's what changed, what I got wrong, and what I've learned about building software alongside AI agents in 2026.
+What changed, what I got wrong, and what I've learned building software alongside AI agents in 2026.
 
 ## The Shift: From Autocomplete to Autonomy 🔄
 
@@ -27,17 +27,17 @@ In my Devin AI post, I framed the value proposition as a time trade-off: 15 minu
 
 The real value isn't "did this specific task get done faster?" It's **"what did I do with the time I didn't spend on it?"** When I stopped measuring AI by how fast it could do _my_ tasks and started measuring it by how much it expanded _my capacity_, the picture changed dramatically.
 
-These days, I routinely have two or three agent sessions running in parallel while I focus on architecture decisions, stakeholder conversations, or code review. My throughput hasn't just increased — it's **qualitatively different**. I spend more time on the problems that actually need a human brain, and less time on the ones that don't.
+These days, I routinely have two or three agent sessions running in parallel while I focus on architecture decisions, stakeholder conversations, or code review. My throughput hasn't just increased. It's **qualitatively different**. I spend more time on the problems that actually need a human brain, and less time on the ones that don't.
 
 ## The Trust Calibration Problem ⚖️
 
-Here's the thing nobody warns you about when working with AI agents: **trust is harder than prompting**.
+Nobody warns you about this part. **Trust is harder than prompting**.
 
-Early on, I over-trusted. I'd skim an AI-generated PR, approve it, and move on. Then I'd find a subtle bug two days later — something that passed tests but violated an unwritten assumption about how our system handles state. The AI didn't know our system's history. It only knew the code as it existed on disk.
+Early on, I over-trusted. I'd skim an AI-generated PR, approve it, and move on. Then I'd find a subtle bug two days later, something that passed tests but violated an unwritten assumption about how our system handles state. The AI didn't know our system's history. It only knew the code as it existed on disk.
 
 Then I over-corrected. I reviewed AI PRs with more scrutiny than I'd give a senior engineer's code. That defeated the entire purpose. I was spending _more_ time reviewing than I would have spent just writing the code myself.
 
-The sweet spot — and I think every engineer working with agents has to find their own — is what I call **calibrated trust**:
+The sweet spot (and every engineer working with agents has to find their own) is what I call **calibrated trust**:
 
 - **High trust** for well-defined, well-tested tasks: CRUD endpoints, data transformations, boilerplate setup, migrations with clear schemas
 - **Medium trust** for tasks that require domain context: business logic, API integrations, anything touching auth or payments
@@ -63,23 +63,23 @@ When I review an agent's plan, I'm asking: _Does this agent understand the probl
 
 ### 3. Keep a Human in the Architecture Loop
 
-AI agents are great at implementing within a well-defined boundary. They're not great at deciding where the boundary should be. Architectural decisions — where does this logic live, how do these services communicate, what are the failure modes — still need human judgment.
+AI agents are great at implementing within a well-defined boundary. They're not great at deciding where the boundary should be. Architectural decisions, where does this logic live, how do these services communicate, what are the failure modes, still need human judgment.
 
 I've settled into a rhythm: I make the structural decisions, the agents fill in the implementation, and I review the result. It's not unlike being a tech lead, except my "team" never gets tired and never has opinions about tabs vs. spaces.
 
-## What I'm Watching Next 🔮
+## Where This Goes Next 🔮
 
-The pace of improvement in AI agents is staggering. A year ago, getting an agent to handle a multi-file refactor reliably felt like a stretch. Now it's routine. The frontier is moving toward agents that can maintain context across longer arcs of work — understanding not just the current task but the _project trajectory_.
+The pace of improvement in AI agents is staggering. A year ago, getting an agent to handle a multi-file refactor reliably felt like a stretch. Now it's routine. The frontier is moving toward agents that can maintain context across longer arcs of work, understanding not just the current task but the _project trajectory_.
 
 I'm also seeing more teams adopt agents not as individual tools but as **team members with defined roles**: one agent handles test coverage, another manages dependency updates, another writes documentation. The multi-agent workflow is still early, but the pattern is emerging.
 
-The engineers who will thrive in this landscape aren't the ones who write the fastest code. They're the ones who can **orchestrate, review, and architect** — the skills that have always defined senior engineering, now amplified by a new kind of teammate.
+The engineers who thrive won't be the fastest coders. They'll be the ones who can **orchestrate, review, and architect**, the skills that have always defined senior engineering, now amplified by a new kind of teammate.
 
-## The Bottom Line 🎯
+## What It Actually Taught Me 🎯
 
 Working with AI agents for the past year taught me something I didn't expect: it made me a **better engineer**, not because the AI wrote my code, but because it forced me to think more clearly about what I actually wanted built. You can't delegate effectively if you don't understand the problem deeply yourself.
 
-AI agents aren't replacing engineers. They're raising the bar for what "engineering" means. Less time typing, more time thinking. Less time on the routine, more time on the remarkable.
+AI agents aren't replacing engineers. They're raising the bar for what "engineering" means. Less time typing. More time thinking.
 
-And honestly? I wouldn't go back. The way I work now — with AI colleagues running alongside me — feels like the way software was always meant to be built. We just didn't have the teammates for it until now.`,
+And honestly? I wouldn't go back. The way I work now, with AI colleagues running alongside me, feels like how software was always meant to be built. We just didn't have the teammates for it until now.`,
 };
