@@ -65,7 +65,7 @@ test.describe("Blog listing and post navigation", () => {
 
   test("non-existent blog slug shows 404", async ({ page }) => {
     await page.goto("/blog/this-post-does-not-exist");
-    await expect(page.getByText("404")).toBeVisible();
-    await expect(page.getByText("Oops! Page not found")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "404" })).toBeVisible();
+    await expect(page.getByText("Page not found")).toBeVisible();
   });
 });

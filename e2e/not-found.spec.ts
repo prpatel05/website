@@ -4,14 +4,14 @@ test.describe("404 page", () => {
   test("shows 404 for invalid route", async ({ page }) => {
     await page.goto("/some-nonexistent-page");
 
-    await expect(page.getByText("404")).toBeVisible();
-    await expect(page.getByText("Oops! Page not found")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "404" })).toBeVisible();
+    await expect(page.getByText("Page not found")).toBeVisible();
   });
 
   test("404 page has link back to home", async ({ page }) => {
     await page.goto("/does-not-exist");
 
-    const homeLink = page.getByText("Return to Home");
+    const homeLink = page.getByText("cd ~");
     await expect(homeLink).toBeVisible();
 
     await homeLink.click();
@@ -21,6 +21,6 @@ test.describe("404 page", () => {
   test("deeply nested invalid route shows 404", async ({ page }) => {
     await page.goto("/foo/bar/baz");
 
-    await expect(page.getByText("404")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "404" })).toBeVisible();
   });
 });
