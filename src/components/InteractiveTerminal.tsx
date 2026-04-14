@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Terminal, X } from "lucide-react";
 import { processTerminalCommand, type TerminalLine } from "@/lib/terminal-commands";
+import { useTerminalHistory } from "@/hooks/useTerminalHistory";
 
 const InteractiveTerminal = () => {
   const [open, setOpen] = useState(false);
@@ -13,8 +14,7 @@ const InteractiveTerminal = () => {
     { type: "output", text: "" },
   ]);
   const [input, setInput] = useState("");
-  const [history, setHistory] = useState<string[]>([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
+  const { push, navigateUp, navigateDown } = useTerminalHistory();
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -22,7 +22,6 @@ const InteractiveTerminal = () => {
   useEffect(() => {
     if (open) inputRef.current?.focus();
   }, [open]);
-
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -84,24 +83,18 @@ const InteractiveTerminal = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     processCommand(input);
-    if (input.trim()) {
-      setHistory((prev) => [input, ...prev]);
-    }
+    push(input);
     setInput("");
-    setHistoryIndex(-1);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowUp") {
       e.preventDefault();
-      const newIndex = Math.min(historyIndex + 1, history.length - 1);
-      setHistoryIndex(newIndex);
-      if (history[newIndex]) setInput(history[newIndex]);
+      const prev = navigateUp();
+      if (prev !== undefined) setInput(prev);
     } else if (e.key === "ArrowDown") {
       e.preventDefault();
-      const newIndex = Math.max(historyIndex - 1, -1);
-      setHistoryIndex(newIndex);
-      setInput(newIndex === -1 ? "" : history[newIndex]);
+      setInput(navigateDown());
     }
   };
 

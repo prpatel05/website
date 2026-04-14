@@ -1,3 +1,5 @@
+import { socials } from "@/data/socials";
+
 export interface TerminalLine {
   type: "input" | "output" | "error" | "system";
   text: string;
@@ -97,11 +99,10 @@ export function processTerminalCommand(
     case "socials":
       return wrapLines([
         { type: "system", text: "┌─ Social Links ───────────────────────┐" },
-        { type: "output", text: "  LinkedIn    linkedin.com/in/prpatel05" },
-        { type: "output", text: "  GitHub      github.com/prpatel05" },
-        { type: "output", text: "  Medium      medium.com/@prpatel05" },
-        { type: "output", text: "  X/Twitter   x.com/prpatel05" },
-        { type: "output", text: "  Dev.to      dev.to/prpatel05" },
+        ...socials.map((s) => ({
+          type: "output" as const,
+          text: `  ${s.name.padEnd(12)} ${s.handle}`,
+        })),
         { type: "system", text: "└──────────────────────────────────────┘" },
       ]);
 

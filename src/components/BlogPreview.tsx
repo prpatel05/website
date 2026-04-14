@@ -1,33 +1,20 @@
 import { Link } from "react-router-dom";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useTransform } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { posts } from "@/data/blog-posts";
-import { useRef } from "react";
+import { useScrollAnimation } from "@/hooks/useScrollAnimation";
+import SectionHeader from "./SectionHeader";
 
 const BlogPreview = () => {
-  const sectionRef = useRef<HTMLElement>(null);
-
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start end", "end start"],
-  });
+  const { ref, scrollYProgress, sectionOpacity } = useScrollAnimation();
 
   const gridY = useTransform(scrollYProgress, [0, 1], ["0%", "-15%"]);
-  const sectionOpacity = useTransform(scrollYProgress, [0, 0.15], [0, 1]);
 
   return (
-    <section ref={sectionRef} id="writing" className="py-16 sm:py-24 lg:py-40 relative overflow-hidden">
+    <section ref={ref} id="writing" className="py-16 sm:py-24 lg:py-40 relative overflow-hidden">
       <motion.div className="absolute inset-0 grid-bg pointer-events-none opacity-50" style={{ y: gridY }} />
       <motion.div className="container relative z-10" style={{ opacity: sectionOpacity }}>
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-        >
-          <span className="font-mono text-xs text-primary/60 tracking-widest block mb-2">
-            {'// section:blog'}
-          </span>
+        <SectionHeader label="// section:blog" titleLeft="Recent" titleRight="writes" titleRightClass="text-accent text-glow-accent">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-12">
             <h2 className="font-display text-3xl sm:text-4xl lg:text-6xl font-bold">
               <span className="text-foreground">Recent</span>{" "}
@@ -40,11 +27,11 @@ const BlogPreview = () => {
               ls ./posts <ArrowUpRight className="w-3 h-3" />
             </Link>
           </div>
-        </motion.div>
+        </SectionHeader>
 
         <div className="space-y-4">
           {posts.map((post, i) => (
-            <motion.div
+            <motion.article
               key={post.slug}
               initial={{ opacity: 0, y: 40, scale: 0.97 }}
               whileInView={{ opacity: 1, y: 0, scale: 1 }}
@@ -86,7 +73,7 @@ const BlogPreview = () => {
                   </div>
                 </div>
               </Link>
-            </motion.div>
+            </motion.article>
           ))}
         </div>
       </motion.div>

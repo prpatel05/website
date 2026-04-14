@@ -10,6 +10,7 @@ const DIST = join(__dirname, "..", "dist");
 const ROUTES = [
   "/",
   "/blog",
+  "/blog/ship-it-yourself",
   "/blog/from-copilots-to-colleagues",
   "/blog/devin-ai-as-my-co-pilot",
   "/blog/the-power-of-saying-no",
@@ -83,7 +84,13 @@ async function prerender() {
     await page.goto(url, { waitUntil: "networkidle" });
 
     // Wait for React to render meaningful content
-    await page.waitForTimeout(3000);
+    await page.waitForFunction(
+      () => document.querySelector('#main-content')?.children.length > 0,
+      { timeout: 10000 }
+    ).catch(() => {
+      // Fallback if the selector isn't found
+      console.warn(`  Warning: hydration check timed out for ${route}, using fallback wait`);
+    });
 
     const html = await page.content();
 

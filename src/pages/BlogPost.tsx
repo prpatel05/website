@@ -47,26 +47,52 @@ const BlogPost = () => {
     ? `https://pratik.pa.tel${post.image}`
     : post.image;
 
-  const blogPostJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    headline: post.title,
-    description: post.subtitle,
-    datePublished: post.dateISO,
-    image: ogImage,
-    url: `https://pratik.pa.tel/blog/${post.slug}`,
-    author: {
-      "@type": "Person",
-      name: "Pratik Patel",
-      url: "https://pratik.pa.tel",
+  const blogPostJsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      headline: post.title,
+      description: post.subtitle,
+      datePublished: post.dateISO,
+      image: ogImage,
+      url: `https://pratik.pa.tel/blog/${post.slug}`,
+      author: {
+        "@type": "Person",
+        name: "Pratik Patel",
+        url: "https://pratik.pa.tel",
+      },
+      publisher: {
+        "@type": "Person",
+        name: "Pratik Patel",
+        url: "https://pratik.pa.tel",
+      },
+      keywords: post.tags.join(", "),
     },
-    publisher: {
-      "@type": "Person",
-      name: "Pratik Patel",
-      url: "https://pratik.pa.tel",
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Home",
+          item: "https://pratik.pa.tel",
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Blog",
+          item: "https://pratik.pa.tel/blog",
+        },
+        {
+          "@type": "ListItem",
+          position: 3,
+          name: post.title,
+          item: `https://pratik.pa.tel/blog/${post.slug}`,
+        },
+      ],
     },
-    keywords: post.tags.join(", "),
-  };
+  ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -137,6 +163,9 @@ const BlogPost = () => {
             <img
               src={post.image}
               alt={post.title}
+              loading="lazy"
+              width={768}
+              height={432}
               className="w-full aspect-video object-cover"
             />
           </motion.div>
