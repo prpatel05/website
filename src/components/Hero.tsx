@@ -182,6 +182,8 @@ const Hero = () => {
               <img
                 src="/images/headshot.png"
                 alt="Pratik Patel"
+                width={288}
+                height={288}
                 className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
               />
             </div>

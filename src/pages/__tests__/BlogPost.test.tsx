@@ -32,31 +32,26 @@ vi.mock("react-helmet-async", () => ({
 }));
 
 import BlogPost from "../BlogPost";
-import type { BlogPost as BlogPostType } from "@/data/blog-posts/types";
 
-const mockPost: BlogPostType = {
-  slug: "test-post",
-  title: "Test Post Title",
-  subtitle: "Test subtitle for the post",
-  date: "Jan 1, 2026",
-  dateISO: "2026-01-01",
-  readTime: "5 min read",
-  tags: ["testing", "vitest", "react"],
-  image: "/images/test.png",
-  content: `## Introduction
-
-This is a **test paragraph** with *emphasis*.
-
-### Sub-heading
-
-- First item
-- Second item
-- Third item`,
-};
-
-vi.mock("@/data/blog-posts", () => ({
-  getPostBySlug: (slug: string) => (slug === "test-post" ? mockPost : undefined),
-}));
+vi.mock("@/data/blog-posts", async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  const testPost = {
+    slug: "test-post",
+    title: "Test Post Title",
+    subtitle: "Test subtitle for the post",
+    date: "Jan 1, 2026",
+    dateISO: "2026-01-01",
+    readTime: "5 min read",
+    tags: ["testing", "vitest", "react"],
+    image: "/images/test.png",
+    content: `## Introduction\n\nThis is a **test paragraph** with *emphasis*.\n\n### Sub-heading\n\n- First item\n- Second item\n- Third item`,
+  };
+  return {
+    ...actual,
+    getPostBySlug: (slug: string) => (slug === "test-post" ? testPost : undefined),
+    posts: [testPost],
+  };
+});
 
 function renderBlogPost(slug: string) {
   return render(
@@ -126,8 +121,9 @@ describe("BlogPost", () => {
 
   it("renders NotFound for unknown slug", () => {
     renderBlogPost("nonexistent-slug");
-    // The BlogPost component returns <NotFound /> which should render a 404-like page
-    expect(screen.queryByText("Test Post Title")).not.toBeInTheDocument();
+    // The BlogPost component returns <NotFound /> which shows the 404 page
+    expect(screen.getByText("404")).toBeInTheDocument();
+    expect(screen.getByText(/Page not found/)).toBeInTheDocument();
   });
 
   it("normalizes relative image URLs for OG image", () => {
