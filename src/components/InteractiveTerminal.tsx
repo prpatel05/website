@@ -2,37 +2,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Terminal, X } from "lucide-react";
-
-interface TerminalLine {
-  type: "input" | "output" | "error" | "system";
-  text: string;
-}
-
-const COMMANDS: Record<string, string> = {
-  help: "Show available commands",
-  about: "Navigate to about section",
-  blog: "Open blog archive",
-  contact: "Navigate to contact section",
-  resume: "Download resume",
-  socials: "List social links",
-  skills: "Show tech stack",
-  clear: "Clear terminal",
-  whoami: "About Pratik",
-  neofetch: "System info",
-  ls: "List site sections",
-  pwd: "Print working directory",
-  date: "Show current date",
-  echo: "Echo a message",
-};
-
-const ASCII_LOGO = `
-  ██████╗ ██████╗ 
-  ██╔══██╗██╔══██╗
-  ██████╔╝██████╔╝
-  ██╔═══╝ ██╔═══╝ 
-  ██║     ██║     
-  ╚═╝     ╚═╝     
-`;
+import { processTerminalCommand, type TerminalLine } from "@/lib/terminal-commands";
+import { useTerminalHistory } from "@/hooks/useTerminalHistory";
 
 const InteractiveTerminal = () => {
   const [open, setOpen] = useState(false);
@@ -43,8 +14,7 @@ const InteractiveTerminal = () => {
     { type: "output", text: "" },
   ]);
   const [input, setInput] = useState("");
-  const [history, setHistory] = useState<string[]>([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
+  const { push, navigateUp, navigateDown } = useTerminalHistory();
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -52,7 +22,6 @@ const InteractiveTerminal = () => {
   useEffect(() => {
     if (open) inputRef.current?.focus();
   }, [open]);
-
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -81,131 +50,31 @@ const InteractiveTerminal = () => {
 
   const processCommand = useCallback(
     (cmd: string) => {
-      const trimmed = cmd.trim().toLowerCase();
-      const parts = trimmed.split(" ");
-      const base = parts[0];
+      const result = processTerminalCommand(cmd, import.meta.env.BASE_URL);
 
-      const addLines = (newLines: TerminalLine[]) => {
-        setLines((prev) => [...prev, { type: "input", text: `$ ${cmd}` }, ...newLines, { type: "output", text: "" }]);
-      };
-
-      switch (base) {
-        case "help":
-          addLines([
-            { type: "system", text: "┌─ Available Commands ─────────────────┐" },
-            ...Object.entries(COMMANDS).map(([k, v]) => ({
-              type: "output" as const,
-              text: `  ${k.padEnd(12)} ${v}`,
-            })),
-            { type: "system", text: "└──────────────────────────────────────┘" },
-            { type: "output", text: "  Tip: Ctrl+K to toggle terminal" },
-          ]);
+      switch (result.action) {
+        case "lines":
+          setLines((prev) => [...prev, ...result.lines]);
           break;
-
-        case "about":
-          addLines([{ type: "system", text: "→ Navigating to #about..." }]);
-          scrollToSection("about");
-          break;
-
-        case "contact":
-          addLines([{ type: "system", text: "→ Navigating to #contact..." }]);
-          scrollToSection("contact");
-          break;
-
-        case "blog":
-          addLines([{ type: "system", text: "→ Opening /blog..." }]);
-          setOpen(false);
-          setTimeout(() => navigate("/blog"), 300);
-          break;
-
-        case "resume":
-          addLines([{ type: "system", text: "→ Downloading resume.pdf..." }]);
-          window.open(`${import.meta.env.BASE_URL}resume.pdf`, "_blank");
-          break;
-
-        case "socials":
-          addLines([
-            { type: "system", text: "┌─ Social Links ───────────────────────┐" },
-            { type: "output", text: "  LinkedIn    linkedin.com/in/prpatel05" },
-            { type: "output", text: "  GitHub      github.com/prpatel05" },
-            { type: "output", text: "  Medium      medium.com/@prpatel05" },
-            { type: "output", text: "  X/Twitter   x.com/prpatel05" },
-            { type: "output", text: "  Dev.to      dev.to/prpatel05" },
-            { type: "system", text: "└──────────────────────────────────────┘" },
-          ]);
-          break;
-
-        case "skills":
-          addLines([
-            { type: "system", text: "┌─ Tech Stack ─────────────────────────┐" },
-            { type: "output", text: "  TypeScript/JS  ████████████████████░ 95%" },
-            { type: "output", text: "  React/Next.js  ██████████████████░░░ 92%" },
-            { type: "output", text: "  Node.js/Bun    ██████████████████░░░ 90%" },
-            { type: "output", text: "  AWS/Cloud      ██████████████████░░░ 92%" },
-            { type: "output", text: "  AI/ML/LLMs     █████████████████░░░░ 88%" },
-            { type: "output", text: "  Python/Go      █████████████████░░░░ 85%" },
-            { type: "output", text: "  Blockchain     █████████████████░░░░ 85%" },
-            { type: "system", text: "└──────────────────────────────────────┘" },
-          ]);
-          break;
-
-        case "whoami":
-          addLines([
-            { type: "output", text: ASCII_LOGO },
-            { type: "system", text: "  Pratik Patel" },
-            { type: "output", text: "  CTO & Chief Architect · 3x Company Builder" },
-            { type: "output", text: "  11+ years · AI · Cloud · Web3" },
-            { type: "output", text: "  Washington, DC | pratik@pa.tel" },
-          ]);
-          break;
-
-        case "neofetch":
-          addLines([
-            { type: "system", text: "  pratik@portfolio" },
-            { type: "system", text: "  ─────────────────" },
-            { type: "output", text: "  OS:       React 18 + Vite" },
-            { type: "output", text: "  Shell:    pratik.pa.tel v3.0" },
-            { type: "output", text: "  Theme:    Cyberpunk Dark" },
-            { type: "output", text: "  Font:     JetBrains Mono" },
-            { type: "output", text: "  Uptime:   11+ years" },
-            { type: "output", text: `  Location: Washington, DC` },
-          ]);
-          break;
-
         case "clear":
           setLines([]);
           return;
-
-        case "ls":
-          addLines([
-            { type: "output", text: "  drwxr-xr-x  about/" },
-            { type: "output", text: "  drwxr-xr-x  blog/" },
-            { type: "output", text: "  drwxr-xr-x  contact/" },
-            { type: "output", text: "  -rw-r--r--  resume.pdf" },
-          ]);
+        case "navigate":
+          setLines((prev) => [...prev, ...result.lines]);
+          setOpen(false);
+          setTimeout(() => navigate(result.path), 300);
           break;
-
-        case "pwd":
-          addLines([{ type: "output", text: "  /home/pratik/portfolio" }]);
+        case "scroll":
+          setLines((prev) => [...prev, ...result.lines]);
+          scrollToSection(result.id);
           break;
-
-        case "date":
-          addLines([{ type: "output", text: `  ${new Date().toString()}` }]);
+        case "open":
+          setLines((prev) => [...prev, ...result.lines]);
+          window.open(result.url, "_blank");
           break;
-
-        case "echo":
-          addLines([{ type: "output", text: `  ${parts.slice(1).join(" ") || ""}` }]);
-          break;
-
-        case "":
+        case "empty":
           setLines((prev) => [...prev, { type: "input", text: "$ " }]);
           break;
-
-        default:
-          addLines([
-            { type: "error", text: `  command not found: ${base}` },
-            { type: "output", text: '  Type "help" for available commands.' },
-          ]);
       }
     },
     [navigate, scrollToSection]
@@ -214,24 +83,18 @@ const InteractiveTerminal = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     processCommand(input);
-    if (input.trim()) {
-      setHistory((prev) => [input, ...prev]);
-    }
+    push(input);
     setInput("");
-    setHistoryIndex(-1);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowUp") {
       e.preventDefault();
-      const newIndex = Math.min(historyIndex + 1, history.length - 1);
-      setHistoryIndex(newIndex);
-      if (history[newIndex]) setInput(history[newIndex]);
+      const prev = navigateUp();
+      if (prev !== undefined) setInput(prev);
     } else if (e.key === "ArrowDown") {
       e.preventDefault();
-      const newIndex = Math.max(historyIndex - 1, -1);
-      setHistoryIndex(newIndex);
-      setInput(newIndex === -1 ? "" : history[newIndex]);
+      setInput(navigateDown());
     }
   };
 

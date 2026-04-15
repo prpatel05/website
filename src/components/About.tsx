@@ -1,5 +1,6 @@
-import { motion, useScroll, useTransform } from "framer-motion";
-import { useRef } from "react";
+import { motion, useTransform } from "framer-motion";
+import { useScrollAnimation } from "@/hooks/useScrollAnimation";
+import SectionHeader from "./SectionHeader";
 
 const skills = [
   { name: "TypeScript / JavaScript", level: 95 },
@@ -19,36 +20,17 @@ const stats = [
 ];
 
 const About = () => {
-  const sectionRef = useRef<HTMLElement>(null);
-
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start end", "end start"],
-  });
+  const { ref, scrollYProgress, sectionOpacity } = useScrollAnimation();
 
   const leftX = useTransform(scrollYProgress, [0, 0.4], ["-60px", "0px"]);
   const rightX = useTransform(scrollYProgress, [0, 0.4], ["60px", "0px"]);
-  const sectionOpacity = useTransform(scrollYProgress, [0, 0.15], [0, 1]);
   const scanlineY = useTransform(scrollYProgress, [0, 1], ["0%", "20%"]);
 
   return (
-    <section ref={sectionRef} id="about" className="py-16 sm:py-24 lg:py-40 relative overflow-hidden">
+    <section ref={ref} id="about" className="py-16 sm:py-24 lg:py-40 relative overflow-hidden">
       <motion.div className="absolute inset-0 scanline pointer-events-none" style={{ y: scanlineY }} />
       <motion.div className="container relative z-10" style={{ opacity: sectionOpacity }}>
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-        >
-          <span className="font-mono text-xs text-primary/60 tracking-widest block mb-2">
-            {'// section:about'}
-          </span>
-          <h2 className="font-display text-3xl sm:text-4xl lg:text-6xl font-bold mb-4">
-            <span className="text-foreground">About</span>{" "}
-            <span className="text-primary text-glow">me</span>
-          </h2>
-        </motion.div>
+        <SectionHeader label="// section:about" titleLeft="About" titleRight="me" />
 
         <div className="grid lg:grid-cols-2 gap-16 mt-12">
           {/* Left - bio with parallax slide-in */}
