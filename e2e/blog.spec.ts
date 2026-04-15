@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { posts } from "../src/data/blog-posts";
 
 test.describe("Blog listing and post navigation", () => {
   test("blog listing shows all posts", async ({ page }) => {
@@ -7,9 +8,9 @@ test.describe("Blog listing and post navigation", () => {
     await expect(page.getByText("Blog")).toBeVisible();
     await expect(page.getByText("archive")).toBeVisible();
 
-    // Verify all 5 blog posts are listed
+    // Verify all blog posts are listed
     const postLinks = page.locator('a[href^="/blog/"]');
-    await expect(postLinks).toHaveCount(5);
+    await expect(postLinks).toHaveCount(posts.length);
 
     // Check first post title is visible
     await expect(
