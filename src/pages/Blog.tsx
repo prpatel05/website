@@ -11,6 +11,7 @@ const Blog = () => {
         title="Blog — Pratik Patel"
         description="Articles on engineering leadership, AI, career growth, and technical architecture by Pratik Patel, CTO & Chief Architect."
         canonical="https://pratik.pa.tel/blog"
+        ogImage={posts[0]?.image.startsWith("/") ? `https://pratik.pa.tel${posts[0].image}` : posts[0]?.image}
       />
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="container flex items-center h-16">
