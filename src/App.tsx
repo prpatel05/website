@@ -1,4 +1,4 @@
-import { Component, type ReactNode } from "react";
+import { Component, type ReactNode, useEffect } from "react";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { AnimatePresence } from "framer-motion";
@@ -44,6 +44,16 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
   }
 }
 
+/* ---------- Scroll Reset ---------- */
+
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+};
+
 /* ---------- Routes ---------- */
 
 const ResumePdfRedirect = () => {
@@ -79,6 +89,7 @@ const App = () => (
         Skip to main content
       </a>
       <BrowserRouter>
+        <ScrollToTop />
         <main id="main-content">
           <AnimatedRoutes />
         </main>
