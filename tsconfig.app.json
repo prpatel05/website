@@ -14,15 +14,15 @@
     "noEmit": true,
     "noFallthroughCasesInSwitch": false,
     "noImplicitAny": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "paths": {
       "@/*": [
         "./src/*"
       ]
     },
     "skipLibCheck": true,
-    "strict": false,
+    "strict": true,
     "target": "ES2020",
     "types": [
       "vitest/globals"

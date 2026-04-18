@@ -43,7 +43,7 @@ const Blog = () => {
 
           <div className="space-y-4">
             {posts.map((post, i) => (
-              <motion.div
+              <motion.article
                 key={post.slug}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -58,6 +58,9 @@ const Blog = () => {
                       <img
                         src={post.image}
                         alt={post.title}
+                        loading="lazy"
+                        width={128}
+                        height={96}
                         className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
                       />
                     </div>
@@ -82,7 +85,7 @@ const Blog = () => {
                     </div>
                   </div>
                 </Link>
-              </motion.div>
+              </motion.article>
             ))}
           </div>
         </div>

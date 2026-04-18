@@ -1,39 +1,21 @@
-import { motion, useScroll, useTransform } from "framer-motion";
-import { Github, Linkedin, Twitter, BookOpen, Code2, Mail, Phone } from "lucide-react";
-import { useRef } from "react";
-
-const socials = [
-  { name: "LinkedIn", url: "https://www.linkedin.com/in/prpatel05/", icon: Linkedin },
-  { name: "GitHub", url: "https://github.com/prpatel05", icon: Github },
-  { name: "Medium", url: "https://medium.com/@prpatel05", icon: BookOpen },
-  { name: "X", url: "https://x.com/prpatel05", icon: Twitter },
-  { name: "Dev.to", url: "https://dev.to/prpatel05", icon: Code2 },
-];
+import { motion, useTransform } from "framer-motion";
+import { Mail, Phone } from "lucide-react";
+import { socials } from "@/data/socials";
+import { useScrollAnimation } from "@/hooks/useScrollAnimation";
+import SectionHeader from "./SectionHeader";
 
 const Contact = () => {
-  const sectionRef = useRef<HTMLElement>(null);
-
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start end", "end start"],
+  const { ref, scrollYProgress, sectionOpacity } = useScrollAnimation({
+    opacityRange: [0, 0.2],
   });
 
   const decorY = useTransform(scrollYProgress, [0, 1], ["100px", "-60px"]);
-  const sectionOpacity = useTransform(scrollYProgress, [0, 0.2], [0, 1]);
 
   return (
-    <section ref={sectionRef} id="contact" className="py-16 sm:py-24 lg:py-40 relative overflow-hidden">
+    <section ref={ref} id="contact" className="py-16 sm:py-24 lg:py-40 relative overflow-hidden">
       <div className="absolute inset-0 scanline pointer-events-none" />
       <motion.div className="container relative z-10" style={{ opacity: sectionOpacity }}>
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-        >
-          <span className="font-mono text-xs text-primary/60 tracking-widest block mb-2">
-            {'// section:contact'}
-          </span>
+        <SectionHeader label="// section:contact" titleLeft="Let's" titleRight="connect">
           <h2 className="font-display text-3xl sm:text-5xl lg:text-7xl font-bold mb-6">
             <span className="text-foreground">Let's</span>{" "}
             <span className="text-primary text-glow">connect</span>
@@ -42,7 +24,7 @@ const Contact = () => {
             Always open to interesting conversations, new opportunities,
             and building things that matter. Based in Washington, DC — open to remote.
           </p>
-        </motion.div>
+        </SectionHeader>
 
         <div className="grid lg:grid-cols-2 gap-12">
           {/* Direct contact */}
