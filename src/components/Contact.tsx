@@ -21,8 +21,8 @@ const Contact = () => {
             <span className="text-primary text-glow">connect</span>
           </h2>
           <p className="font-mono text-sm text-muted-foreground max-w-md mb-12">
-            Always open to interesting conversations, new opportunities,
-            and building things that matter. Based in Washington, DC — open to remote.
+            Always open to interesting conversations
+            and building things that matter. Based in Washington, DC.
           </p>
         </SectionHeader>
 
