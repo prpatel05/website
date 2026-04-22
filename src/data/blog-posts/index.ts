@@ -1,4 +1,5 @@
 export type { BlogPost } from "./types";
+import { tenXEngineerMyth } from "./10x-engineer-myth";
 import { noMoreUglyWebsites } from "./no-more-ugly-websites";
 import { shipItYourself } from "./ship-it-yourself";
 import { fromCopilotsToColleagues } from "./from-copilots-to-colleagues";
@@ -10,6 +11,7 @@ import type { BlogPost } from "./types";
 
 export const posts: BlogPost[] = [
   theZeroDollarStartup,
+  tenXEngineerMyth,
   noMoreUglyWebsites,
   shipItYourself,
   fromCopilotsToColleagues,
