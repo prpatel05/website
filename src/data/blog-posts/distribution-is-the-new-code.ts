@@ -10,23 +10,23 @@ export const distributionIsTheNewCode: BlogPost = {
   readTime: "7 min",
   tags: ["ai", "distribution", "startups", "marketing"],
   image: "/images/blog-distribution-is-the-new-code.webp",
-  content: `There's a pattern I keep seeing in my DMs. Someone builds something genuinely good — a clean product, solid code, real utility — and then wonders why nobody's using it. They share a link on Twitter, post it to a couple of subreddits, and wait. Nothing happens. A week later they're demoralized, convinced the product wasn't good enough.
+  content: `There's a pattern I keep seeing in my DMs. Someone builds something genuinely good (clean product, solid code, real utility) and then wonders why nobody's using it. They share a link on Twitter, post it to a couple of subreddits, and wait. Nothing happens. A week later they're demoralized, convinced the product wasn't good enough.
 
 It was good enough. The product wasn't the problem. **Getting it in front of people** was the problem.
 
-We've spent the last two years celebrating how AI collapsed the cost of building. I wrote about it — the $0 startup is real, shipping solo is real, taste as a moat is real. But here's what nobody wants to talk about: **building was never the hardest part**. Distribution was. And it still is.
+We've spent the last two years celebrating how AI collapsed the cost of building. I wrote about it. The $0 startup is real, shipping solo is real, taste as a moat is real. But nobody wants to talk about what comes next: **building was never the hardest part**. Distribution was. And it still is.
 
 ## The Biggest Lie in Tech
 
 Silicon Valley has a mythology problem. The story goes like this: build something great, and the world will beat a path to your door. "If you build it, they will come." It's the foundational myth of the startup world, and it has always been a lie.
 
-Google wasn't the best search engine when it launched — it had better distribution through academic networks. Facebook wasn't the best social network — it had exclusivity and campus-by-campus rollout. Slack wasn't the best chat app — it had a viral loop baked into its team onboarding. The winners didn't just build better products. They **built better distribution**.
+Google wasn't the best search engine when it launched. It had better distribution through academic networks. Facebook wasn't the best social network. It had exclusivity and campus-by-campus rollout. Slack wasn't the best chat app. It had a viral loop baked into its team onboarding. The winners didn't just build better products. They **built better distribution**.
 
 This was already true before AI. Now it's the _only_ truth that matters.
 
-## Why Building Stopped Being the Bottleneck
+## Building Isn't the Bottleneck Anymore
 
-Here's the math. In 2024, maybe 500,000 people worldwide could build a production-quality web app from scratch. Designers, engineers, full-stack developers — the usual suspects. In 2026, that number is closer to 50 million. AI agents turned "non-technical" people into builders overnight.
+The math is simple. In 2024, maybe 500,000 people worldwide could build a production-quality web app from scratch. Designers, engineers, full-stack developers, the usual suspects. In 2026, that number is closer to 50 million. AI agents turned "non-technical" people into builders overnight.
 
 That's a 100x increase in supply. What happens when supply explodes? The thing that was scarce stops being scarce. **The ability to build is no longer a competitive advantage.** It's table stakes.
 
@@ -38,17 +38,17 @@ Let me be specific, because "distribution" gets thrown around as a buzzword. It'
 
 **Audience.** People who already know you exist and have some reason to pay attention. This could be a Twitter following, a newsletter list, a YouTube channel, a podcast. The format doesn't matter. What matters is that when you say "I built a thing," there are humans on the other end who will actually look at it.
 
-**Trust.** An audience that doesn't trust you is just a number. Trust comes from consistency — from showing up, sharing real work, being honest about what works and what doesn't. The people who do best at distribution aren't the loudest. They're the most consistent.
+**Trust.** An audience that doesn't trust you is just a number. Trust comes from consistency, from showing up, sharing real work, being honest about what works and what doesn't. The people who do best at distribution aren't the loudest. They're the most consistent.
 
 **Channel fit.** Every product has natural channels where it spreads, and forcing it into the wrong one is a waste of time. A developer tool spreads through GitHub stars and technical blog posts. A consumer app spreads through TikTok and word of mouth. A B2B product spreads through case studies and LinkedIn. If you're posting your B2B SaaS on Reddit's r/sideproject, you're putting premium gas in a bicycle.
 
-**Story.** People don't share products. They share stories. "I built an app" is not a story. "I quit my job, built a tool that replaced my old team's entire workflow, and now it's making $10K/month" is a story. The narrative around your product matters as much as the product itself — maybe more.
+**Story.** People don't share products. They share stories. "I built an app" is not a story. "I quit my job, built a tool that replaced my old team's entire workflow, and now it's making $10K/month" is a story. The narrative around your product matters as much as the product itself. Maybe more.
 
 ## The Distribution Divide
 
-Here's what I'm watching happen in real time: the gap between builders and distributors is becoming the defining divide in tech.
+I'm watching this play out in real time: the gap between builders and distributors is becoming the defining divide in tech.
 
-On one side, you have incredible builders — technical people shipping polished products every week — who can't get past 50 users. They keep iterating on features, convinced that the _next_ feature will be the one that unlocks growth. It never is.
+On one side, you have incredible builders, technical people shipping polished products every week, who can't get past 50 users. They keep iterating on features, convinced that the _next_ feature will be the one that unlocks growth. It never is.
 
 On the other side, you have people with strong audiences and distribution channels who build something mediocre and immediately get traction. Their v1 is worse, but it doesn't matter because 10,000 people tried it on day one. And with real user feedback flowing in from day one, their v2 is better than the first group's v5.
 
@@ -60,7 +60,7 @@ The single best piece of advice I can give to anyone planning to build something
 
 ### 1. Build in Public
 
-Share your process, not just your product. People love watching things get built. Tweet your progress. Write about your decisions. Show the messy middle. By the time you launch, you'll have an audience that feels invested in your success — because they watched it happen.
+Share your process, not just your product. People love watching things get built. Tweet your progress. Write about your decisions. Show the messy middle. By the time you launch, you'll have an audience that feels invested in your success. They watched it happen.
 
 ### 2. Own a Narrative
 
@@ -76,11 +76,11 @@ Don't try to be everywhere. Pick the one channel where your target users already
 
 ## AI Can't Distribute For You
 
-Here's the uncomfortable truth that the AI hype cycle doesn't want to acknowledge: AI is great at building things, but it's mediocre at distributing them.
+The uncomfortable truth is one the AI hype cycle doesn't want to acknowledge: AI is great at building things, but it's mediocre at distributing them.
 
-Yes, AI can write social media posts and schedule them. It can generate content at scale. But the output feels like what it is — machine-generated filler. And people are getting better at pattern-matching on AI slop every day.
+Yes, AI can write social media posts and schedule them. It can generate content at scale. But the output feels like what it is: machine-generated filler. And people are getting better at pattern-matching on AI slop every day.
 
-Distribution that works is built on **authenticity**. It's your real story, your real struggle, your real perspective. The irony is rich: in a world where AI can fake almost anything, the unfakeable stuff — genuine human experience and earned trust — has become the most valuable asset of all.
+Distribution that works is built on **authenticity**. It's your real story, your real struggle, your real perspective. The irony is rich: in a world where AI can fake almost anything, the unfakeable stuff, genuine human experience and earned trust, has become the most valuable asset of all.
 
 ## The New Stack
 
@@ -92,9 +92,9 @@ In 2026, the stack looks different:
 - **AI** handles the building
 - **Distribution** determines whether anyone ever uses it
 
-Two out of three are in your control. And the one that requires the most sustained effort — distribution — is the one most builders ignore.
+Two out of three are in your control. And the one most builders ignore is the one that requires the most sustained effort — distribution.
 
-## The Bottom Line
+## The Question You Should Be Asking
 
 If you're building something right now, I have a simple question: **do you have a plan to get it in front of 1,000 people on launch day?** Not a vague hope. A plan. Names of communities, channels, people who will amplify it.
 
