@@ -6,7 +6,7 @@ export const whatIMissAboutHavingATeam: BlogPost = {
   subtitle:
     "Solo building is a superpower. But superpowers have side effects.",
   date: "2026.05",
-  dateISO: "2026-05-26",
+  dateISO: "2026-05-19",
   readTime: "7 min",
   tags: ["ai", "building", "teams", "reflection"],
   image: "/images/blog-what-i-miss-about-having-a-team.webp",
