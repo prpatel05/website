@@ -6,7 +6,7 @@ export const tasteIsYourMoat: BlogPost = {
   subtitle:
     "AI made execution cheap. The scarce resource now is knowing what to build.",
   date: "2026.05",
-  dateISO: "2026-05-10",
+  dateISO: "2026-05-12",
   readTime: "6 min",
   tags: ["ai", "engineering", "leadership", "product"],
   image: "/images/blog-taste-is-your-moat.webp",
