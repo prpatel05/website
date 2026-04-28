@@ -17,6 +17,7 @@ const ROUTES = [
   "/blog/devin-ai-as-my-co-pilot",
   "/blog/the-power-of-saying-no",
   "/blog/own-your-career",
+  "/blog/distribution-is-the-new-code",
 ];
 
 // Simple static file server for the dist folder
