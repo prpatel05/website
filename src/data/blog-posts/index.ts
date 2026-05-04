@@ -1,4 +1,5 @@
 export type { BlogPost } from "./types";
+import { tasteIsYourMoat } from "./taste-is-your-moat";
 import { securityIncidentsOnTheRise } from "./security-incidents-on-the-rise";
 import { tenXEngineerMyth } from "./10x-engineer-myth";
 import { noMoreUglyWebsites } from "./no-more-ugly-websites";
@@ -11,6 +12,7 @@ import { theZeroDollarStartup } from "./the-zero-dollar-startup";
 import type { BlogPost } from "./types";
 
 export const posts: BlogPost[] = [
+  tasteIsYourMoat,
   theZeroDollarStartup,
   securityIncidentsOnTheRise,
   tenXEngineerMyth,
