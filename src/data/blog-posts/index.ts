@@ -1,5 +1,6 @@
 export type { BlogPost } from "./types";
 import { distributionIsTheNewCode } from "./distribution-is-the-new-code";
+import { tasteIsYourMoat } from "./taste-is-your-moat";
 import { securityIncidentsOnTheRise } from "./security-incidents-on-the-rise";
 import { tenXEngineerMyth } from "./10x-engineer-myth";
 import { noMoreUglyWebsites } from "./no-more-ugly-websites";
@@ -8,10 +9,13 @@ import { fromCopilotsToColleagues } from "./from-copilots-to-colleagues";
 import { thePowerOfSayingNo } from "./the-power-of-saying-no";
 import { ownYourCareer } from "./own-your-career";
 import { devinAiCoPilot } from "./devin-ai-co-pilot";
+import { theZeroDollarStartup } from "./the-zero-dollar-startup";
 import type { BlogPost } from "./types";
 
 export const posts: BlogPost[] = [
   distributionIsTheNewCode,
+  tasteIsYourMoat,
+  theZeroDollarStartup,
   securityIncidentsOnTheRise,
   tenXEngineerMyth,
   noMoreUglyWebsites,
