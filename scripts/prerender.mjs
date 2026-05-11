@@ -10,6 +10,7 @@ const DIST = join(__dirname, "..", "dist");
 const ROUTES = [
   "/",
   "/blog",
+  "/blog/distribution-is-the-new-code",
   "/blog/taste-is-your-moat",
   "/blog/10x-engineer-myth",
   "/blog/no-more-ugly-websites",
