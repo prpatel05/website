@@ -6,7 +6,7 @@ export const iHaveNotTouchedCodeInOneMonth: BlogPost = {
   subtitle:
     "AI did not make me obsolete. It moved my job up the stack.",
   date: "2026.05",
-  dateISO: "2026-05-14",
+  dateISO: "2026-05-26",
   readTime: "7 min",
   tags: ["ai", "engineering", "productivity", "building"],
   image: "/images/blog-copilots-to-colleagues.webp",
