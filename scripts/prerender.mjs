@@ -10,6 +10,8 @@ const DIST = join(__dirname, "..", "dist");
 const ROUTES = [
   "/",
   "/blog",
+  "/blog/distribution-is-the-new-code",
+  "/blog/taste-is-your-moat",
   "/blog/10x-engineer-myth",
   "/blog/no-more-ugly-websites",
   "/blog/ship-it-yourself",
@@ -18,6 +20,7 @@ const ROUTES = [
   "/blog/the-power-of-saying-no",
   "/blog/own-your-career",
   "/blog/what-i-miss-about-having-a-team",
+  "/blog/the-zero-dollar-startup",
 ];
 
 // Simple static file server for the dist folder
