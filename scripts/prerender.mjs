@@ -19,6 +19,7 @@ const ROUTES = [
   "/blog/devin-ai-as-my-co-pilot",
   "/blog/the-power-of-saying-no",
   "/blog/own-your-career",
+  "/blog/what-i-miss-about-having-a-team",
   "/blog/the-zero-dollar-startup",
 ];
 
