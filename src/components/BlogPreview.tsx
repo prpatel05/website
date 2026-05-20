@@ -5,8 +5,11 @@ import { posts } from "@/data/blog-posts";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import SectionHeader from "./SectionHeader";
 
+const HOME_BLOG_POST_LIMIT = 5;
+
 const BlogPreview = () => {
   const { ref, scrollYProgress, sectionOpacity } = useScrollAnimation();
+  const previewPosts = posts.slice(0, HOME_BLOG_POST_LIMIT);
 
   const gridY = useTransform(scrollYProgress, [0, 1], ["0%", "-15%"]);
 
@@ -30,7 +33,7 @@ const BlogPreview = () => {
         </SectionHeader>
 
         <div className="space-y-4">
-          {posts.map((post, i) => (
+          {previewPosts.map((post, i) => (
             <motion.article
               key={post.slug}
               initial={{ opacity: 0, y: 40, scale: 0.97 }}
