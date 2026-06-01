@@ -1,4 +1,5 @@
 export type { BlogPost } from "./types";
+import { theAgentLeftTheIde } from "./the-agent-left-the-ide";
 import { iHaveNotTouchedCodeInOneMonth } from "./i-have-not-touched-code-in-one-month";
 import { whatIMissAboutHavingATeam } from "./what-i-miss-about-having-a-team";
 import { distributionIsTheNewCode } from "./distribution-is-the-new-code";
@@ -15,6 +16,7 @@ import { theZeroDollarStartup } from "./the-zero-dollar-startup";
 import type { BlogPost } from "./types";
 
 export const posts: BlogPost[] = [
+  theAgentLeftTheIde,
   iHaveNotTouchedCodeInOneMonth,
   whatIMissAboutHavingATeam,
   distributionIsTheNewCode,
