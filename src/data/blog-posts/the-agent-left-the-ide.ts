@@ -18,7 +18,7 @@ That sounds like a small distinction until you feel it in the workflow. A code g
 
 That is a different kind of tool.
 
-OpenAI's latest [Codex update](https://help.openai.com/en/articles/6825453-chatgpt-release-notes) points in that direction. Codex now supports computer use on Windows in the Codex app for eligible users, so it can see, click, and type in Windows applications while testing and refining software. The same release also expands remote control, letting a user steer work from ChatGPT on mobile or Codex on Mac while the Windows machine remains the host for the project files, shell, app server, and local context.
+OpenAI's May 29 [Codex update](https://help.openai.com/en/articles/6825453-chatgpt-release-notes) points in that direction. Codex now supports computer use on Windows in the Codex app for eligible users, so it can see, click, and type in Windows applications while testing and refining software. The same release also expands remote control, letting a user steer work from ChatGPT on mobile or Codex on Mac while the Windows machine remains the host for the project files, shell, app server, and local context.
 
 I do not think the important part is Windows support by itself.
 
