@@ -9,7 +9,7 @@ export const iHaveNotTouchedCodeInOneMonth: BlogPost = {
   dateISO: "2026-05-26",
   readTime: "7 min",
   tags: ["ai", "engineering", "productivity", "building"],
-  image: "/images/blog-copilots-to-colleagues.webp",
+  image: "/images/blog-i-have-not-touched-code.webp",
   content: `I realized something uncomfortable this week: I have not really touched code in a full month.
 
 Not "I stopped building." The opposite. More shipped. More got reviewed. More ideas made it from vague note to working software. But the actual implementation work - the typing, wiring, scaffolding, renaming, fixing imports, chasing test failures - increasingly happened somewhere else.

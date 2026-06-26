@@ -9,7 +9,7 @@ export const aiMadeBugsCheapToFind: BlogPost = {
   dateISO: "2026-06-02",
   readTime: "7 min",
   tags: ["ai", "security", "engineering", "building"],
-  image: "/images/blog-security-incidents.webp",
+  image: "/images/blog-ai-made-bugs-cheap.webp",
   content: `The most important AI security story right now is not that models can find bugs.
 
 It is that models can find more bugs than humans can responsibly process.

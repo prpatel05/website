@@ -9,7 +9,7 @@ export const agentPermissionsAreProductDesign: BlogPost = {
   dateISO: "2026-06-23",
   readTime: "6 min",
   tags: ["ai", "agents", "security", "product"],
-  image: "/images/blog-copilots-to-colleagues.webp",
+  image: "/images/blog-agent-permissions.webp",
   content: `The most important setting in an AI agent is not the model.
 
 It is the boundary.

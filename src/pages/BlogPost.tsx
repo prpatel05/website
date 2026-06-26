@@ -101,6 +101,7 @@ const BlogPost = () => {
         description={post.subtitle}
         canonical={`https://pratik.pa.tel/blog/${post.slug}`}
         ogImage={ogImage}
+        ogImageAlt={post.title}
         ogType="article"
         jsonLd={blogPostJsonLd}
       />
