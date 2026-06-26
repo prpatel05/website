@@ -9,7 +9,7 @@ export const agentRunbooksBeatBetterPrompts: BlogPost = {
   dateISO: "2026-06-16",
   readTime: "7 min",
   tags: ["ai", "agents", "engineering", "productivity"],
-  image: "/images/blog-copilots-to-colleagues.webp",
+  image: "/images/blog-agent-runbooks.webp",
   content: `I started writing tiny runbooks for AI agent tasks, and the quality of the work changed almost immediately.
 
 Not because the model got smarter.

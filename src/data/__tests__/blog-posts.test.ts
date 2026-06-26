@@ -1,3 +1,6 @@
+import { createHash } from "node:crypto";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, it, expect } from "vitest";
 import { posts, getPostBySlug } from "../blog-posts";
 
@@ -25,6 +28,39 @@ describe("blog-posts data", () => {
   it("each post has a unique slug", () => {
     const slugs = posts.map((p) => p.slug);
     expect(new Set(slugs).size).toBe(slugs.length);
+  });
+
+  it("each post has a unique image path", () => {
+    const images = posts.map((p) => p.image);
+    expect(new Set(images).size).toBe(images.length);
+  });
+
+  it("each local blog image asset has unique file contents", () => {
+    const seenHashes = new Map<string, string>();
+
+    for (const post of posts) {
+      if (!post.image.startsWith("/")) {
+        continue;
+      }
+
+      const assetPath = join(process.cwd(), "public", post.image.slice(1));
+      expect(
+        existsSync(assetPath),
+        `${post.slug} points to a missing image asset: ${post.image}`
+      ).toBe(true);
+
+      const hash = createHash("sha256")
+        .update(readFileSync(assetPath))
+        .digest("hex");
+      const duplicateSlug = seenHashes.get(hash);
+
+      expect(
+        duplicateSlug,
+        `${post.slug} reuses the same image file contents as ${duplicateSlug}`
+      ).toBeUndefined();
+
+      seenHashes.set(hash, post.slug);
+    }
   });
 
   it("dateISO is a valid ISO date string", () => {

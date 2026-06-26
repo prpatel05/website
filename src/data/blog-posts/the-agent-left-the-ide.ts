@@ -9,7 +9,7 @@ export const theAgentLeftTheIde: BlogPost = {
   dateISO: "2026-06-02",
   readTime: "6 min",
   tags: ["ai", "engineering", "codex", "productivity"],
-  image: "/images/blog-copilots-to-colleagues.webp",
+  image: "/images/blog-agent-left-ide.webp",
   content: `The most interesting thing about AI coding agents right now is not that they can write code.
 
 It is that they are starting to operate computers.
