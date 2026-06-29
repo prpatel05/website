@@ -1,4 +1,5 @@
 export type { BlogPost } from "./types";
+import { agentsFailQuietly } from "./agents-fail-quietly";
 import { agentPermissionsAreProductDesign } from "./agent-permissions-are-product-design";
 import { agentRunbooksBeatBetterPrompts } from "./agent-runbooks-beat-better-prompts";
 import { theAgentLeftTheIde } from "./the-agent-left-the-ide";
@@ -19,6 +20,7 @@ import { theZeroDollarStartup } from "./the-zero-dollar-startup";
 import type { BlogPost } from "./types";
 
 export const posts: BlogPost[] = [
+  agentsFailQuietly,
   agentPermissionsAreProductDesign,
   agentRunbooksBeatBetterPrompts,
   theAgentLeftTheIde,
