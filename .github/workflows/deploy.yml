@@ -47,6 +47,10 @@ jobs:
         run: bunx playwright install --with-deps chromium
       - name: Build
         run: bun run build
+        env:
+          # Cloudflare Web Analytics site token (public, cookieless beacon).
+          # Set repo variable CF_BEACON_TOKEN to activate; unset = beacon disabled. See PRA-465.
+          VITE_CF_BEACON_TOKEN: ${{ vars.CF_BEACON_TOKEN }}
       - name: Playwright tests
         run: bunx playwright test
       - name: Setup Pages
