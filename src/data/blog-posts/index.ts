@@ -1,5 +1,6 @@
 export type { BlogPost } from "./types";
 import { teachYourAgentToAskForHelp } from "./teach-your-agent-to-ask-for-help";
+import { giveYourAgentAnUndoButton } from "./give-your-agent-an-undo-button";
 import { agentsFailQuietly } from "./agents-fail-quietly";
 import { agentPermissionsAreProductDesign } from "./agent-permissions-are-product-design";
 import { agentRunbooksBeatBetterPrompts } from "./agent-runbooks-beat-better-prompts";
@@ -22,6 +23,7 @@ import type { BlogPost } from "./types";
 
 export const posts: BlogPost[] = [
   teachYourAgentToAskForHelp,
+  giveYourAgentAnUndoButton,
   agentsFailQuietly,
   agentPermissionsAreProductDesign,
   agentRunbooksBeatBetterPrompts,
