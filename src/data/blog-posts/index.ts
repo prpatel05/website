@@ -1,4 +1,5 @@
 export type { BlogPost } from "./types";
+import { trustComesFromTheTrace } from "./trust-comes-from-the-trace";
 import { giveYourAgentAnUndoButton } from "./give-your-agent-an-undo-button";
 import { agentsFailQuietly } from "./agents-fail-quietly";
 import { agentPermissionsAreProductDesign } from "./agent-permissions-are-product-design";
@@ -21,6 +22,7 @@ import { theZeroDollarStartup } from "./the-zero-dollar-startup";
 import type { BlogPost } from "./types";
 
 export const posts: BlogPost[] = [
+  trustComesFromTheTrace,
   giveYourAgentAnUndoButton,
   agentsFailQuietly,
   agentPermissionsAreProductDesign,
