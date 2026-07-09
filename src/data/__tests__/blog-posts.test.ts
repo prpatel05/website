@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it, expect } from "vitest";
-import { posts, getPostBySlug } from "../blog-posts";
+import { posts, getPostBySlug } from "../blog-posts/registry";
 
 describe("blog-posts data", () => {
   it("exports a non-empty posts array", () => {
@@ -42,7 +42,10 @@ describe("blog-posts data", () => {
     const discovered = readdirSync(postsDir)
       .filter(
         (name) =>
-          name.endsWith(".ts") && name !== "index.ts" && name !== "types.ts"
+          name.endsWith(".ts") &&
+          name !== "index.ts" &&
+          name !== "registry.ts" &&
+          name !== "types.ts"
       )
       .map((name) => {
         const source = readFileSync(join(postsDir, name), "utf-8");
@@ -53,6 +56,30 @@ describe("blog-posts data", () => {
       .sort();
 
     expect(posts.map((p) => p.slug).sort()).toEqual(discovered);
+  });
+
+  // index.ts is the retired hand-written list. It is left on disk untouched so
+  // the queued blog PRs that edit it still merge cleanly; importing it again
+  // would silently drop any post whose author did not also edit it.
+  it("no source file imports the retired index", () => {
+    const offenders: string[] = [];
+
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const full = join(dir, entry.name);
+
+        if (entry.isDirectory()) {
+          walk(full);
+        } else if (/\.tsx?$/.test(entry.name)) {
+          if (/["']@\/data\/blog-posts["']/.test(readFileSync(full, "utf-8"))) {
+            offenders.push(full);
+          }
+        }
+      }
+    };
+
+    walk(join(process.cwd(), "src"));
+    expect(offenders).toEqual([]);
   });
 
   it("orders posts newest first, breaking ties by slug", () => {

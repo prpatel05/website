@@ -33,7 +33,7 @@ vi.mock("react-helmet-async", () => ({
 
 import BlogPost from "../BlogPost";
 
-vi.mock("@/data/blog-posts", async (importOriginal) => {
+vi.mock("@/data/blog-posts/registry", async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   const testPost = {
     slug: "test-post",

@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
-import { posts } from "@/data/blog-posts";
+import { posts } from "@/data/blog-posts/registry";
 
 const NotFound = () => {
   const recentPosts = posts.slice(0, 3);

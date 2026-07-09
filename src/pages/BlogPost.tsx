@@ -2,7 +2,7 @@ import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Clock, Calendar } from "lucide-react";
 import ReactMarkdown, { Components } from "react-markdown";
-import { getPostBySlug } from "@/data/blog-posts";
+import { getPostBySlug } from "@/data/blog-posts/registry";
 import NotFound from "./NotFound";
 import SEO from "@/components/SEO";
 

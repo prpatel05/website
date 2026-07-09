@@ -13,7 +13,7 @@ export const BLOG_POSTS_DIR = join(
   "blog-posts"
 );
 
-const NON_POST_FILES = new Set(["index.ts", "types.ts"]);
+const NON_POST_FILES = new Set(["index.ts", "registry.ts", "types.ts"]);
 
 function getPropertyName(name) {
   if (
@@ -70,7 +70,7 @@ function findPostSlug(filePath) {
 
 // The app discovers posts with import.meta.glob, which only exists inside
 // Vite's transform. Node scripts and the Playwright suite run outside it, so
-// they share this scan instead of importing src/data/blog-posts.
+// they share this scan instead of importing src/data/blog-posts/registry.
 export function discoverPostSlugs() {
   const postFiles = readdirSync(BLOG_POSTS_DIR)
     .filter((name) => name.endsWith(".ts") && !NON_POST_FILES.has(name))

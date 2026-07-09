@@ -1,9 +1,9 @@
 import { test, expect } from "./fixtures";
 import { discoverPostSlugs } from "../scripts/blog-posts.mjs";
 
-// src/data/blog-posts discovers posts with import.meta.glob, which only exists
-// inside Vite's transform. This suite runs outside it, so it scans the post
-// directory the same way the prerender does.
+// src/data/blog-posts/registry discovers posts with import.meta.glob, which
+// only exists inside Vite's transform. This suite runs outside it, so it scans
+// the post directory the same way the prerender does.
 const postSlugs = discoverPostSlugs();
 
 test.describe("Blog listing and post navigation", () => {
