@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { posts } from "../src/data/blog-posts";
 
 test.describe("Blog listing and post navigation", () => {
