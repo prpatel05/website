@@ -3,9 +3,34 @@
 set -euo pipefail
 
 REPO="${GITHUB_REPOSITORY:-prpatel05/website}"
-TODAY="$(date -u +%F)"
-TOMORROW="$(date -u -d "tomorrow" +%F)"
+# AUTOMERGE_TODAY pins the clock so the routine's date branches are testable.
+TODAY="${AUTOMERGE_TODAY:-$(date -u +%F)}"
+TOMORROW="$(date -u -d "$TODAY +1 day" +%F)"
 TODAY_EPOCH="$(date -u -d "$TODAY" +%s)"
+
+# GitHub computes `mergeable` lazily and reports UNKNOWN until it has built the
+# test merge commit. Any push to main invalidates it for every open PR, so the
+# 08:30 cron routinely races a freshly-invalidated cache.
+MERGEABLE_RETRIES="${AUTOMERGE_MERGEABLE_RETRIES:-5}"
+MERGEABLE_RETRY_SLEEP="${AUTOMERGE_MERGEABLE_RETRY_SLEEP:-2}"
+
+# How long after its publish date a ready post may still be merged.
+PUBLISH_GRACE_DAYS="${AUTOMERGE_PUBLISH_GRACE_DAYS:-7}"
+GRACE_SECONDS=$(( PUBLISH_GRACE_DAYS * 86400 ))
+
+resolve_mergeable() {
+  local number="$1"
+  local mergeable="$2"
+  local attempts="$MERGEABLE_RETRIES"
+
+  while [[ "$mergeable" == "UNKNOWN" || -z "$mergeable" ]] && (( attempts > 0 )); do
+    attempts=$(( attempts - 1 ))
+    sleep "$MERGEABLE_RETRY_SLEEP"
+    mergeable="$(gh pr view "$number" --repo "$REPO" --json mergeable --jq '.mergeable' 2>/dev/null || echo "UNKNOWN")"
+  done
+
+  printf '%s' "${mergeable:-UNKNOWN}"
+}
 
 echo "Checking open blog PRs for $REPO"
 echo "UTC date: $TODAY (tomorrow: $TOMORROW)"
@@ -19,7 +44,7 @@ create_social_promotion_issue() {
   local issue_title="Social promotion: $branch"
   local existing_issue_count
 
-  existing_issue_count="$(gh issue list --repo "$REPO" --search "$issue_title" --state all --json title --jq 'length')"
+  existing_issue_count="$(gh issue list --repo "$REPO" --search "$issue_title in:title" --state all --json title --jq 'length')"
 
   if [[ "$existing_issue_count" -gt 0 ]]; then
     echo "    Social-promotion issue already exists for $branch."
@@ -29,33 +54,59 @@ create_social_promotion_issue() {
   if gh issue create \
     --repo "$REPO" \
     --title "$issue_title" \
-    --body "The merged blog PR \`$slug\` needs manual social promotion planning.\n\n- PR: https://github.com/$REPO/pull/$number\n- Title: $title\n- Published date (dateISO): $date_iso\n- Branch: $branch" >/dev/null; then
+    --body "$(printf 'The merged blog PR `%s` needs manual social promotion planning.\n\n- PR: https://github.com/%s/pull/%s\n- Title: %s\n- Published date (dateISO): %s\n- Branch: %s\n' "$slug" "$REPO" "$number" "$title" "$date_iso" "$branch")" >/dev/null; then
     echo "    Created social-promotion issue for $branch."
   else
     echo "    Failed to create social-promotion issue for $branch."
   fi
 }
 
-create_conflict_issue() {
+create_blocked_merge_issue() {
   local number="$1"
   local branch="$2"
   local date_iso="$3"
-  local issue_title="Resolve merge conflict: $branch"
+  local reason="$4"
+  local issue_title="Resolve blocked blog merge: $branch"
   local existing_issue_count
 
-  existing_issue_count="$(gh issue list --repo "$REPO" --search "$issue_title" --state all --json title --jq 'length')"
+  existing_issue_count="$(gh issue list --repo "$REPO" --search "$issue_title in:title" --state all --json title --jq 'length')"
   if [[ "$existing_issue_count" -gt 0 ]]; then
-    echo "    Conflict-resolution issue already exists for $branch."
+    echo "    Blocked-merge issue already exists for $branch."
     return
   fi
 
   if gh issue create \
     --repo "$REPO" \
     --title "$issue_title" \
-    --body "Mergeability is still CONFLICTING and publish date is within 2 days.\n\n- PR: https://github.com/$REPO/pull/$number\n- Date: $date_iso\n- Branch: $branch\n- Action: resolve conflicts and re-run the blog auto-merge workflow." >/dev/null; then
-    echo "    Created conflict-resolution issue for $branch."
+    --body "$(printf 'The blog auto-merge routine could not merge this PR on or before its publish date.\n\n- PR: https://github.com/%s/pull/%s\n- Date (dateISO): %s\n- Branch: %s\n- Reason: %s\n- Action: unblock the merge, then re-run the blog auto-merge workflow.\n' "$REPO" "$number" "$date_iso" "$branch" "$reason")" >/dev/null; then
+    echo "    Created blocked-merge issue for $branch ($reason)."
   else
-    echo "    Failed to create conflict-resolution issue for $branch."
+    echo "    Failed to create blocked-merge issue for $branch."
+  fi
+}
+
+# Alarm on anything that cannot merge and is due within 2 days -- or is already
+# past due. Without the past-due arm, a post that slips its date by >2 days goes
+# permanently silent: never merged, never reported.
+alarm_if_due() {
+  local number="$1"
+  local branch="$2"
+  local date_iso="$3"
+  local reason="$4"
+  local date_epoch
+
+  date_epoch="$(date -u -d "$date_iso" +%s)"
+  if (( date_epoch <= TODAY_EPOCH + 172800 )); then
+    conflict_prs+=("$number|$branch|$date_iso|$reason")
+    create_blocked_merge_issue "$number" "$branch" "$date_iso" "$reason"
+  fi
+
+  # A publish date that has arrived without a merge is a missed date, not a
+  # warning. Fail the job so the run goes red instead of green-with-an-issue.
+  # Bounded by the grace window: an abandoned PR is reported once, not allowed
+  # to pin the daily cron red forever.
+  if (( date_epoch <= TODAY_EPOCH && date_epoch >= TODAY_EPOCH - GRACE_SECONDS )); then
+    missed_publish_prs+=("$number|$branch|$date_iso|$reason")
   fi
 }
 
@@ -72,6 +123,7 @@ fi
 merged_prs=()
 skipped_prs=()
 conflict_prs=()
+missed_publish_prs=()
 
 while IFS= read -r pr_json; do
   number="$(jq -r '.number' <<<"$pr_json")"
@@ -120,21 +172,22 @@ while IFS= read -r pr_json; do
     continue
   fi
 
-  if [[ "$mergeable" == "CONFLICTING" ]]; then
-    date_epoch="$(date -u -d "$date_iso" +%s)"
-    within_two_days="false"
-    if (( date_epoch >= TODAY_EPOCH - 172800 && date_epoch <= TODAY_EPOCH + 172800 )); then
-      within_two_days="true"
-    fi
+  mergeable="$(resolve_mergeable "$number" "$mergeable")"
 
+  if [[ "$mergeable" == "CONFLICTING" ]]; then
     echo "  Skipping: merge conflict detected."
     skipped_prs+=("$number|$branch|merge_conflict")
+    alarm_if_due "$number" "$branch" "$date_iso" "merge_conflict"
+    continue
+  fi
 
-    if [[ "$within_two_days" == "true" ]]; then
-      conflict_prs+=("$number|$branch|$date_iso")
-      create_conflict_issue "$number" "$branch" "$date_iso"
-    fi
-
+  # Never attempt a merge on an unresolved mergeability. `gh pr merge` would
+  # fail, and the old code recorded that as a bare `merge_failed` with no issue
+  # and a green run -- the silent missed-publish this routine exists to prevent.
+  if [[ "$mergeable" != "MERGEABLE" ]]; then
+    echo "  Skipping: mergeability unresolved after $MERGEABLE_RETRIES retries (got '$mergeable')."
+    skipped_prs+=("$number|$branch|mergeable_unknown")
+    alarm_if_due "$number" "$branch" "$date_iso" "mergeable_unknown"
     continue
   fi
 
@@ -144,10 +197,20 @@ while IFS= read -r pr_json; do
     continue
   fi
 
-  if [[ "$date_iso" != "$TODAY" && "$date_iso" != "$TOMORROW" ]]; then
-    echo "  Skipping: publish date $date_iso is not today or tomorrow."
-    skipped_prs+=("$number|$branch|date_not_due:$date_iso")
+  # A past-due PR used to land here as `date_not_due` and be skipped forever:
+  # never merged, never reported, even though it was ready to publish. Publish
+  # it late instead. Beyond the grace window it is treated as abandoned -- it is
+  # reported, but never silently auto-published long after the fact.
+  date_epoch="$(date -u -d "$date_iso" +%s)"
+  if (( date_epoch < TODAY_EPOCH - GRACE_SECONDS )); then
+    echo "  Skipping: publish date $date_iso is more than $PUBLISH_GRACE_DAYS days past due."
+    skipped_prs+=("$number|$branch|stale_past_due:$date_iso")
+    alarm_if_due "$number" "$branch" "$date_iso" "stale_past_due"
     continue
+  fi
+
+  if [[ "$date_iso" < "$TODAY" ]]; then
+    echo "  Publishing late: $date_iso is past due but within the $PUBLISH_GRACE_DAYS-day grace window."
   fi
 
   echo "  Attempting merge for #$number (\"$title\")."
@@ -158,6 +221,7 @@ while IFS= read -r pr_json; do
   else
     echo "  Merge failed for #$number."
     skipped_prs+=("$number|$branch|merge_failed")
+    alarm_if_due "$number" "$branch" "$date_iso" "merge_failed"
   fi
 done < <(echo "$blog_prs" | jq -c '.[]')
 
@@ -166,6 +230,7 @@ echo "=== Blog PR Auto-Merge Summary ==="
 echo "Merged: ${#merged_prs[@]}"
 echo "Skipped: ${#skipped_prs[@]}"
 echo "Blocked by conflict: ${#conflict_prs[@]}"
+echo "Missed publish date: ${#missed_publish_prs[@]}"
 
 if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
   {
@@ -197,13 +262,33 @@ if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
 
     if (( ${#conflict_prs[@]} > 0 )); then
       echo ""
-      echo "### Merge-conflict PRs"
+      echo "### Blocked PRs"
       for item in "${conflict_prs[@]}"; do
-        IFS='|' read -r number branch date <<<"$item"
-        echo "- #$number (\`$branch\`, dateISO: \`$date\`)"
+        IFS='|' read -r number branch date reason <<<"$item"
+        echo "- #$number (\`$branch\`, dateISO: \`$date\`): $reason"
+      done
+    fi
+
+    if (( ${#missed_publish_prs[@]} > 0 )); then
+      echo ""
+      echo "### Missed publish date"
+      for item in "${missed_publish_prs[@]}"; do
+        IFS='|' read -r number branch date reason <<<"$item"
+        echo "- #$number (\`$branch\`, dateISO: \`$date\`): $reason"
       done
     fi
   } >> "$GITHUB_STEP_SUMMARY"
+fi
+
+# A post whose publish date has arrived and did not merge is a failure of this
+# routine's one job. Report it as one -- a green run here has, until now, been
+# indistinguishable from a run that published nothing.
+if (( ${#missed_publish_prs[@]} > 0 )); then
+  for item in "${missed_publish_prs[@]}"; do
+    IFS='|' read -r number branch date reason <<<"$item"
+    echo "::error::Blog PR #$number ($branch) missed its publish date $date: $reason"
+  done
+  exit 1
 fi
 
 exit 0
