@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { motion, useTransform } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
-import { posts } from "@/data/blog-posts";
+import { posts } from "@/data/blog-posts/registry";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import SectionHeader from "./SectionHeader";
 

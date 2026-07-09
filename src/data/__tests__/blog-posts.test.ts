@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it, expect } from "vitest";
-import { posts, getPostBySlug } from "../blog-posts";
+import { posts, getPostBySlug } from "../blog-posts/registry";
 
 describe("blog-posts data", () => {
   it("exports a non-empty posts array", () => {
@@ -33,6 +33,62 @@ describe("blog-posts data", () => {
   it("each post has a unique image path", () => {
     const images = posts.map((p) => p.image);
     expect(new Set(images).size).toBe(images.length);
+  });
+
+  // Guards the discovery contract: dropping a .ts file into the directory must
+  // publish it, with no shared index to edit. Filenames need not match slugs.
+  it("discovers every post file in the directory", () => {
+    const postsDir = join(process.cwd(), "src", "data", "blog-posts");
+    const discovered = readdirSync(postsDir)
+      .filter(
+        (name) =>
+          name.endsWith(".ts") &&
+          name !== "index.ts" &&
+          name !== "registry.ts" &&
+          name !== "types.ts"
+      )
+      .map((name) => {
+        const source = readFileSync(join(postsDir, name), "utf-8");
+        const slug = /slug:\s*"([^"]+)"/.exec(source)?.[1];
+        expect(slug, `${name} has no slug`).toBeTruthy();
+        return slug as string;
+      })
+      .sort();
+
+    expect(posts.map((p) => p.slug).sort()).toEqual(discovered);
+  });
+
+  // index.ts is the retired hand-written list. It is left on disk untouched so
+  // the queued blog PRs that edit it still merge cleanly; importing it again
+  // would silently drop any post whose author did not also edit it.
+  it("no source file imports the retired index", () => {
+    const offenders: string[] = [];
+
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const full = join(dir, entry.name);
+
+        if (entry.isDirectory()) {
+          walk(full);
+        } else if (/\.tsx?$/.test(entry.name)) {
+          if (/["']@\/data\/blog-posts["']/.test(readFileSync(full, "utf-8"))) {
+            offenders.push(full);
+          }
+        }
+      }
+    };
+
+    walk(join(process.cwd(), "src"));
+    expect(offenders).toEqual([]);
+  });
+
+  it("orders posts newest first, breaking ties by slug", () => {
+    const expected = [...posts].sort(
+      (a, b) =>
+        b.dateISO.localeCompare(a.dateISO) || a.slug.localeCompare(b.slug)
+    );
+
+    expect(posts.map((p) => p.slug)).toEqual(expected.map((p) => p.slug));
   });
 
   it("each local blog image asset has unique file contents", () => {

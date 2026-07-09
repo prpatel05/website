@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
-import { posts } from "@/data/blog-posts";
+import { posts } from "@/data/blog-posts/registry";
 
 vi.mock("framer-motion", () => {
   const motionProxy = new Proxy(

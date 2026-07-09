@@ -1,5 +1,10 @@
 import { test, expect } from "./fixtures";
-import { posts } from "../src/data/blog-posts";
+import { discoverPostSlugs } from "../scripts/blog-posts.mjs";
+
+// src/data/blog-posts/registry discovers posts with import.meta.glob, which
+// only exists inside Vite's transform. This suite runs outside it, so it scans
+// the post directory the same way the prerender does.
+const postSlugs = discoverPostSlugs();
 
 test.describe("Blog listing and post navigation", () => {
   test("blog listing shows all posts", async ({ page }) => {
@@ -10,7 +15,16 @@ test.describe("Blog listing and post navigation", () => {
 
     // Verify all blog posts are listed
     const postLinks = page.locator('a[href^="/blog/"]');
-    await expect(postLinks).toHaveCount(posts.length);
+    await expect(postLinks).toHaveCount(postSlugs.length);
+
+    // Every discovered post is reachable from the listing, so a post the
+    // prerender builds can never be missing a link here.
+    const hrefs = await postLinks.evaluateAll((links) =>
+      links.map((link) => link.getAttribute("href"))
+    );
+    expect(hrefs.sort()).toEqual(
+      postSlugs.map((slug) => `/blog/${slug}`).sort()
+    );
 
     // Check first post title is visible
     await expect(
