@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it, expect } from "vitest";
 import { posts, getPostBySlug } from "../blog-posts";
@@ -33,6 +33,35 @@ describe("blog-posts data", () => {
   it("each post has a unique image path", () => {
     const images = posts.map((p) => p.image);
     expect(new Set(images).size).toBe(images.length);
+  });
+
+  // Guards the discovery contract: dropping a .ts file into the directory must
+  // publish it, with no shared index to edit. Filenames need not match slugs.
+  it("discovers every post file in the directory", () => {
+    const postsDir = join(process.cwd(), "src", "data", "blog-posts");
+    const discovered = readdirSync(postsDir)
+      .filter(
+        (name) =>
+          name.endsWith(".ts") && name !== "index.ts" && name !== "types.ts"
+      )
+      .map((name) => {
+        const source = readFileSync(join(postsDir, name), "utf-8");
+        const slug = /slug:\s*"([^"]+)"/.exec(source)?.[1];
+        expect(slug, `${name} has no slug`).toBeTruthy();
+        return slug as string;
+      })
+      .sort();
+
+    expect(posts.map((p) => p.slug).sort()).toEqual(discovered);
+  });
+
+  it("orders posts newest first, breaking ties by slug", () => {
+    const expected = [...posts].sort(
+      (a, b) =>
+        b.dateISO.localeCompare(a.dateISO) || a.slug.localeCompare(b.slug)
+    );
+
+    expect(posts.map((p) => p.slug)).toEqual(expected.map((p) => p.slug));
   });
 
   it("each local blog image asset has unique file contents", () => {

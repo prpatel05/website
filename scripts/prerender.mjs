@@ -1,6 +1,12 @@
 import { chromium } from "playwright";
 import { createServer } from "http";
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
+import {
+  readFileSync,
+  readdirSync,
+  writeFileSync,
+  mkdirSync,
+  existsSync,
+} from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import ts from "typescript";
@@ -9,7 +15,7 @@ import { isTelemetryRequest } from "./telemetry-blocklist.mjs";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DIST = join(__dirname, "..", "dist");
 const BLOG_POSTS_DIR = join(__dirname, "..", "src", "data", "blog-posts");
-const BLOG_POSTS_INDEX = join(BLOG_POSTS_DIR, "index.ts");
+const BLOG_POSTS_NON_POST_FILES = new Set(["index.ts", "types.ts"]);
 
 function getPropertyName(name) {
   if (
@@ -33,7 +39,7 @@ function readSourceFile(filePath) {
   );
 }
 
-function findPostSlug(filePath, exportName) {
+function findPostSlug(filePath) {
   const sourceFile = readSourceFile(filePath);
   let slug;
 
@@ -41,7 +47,6 @@ function findPostSlug(filePath, exportName) {
     if (
       ts.isVariableDeclaration(node) &&
       ts.isIdentifier(node.name) &&
-      node.name.text === exportName &&
       node.initializer &&
       ts.isObjectLiteralExpression(node.initializer)
     ) {
@@ -63,70 +68,28 @@ function findPostSlug(filePath, exportName) {
   visit(sourceFile);
 
   if (!slug) {
-    throw new Error(`Could not find slug for ${exportName} in ${filePath}`);
+    throw new Error(`Could not find slug in ${filePath}`);
   }
 
   return slug;
 }
 
+// Mirrors the import.meta.glob discovery in src/data/blog-posts/index.ts, so a
+// new post is prerendered without touching any shared file.
 function discoverBlogRoutes() {
-  const sourceFile = readSourceFile(BLOG_POSTS_INDEX);
-  const importPathsByName = new Map();
-  let postNames = [];
+  const postFiles = readdirSync(BLOG_POSTS_DIR)
+    .filter(
+      (name) => name.endsWith(".ts") && !BLOG_POSTS_NON_POST_FILES.has(name)
+    )
+    .sort();
 
-  for (const statement of sourceFile.statements) {
-    if (
-      ts.isImportDeclaration(statement) &&
-      ts.isStringLiteral(statement.moduleSpecifier) &&
-      statement.moduleSpecifier.text.startsWith("./") &&
-      statement.importClause?.namedBindings &&
-      ts.isNamedImports(statement.importClause.namedBindings)
-    ) {
-      for (const element of statement.importClause.namedBindings.elements) {
-        const importName = element.name.text;
-        const filePath = join(
-          BLOG_POSTS_DIR,
-          `${statement.moduleSpecifier.text.slice(2)}.ts`
-        );
-
-        importPathsByName.set(importName, filePath);
-      }
-    }
-
-    if (
-      ts.isVariableStatement(statement) &&
-      statement.modifiers?.some(
-        (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword
-      )
-    ) {
-      for (const declaration of statement.declarationList.declarations) {
-        if (
-          ts.isIdentifier(declaration.name) &&
-          declaration.name.text === "posts" &&
-          declaration.initializer &&
-          ts.isArrayLiteralExpression(declaration.initializer)
-        ) {
-          postNames = declaration.initializer.elements
-            .filter(ts.isIdentifier)
-            .map((element) => element.text);
-        }
-      }
-    }
+  if (postFiles.length === 0) {
+    throw new Error(`Could not discover blog posts from ${BLOG_POSTS_DIR}`);
   }
 
-  if (postNames.length === 0) {
-    throw new Error(`Could not discover blog posts from ${BLOG_POSTS_INDEX}`);
-  }
-
-  return postNames.map((postName) => {
-    const filePath = importPathsByName.get(postName);
-
-    if (!filePath) {
-      throw new Error(`Could not find import path for blog post ${postName}`);
-    }
-
-    return `/blog/${findPostSlug(filePath, postName)}`;
-  });
+  return postFiles.map(
+    (name) => `/blog/${findPostSlug(join(BLOG_POSTS_DIR, name))}`
+  );
 }
 
 const ROUTES = [
