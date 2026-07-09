@@ -195,8 +195,9 @@ async function prerender() {
   const context = await browser.newContext();
 
   // The app's analytics beacon injects a real <script src> tag, which this
-  // browser would otherwise fetch and execute, reporting a pageview per route
-  // per deploy into the live read-out. Keep the tag, drop the hit.
+  // browser would otherwise fetch and execute, reporting a synthetic pageview
+  // per route per deploy into the Cloudflare dashboard. It does not reach the
+  // traffic read-out; see telemetry-blocklist.mjs. Keep the tag, drop the hit.
   let blockedTelemetry = 0;
   await context.route("**/*", (route) => {
     if (isTelemetryRequest(route.request().url())) {
