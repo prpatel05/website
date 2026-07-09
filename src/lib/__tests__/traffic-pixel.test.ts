@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { posts } from "@/data/blog-posts";
 import {
   buildPixelUrl,
   encodePagePath,
@@ -52,10 +53,31 @@ describe("encodePagePath", () => {
     );
   });
 
-  it("keeps long blog slugs distinct after truncation", () => {
-    const a = encodePagePath("/blog/agent-permissions-are-product-design");
-    const b = encodePagePath("/blog/agent-runbooks-beat-better-prompts");
-    expect(a).not.toBe(b);
+  // Truncating to 19 chars is only safe while it stays injective over the real
+  // corpus. Ten of the current slugs land on exactly 19 characters, so two
+  // posts sharing a 19-char prefix would silently merge into one bucket and the
+  // read-out would attribute one post's traffic to another. These two run over
+  // `posts`, not over fixtures, so adding such a post fails the build instead
+  // of corrupting the data.
+  describe("over every real blog post", () => {
+    const encoded = posts.map((p) => ({
+      slug: p.slug,
+      segment: encodePagePath(`/blog/${p.slug}`).split("/")[1],
+    }));
+
+    it("keeps every slug under the 20-char normalizer threshold", () => {
+      const collapsed = encoded.filter((e) => e.segment.length >= 20);
+      expect(collapsed).toEqual([]);
+    });
+
+    it("encodes every slug to a distinct segment", () => {
+      const bySegment = new Map<string, string[]>();
+      for (const { slug, segment } of encoded) {
+        bySegment.set(segment, [...(bySegment.get(segment) ?? []), slug]);
+      }
+      const collisions = [...bySegment.values()].filter((s) => s.length > 1);
+      expect(collisions).toEqual([]);
+    });
   });
 });
 
