@@ -32,7 +32,7 @@ That's the actual shape of the jump. The first agent is a systems problem you ca
 
 ## The Failures Are Boring, Which Is the Bad News
 
-There's now real data on how these systems fail. A team from Berkeley and collaborators read [150 execution traces](https://arxiv.org/abs/2503.13657) closely enough to build a taxonomy of what actually goes wrong, then used it to annotate more than 1,600 traces across seven popular multi-agent frameworks. They found fourteen distinct failure modes, with high agreement between the human annotators, sorted into three buckets: system design issues, inter-agent misalignment, and task verification.
+There's now real data on how these systems fail. A team from Berkeley and collaborators read [150 execution traces](https://arxiv.org/abs/2503.13657) closely enough, and agreed with each other closely enough (Cohen's kappa of 0.88), to build a taxonomy of what actually goes wrong. It has fourteen distinct failure modes in three buckets: system design issues, inter-agent misalignment, and task verification. They then built an LLM annotator against that taxonomy and ran it over more than 1,600 traces from seven popular multi-agent frameworks, which is how we know the taxonomy holds beyond the traces that produced it.
 
 Read that list again and notice what isn't on it. Not "the model wasn't capable enough." Not "reasoning was too shallow." The failures are specification, coordination, and checking the work. If you replaced every agent in those traces with a smarter model, most of those traces would still fail, which is roughly what the authors concluded when they said the failures they found demand more sophisticated solutions than surface-level fixes.
 
