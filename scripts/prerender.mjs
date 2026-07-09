@@ -4,6 +4,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import ts from "typescript";
+import { isTelemetryRequest } from "./telemetry-blocklist.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DIST = join(__dirname, "..", "dist");
@@ -193,6 +194,18 @@ async function prerender() {
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext();
 
+  // The app's analytics beacon injects a real <script src> tag, which this
+  // browser would otherwise fetch and execute, reporting a pageview per route
+  // per deploy into the live read-out. Keep the tag, drop the hit.
+  let blockedTelemetry = 0;
+  await context.route("**/*", (route) => {
+    if (isTelemetryRequest(route.request().url())) {
+      blockedTelemetry += 1;
+      return route.abort();
+    }
+    return route.continue();
+  });
+
   for (const route of ROUTES) {
     const page = await context.newPage();
     const url = `http://127.0.0.1:${port}${route}`;
@@ -226,6 +239,9 @@ async function prerender() {
 
   await browser.close();
   server.close();
+  console.log(
+    `Blocked ${blockedTelemetry} telemetry request(s) from the build.`
+  );
   console.log("Prerendering complete!");
 }
 
