@@ -1,101 +1,18 @@
 import { chromium } from "playwright";
 import { createServer } from "http";
-import {
-  readFileSync,
-  readdirSync,
-  writeFileSync,
-  mkdirSync,
-  existsSync,
-} from "fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
-import ts from "typescript";
 import { isTelemetryRequest } from "./telemetry-blocklist.mjs";
+import { discoverPostSlugs } from "./blog-posts.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DIST = join(__dirname, "..", "dist");
-const BLOG_POSTS_DIR = join(__dirname, "..", "src", "data", "blog-posts");
-const BLOG_POSTS_NON_POST_FILES = new Set(["index.ts", "types.ts"]);
-
-function getPropertyName(name) {
-  if (
-    ts.isIdentifier(name) ||
-    ts.isStringLiteral(name) ||
-    ts.isNumericLiteral(name)
-  ) {
-    return name.text;
-  }
-
-  return null;
-}
-
-function readSourceFile(filePath) {
-  return ts.createSourceFile(
-    filePath,
-    readFileSync(filePath, "utf-8"),
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.TS
-  );
-}
-
-function findPostSlug(filePath) {
-  const sourceFile = readSourceFile(filePath);
-  let slug;
-
-  function visit(node) {
-    if (
-      ts.isVariableDeclaration(node) &&
-      ts.isIdentifier(node.name) &&
-      node.initializer &&
-      ts.isObjectLiteralExpression(node.initializer)
-    ) {
-      const slugProperty = node.initializer.properties.find(
-        (property) =>
-          ts.isPropertyAssignment(property) &&
-          getPropertyName(property.name) === "slug" &&
-          ts.isStringLiteralLike(property.initializer)
-      );
-
-      if (slugProperty && ts.isPropertyAssignment(slugProperty)) {
-        slug = slugProperty.initializer.text;
-      }
-    }
-
-    ts.forEachChild(node, visit);
-  }
-
-  visit(sourceFile);
-
-  if (!slug) {
-    throw new Error(`Could not find slug in ${filePath}`);
-  }
-
-  return slug;
-}
-
-// Mirrors the import.meta.glob discovery in src/data/blog-posts/index.ts, so a
-// new post is prerendered without touching any shared file.
-function discoverBlogRoutes() {
-  const postFiles = readdirSync(BLOG_POSTS_DIR)
-    .filter(
-      (name) => name.endsWith(".ts") && !BLOG_POSTS_NON_POST_FILES.has(name)
-    )
-    .sort();
-
-  if (postFiles.length === 0) {
-    throw new Error(`Could not discover blog posts from ${BLOG_POSTS_DIR}`);
-  }
-
-  return postFiles.map(
-    (name) => `/blog/${findPostSlug(join(BLOG_POSTS_DIR, name))}`
-  );
-}
 
 const ROUTES = [
   "/",
   "/blog",
-  ...discoverBlogRoutes(),
+  ...discoverPostSlugs().map((slug) => `/blog/${slug}`),
 ];
 
 // Simple static file server for the dist folder
