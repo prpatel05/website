@@ -18,6 +18,11 @@ MERGEABLE_RETRY_SLEEP="${AUTOMERGE_MERGEABLE_RETRY_SLEEP:-2}"
 PUBLISH_GRACE_DAYS="${AUTOMERGE_PUBLISH_GRACE_DAYS:-7}"
 GRACE_SECONDS=$(( PUBLISH_GRACE_DAYS * 86400 ))
 
+# Failures that must redden the run on the day they happen, rather than waiting
+# for the publish date to arrive. A merge is only ever attempted on a post that
+# is already due, and an alarm nobody can file is an alarm nobody will see.
+hard_failures=()
+
 resolve_mergeable() {
   local number="$1"
   local mergeable="$2"
@@ -58,6 +63,7 @@ create_social_promotion_issue() {
     echo "    Created social-promotion issue for $branch."
   else
     echo "    Failed to create social-promotion issue for $branch."
+    hard_failures+=("$number|$branch|social_promotion_issue_failed")
   fi
 }
 
@@ -82,6 +88,7 @@ create_blocked_merge_issue() {
     echo "    Created blocked-merge issue for $branch ($reason)."
   else
     echo "    Failed to create blocked-merge issue for $branch."
+    hard_failures+=("$number|$branch|blocked_merge_issue_failed")
   fi
 }
 
@@ -221,6 +228,7 @@ while IFS= read -r pr_json; do
   else
     echo "  Merge failed for #$number."
     skipped_prs+=("$number|$branch|merge_failed")
+    hard_failures+=("$number|$branch|merge_failed")
     alarm_if_due "$number" "$branch" "$date_iso" "merge_failed"
   fi
 done < <(echo "$blog_prs" | jq -c '.[]')
@@ -231,6 +239,7 @@ echo "Merged: ${#merged_prs[@]}"
 echo "Skipped: ${#skipped_prs[@]}"
 echo "Blocked by conflict: ${#conflict_prs[@]}"
 echo "Missed publish date: ${#missed_publish_prs[@]}"
+echo "Failed operations: ${#hard_failures[@]}"
 
 if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
   {
@@ -277,6 +286,15 @@ if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
         echo "- #$number (\`$branch\`, dateISO: \`$date\`): $reason"
       done
     fi
+
+    if (( ${#hard_failures[@]} > 0 )); then
+      echo ""
+      echo "### Failed operations"
+      for item in "${hard_failures[@]}"; do
+        IFS='|' read -r number branch reason <<<"$item"
+        echo "- #$number (\`$branch\`): $reason"
+      done
+    fi
   } >> "$GITHUB_STEP_SUMMARY"
 fi
 
@@ -288,6 +306,19 @@ if (( ${#missed_publish_prs[@]} > 0 )); then
     IFS='|' read -r number branch date reason <<<"$item"
     echo "::error::Blog PR #$number ($branch) missed its publish date $date: $reason"
   done
+fi
+
+# A failed merge or a failed alarm is a failure today, not on the publish date.
+# Waiting for the date to arrive hides a broken run for a full day, and hides a
+# permanently broken one forever if something else merges the PR first.
+if (( ${#hard_failures[@]} > 0 )); then
+  for item in "${hard_failures[@]}"; do
+    IFS='|' read -r number branch reason <<<"$item"
+    echo "::error::Blog PR #$number ($branch): $reason"
+  done
+fi
+
+if (( ${#missed_publish_prs[@]} > 0 || ${#hard_failures[@]} > 0 )); then
   exit 1
 fi
 

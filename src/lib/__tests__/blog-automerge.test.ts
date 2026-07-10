@@ -17,6 +17,7 @@ import { tmpdir } from "os";
 const SCRIPT = join(process.cwd(), "scripts/blog-automerge.sh");
 const REPO = "prpatel05/website";
 const TODAY = "2026-07-09";
+const TOMORROW = "2026-07-10";
 
 let binDir: string;
 let workDir: string;
@@ -292,6 +293,20 @@ describe("blog auto-merge routine", () => {
       const r = run({
         prs: [pr()],
         files: { [BRANCH]: TODAY },
+        mergeResult: { "31": "fail" },
+      });
+      expect(r.merges).toEqual(["31"]);
+      expect(r.issues).toEqual([`Resolve blocked blog merge: ${BRANCH}`]);
+      expect(r.status).toBe(1);
+    });
+
+    // The merge is only ever attempted on a post due today or tomorrow, so a
+    // failed merge is always a real failure. It used to exit 0 when the post
+    // was due tomorrow, because only an arrived publish date reddened the run.
+    it("fails the run when the merge fails on a post due tomorrow", () => {
+      const r = run({
+        prs: [pr()],
+        files: { [BRANCH]: TOMORROW },
         mergeResult: { "31": "fail" },
       });
       expect(r.merges).toEqual(["31"]);
