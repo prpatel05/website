@@ -6,6 +6,13 @@ interface SEOProps {
   canonical: string;
   ogImage?: string;
   ogImageAlt?: string;
+  /**
+   * Declared so the first scrape can pick the large-card layout without
+   * refetching the image. Blog cards and the homepage card differ in height,
+   * so these stay per-page rather than being hardcoded here.
+   */
+  ogImageWidth?: number;
+  ogImageHeight?: number;
   ogType?: string;
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
@@ -16,6 +23,8 @@ const SEO = ({
   canonical,
   ogImage,
   ogImageAlt,
+  ogImageWidth,
+  ogImageHeight,
   ogType = "website",
   jsonLd,
 }: SEOProps) => {
@@ -33,6 +42,12 @@ const SEO = ({
       <meta property="og:type" content={ogType} />
       {ogImage && <meta property="og:image" content={ogImage} />}
       {ogImage && <meta property="og:image:alt" content={imageAlt} />}
+      {ogImage && ogImageWidth && (
+        <meta property="og:image:width" content={String(ogImageWidth)} />
+      )}
+      {ogImage && ogImageHeight && (
+        <meta property="og:image:height" content={String(ogImageHeight)} />
+      )}
 
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={title} />
