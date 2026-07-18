@@ -4,15 +4,70 @@ import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { posts } from "@/data/blog-posts/registry";
 import SEO from "@/components/SEO";
 
+const BLOG_DESCRIPTION =
+  "Articles on engineering leadership, AI, career growth, and technical architecture by Pratik Patel, CTO & Chief Architect.";
+
+const author = {
+  "@type": "Person",
+  name: "Pratik Patel",
+  url: "https://pratik.pa.tel",
+};
+
 const Blog = () => {
+  // The archive is the entry point crawlers reach before any individual post,
+  // so it names every post here rather than leaving them to be discovered one
+  // BlogPosting at a time.
+  const blogJsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Blog",
+      name: "Blog — Pratik Patel",
+      description: BLOG_DESCRIPTION,
+      url: "https://pratik.pa.tel/blog",
+      author,
+      publisher: author,
+      blogPost: posts.map((post) => ({
+        "@type": "BlogPosting",
+        headline: post.title,
+        description: post.subtitle,
+        datePublished: post.dateISO,
+        url: `https://pratik.pa.tel/blog/${post.slug}`,
+        image: post.image.startsWith("/")
+          ? `https://pratik.pa.tel${post.image}`
+          : post.image,
+        author,
+        keywords: post.tags.join(", "),
+      })),
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Home",
+          item: "https://pratik.pa.tel",
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Blog",
+          item: "https://pratik.pa.tel/blog",
+        },
+      ],
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-background">
       <SEO
         title="Blog — Pratik Patel"
-        description="Articles on engineering leadership, AI, career growth, and technical architecture by Pratik Patel, CTO & Chief Architect."
+        description={BLOG_DESCRIPTION}
         canonical="https://pratik.pa.tel/blog"
         ogImage={posts[0]?.image.startsWith("/") ? `https://pratik.pa.tel${posts[0].image}` : posts[0]?.image}
         ogImageAlt={posts[0]?.title ?? "Pratik Patel blog"}
+        jsonLd={blogJsonLd}
       />
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="container flex items-center h-16">
