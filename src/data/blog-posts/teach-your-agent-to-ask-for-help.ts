@@ -32,7 +32,7 @@ Regulators are already treating the pause as mandatory. The EU AI Act's oversigh
 
 The mistake is treating autonomy as a single dial you turn up or down for the whole agent. It's not one dial. It's a decision you make per action.
 
-A useful framework I keep coming back to sorts every action an agent can take into [four tiers by reversibility and blast radius](https://www.digitalapplied.com/blog/human-in-the-loop-escalation-design-ai-agents-2026):
+The way we sort it: every action an agent can take falls into one of four tiers, ranked by reversibility and blast radius.
 
 **Tier 1. Read-only.** Queries, searches, analysis. Nothing changes in the outside world. Let the agent run. Gating these just manufactures friction and trains your reviewers to rubber-stamp.
 
@@ -46,7 +46,7 @@ The last clause is the important one. The agent's confidence isn't a signal you 
 
 ## The Agent's Confidence Is Not Evidence
 
-Here is the number that should end the "just let it decide" argument. Chain three agents together, each reporting 90 percent confidence but actually running around 75 percent accurate, and the miscalibration compounds. The real end-to-end reliability [collapses to roughly 42 percent](https://www.digitalapplied.com/blog/human-in-the-loop-escalation-design-ai-agents-2026).
+Here is the arithmetic that should end the "just let it decide" argument. Chain three agents together, each reporting 90 percent confidence but actually running around 75 percent accurate. Every step has to land for the chain to land, so the accuracies multiply: 0.75 × 0.75 × 0.75 ≈ 0.42. Three steps in, real end-to-end reliability is roughly 42 percent.
 
 The agent will tell you it's 90 percent sure. The system is a coin flip. And it will report that 90 percent with exactly the same fluent, self-assured tone whether it's right or catastrophically wrong.
 
