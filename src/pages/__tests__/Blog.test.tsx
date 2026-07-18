@@ -100,12 +100,30 @@ describe("Blog archive", () => {
     const blog = blogJsonLd(container).find((n) => n["@type"] === "Blog");
 
     expect(blog).toBeDefined();
-    expect(blog.url).toBe("https://pratik.pa.tel/blog");
+    expect(blog.url).toBe("https://pratik.pa.tel/blog/");
     expect(blog.blogPost).toHaveLength(testPosts.length);
     expect(blog.blogPost.map((p: { url: string }) => p.url)).toEqual([
-      "https://pratik.pa.tel/blog/second-post",
-      "https://pratik.pa.tel/blog/first-post",
+      "https://pratik.pa.tel/blog/second-post/",
+      "https://pratik.pa.tel/blog/first-post/",
     ]);
+  });
+
+  // Every bare-form URL 301s on GitHub Pages, so a redirecting URL in
+  // structured data would reintroduce the defect #45 fixes for canonical/og:url.
+  it("points structured data at non-redirecting trailing-slash URLs", () => {
+    const { container } = renderBlog();
+    const nodes = blogJsonLd(container);
+    const blog = nodes.find((n) => n["@type"] === "Blog");
+    const crumbs = nodes.find((n) => n["@type"] === "BreadcrumbList");
+
+    const blogUrls = [blog.url, ...blog.blogPost.map((p: { url: string }) => p.url)];
+    for (const url of blogUrls) {
+      expect(url.endsWith("/")).toBe(true);
+    }
+
+    // The bare origin is served directly and must not gain a slash.
+    expect(crumbs.itemListElement[0].item).toBe("https://pratik.pa.tel");
+    expect(crumbs.itemListElement[1].item).toBe("https://pratik.pa.tel/blog/");
   });
 
   it("absolutizes relative post images and leaves absolute ones alone", () => {

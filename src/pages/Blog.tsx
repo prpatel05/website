@@ -23,7 +23,10 @@ const Blog = () => {
       "@type": "Blog",
       name: "Blog — Pratik Patel",
       description: BLOG_DESCRIPTION,
-      url: "https://pratik.pa.tel/blog",
+      // Trailing slash throughout: GitHub Pages 301s the bare form, and a
+      // structured-data URL that redirects is the same defect #45 fixes for
+      // canonical/og:url. The bare origin is served directly, so it stays bare.
+      url: "https://pratik.pa.tel/blog/",
       author,
       publisher: author,
       blogPost: posts.map((post) => ({
@@ -31,7 +34,7 @@ const Blog = () => {
         headline: post.title,
         description: post.subtitle,
         datePublished: post.dateISO,
-        url: `https://pratik.pa.tel/blog/${post.slug}`,
+        url: `https://pratik.pa.tel/blog/${post.slug}/`,
         image: post.image.startsWith("/")
           ? `https://pratik.pa.tel${post.image}`
           : post.image,
@@ -53,7 +56,7 @@ const Blog = () => {
           "@type": "ListItem",
           position: 2,
           name: "Blog",
-          item: "https://pratik.pa.tel/blog",
+          item: "https://pratik.pa.tel/blog/",
         },
       ],
     },
