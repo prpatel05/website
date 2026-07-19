@@ -27,7 +27,10 @@ function getPropertyName(name) {
   return null;
 }
 
-function findPostSlug(filePath) {
+// Reads the string-valued fields off the exported post object. `content` is a
+// template literal rather than a plain string, so it is deliberately not
+// readable here — the feed summarises posts from `subtitle` instead.
+function findPostFields(filePath, fields) {
   const sourceFile = ts.createSourceFile(
     filePath,
     readFileSync(filePath, "utf-8"),
@@ -35,7 +38,8 @@ function findPostSlug(filePath) {
     true,
     ts.ScriptKind.TS
   );
-  let slug;
+  const wanted = new Set(fields);
+  const found = {};
 
   function visit(node) {
     if (
@@ -44,15 +48,17 @@ function findPostSlug(filePath) {
       node.initializer &&
       ts.isObjectLiteralExpression(node.initializer)
     ) {
-      const slugProperty = node.initializer.properties.find(
-        (property) =>
+      for (const property of node.initializer.properties) {
+        if (
           ts.isPropertyAssignment(property) &&
-          getPropertyName(property.name) === "slug" &&
           ts.isStringLiteralLike(property.initializer)
-      );
+        ) {
+          const name = getPropertyName(property.name);
 
-      if (slugProperty && ts.isPropertyAssignment(slugProperty)) {
-        slug = slugProperty.initializer.text;
+          if (name && wanted.has(name)) {
+            found[name] = property.initializer.text;
+          }
+        }
       }
     }
 
@@ -61,17 +67,19 @@ function findPostSlug(filePath) {
 
   visit(sourceFile);
 
-  if (!slug) {
-    throw new Error(`Could not find slug in ${filePath}`);
+  for (const field of fields) {
+    if (!found[field]) {
+      throw new Error(`Could not find ${field} in ${filePath}`);
+    }
   }
 
-  return slug;
+  return found;
 }
 
 // The app discovers posts with import.meta.glob, which only exists inside
 // Vite's transform. Node scripts and the Playwright suite run outside it, so
 // they share this scan instead of importing src/data/blog-posts/registry.
-export function discoverPostSlugs() {
+function postFilePaths() {
   const postFiles = readdirSync(BLOG_POSTS_DIR)
     .filter((name) => name.endsWith(".ts") && !NON_POST_FILES.has(name))
     .sort();
@@ -80,5 +88,30 @@ export function discoverPostSlugs() {
     throw new Error(`Could not discover blog posts from ${BLOG_POSTS_DIR}`);
   }
 
-  return postFiles.map((name) => findPostSlug(join(BLOG_POSTS_DIR, name)));
+  return postFiles.map((name) => join(BLOG_POSTS_DIR, name));
+}
+
+export function discoverPostSlugs() {
+  return postFilePaths().map(
+    (filePath) => findPostFields(filePath, ["slug"]).slug
+  );
+}
+
+// Newest first, matching src/data/blog-posts/registry.ts so the feed and the
+// rendered archive agree on ordering.
+export function discoverPosts() {
+  return postFilePaths()
+    .map((filePath) =>
+      findPostFields(filePath, [
+        "slug",
+        "title",
+        "subtitle",
+        "dateISO",
+        "image",
+      ])
+    )
+    .sort(
+      (a, b) =>
+        b.dateISO.localeCompare(a.dateISO) || a.slug.localeCompare(b.slug)
+    );
 }
