@@ -1,4 +1,5 @@
 import { Helmet } from "react-helmet-async";
+import { canonicalUrl } from "@/lib/canonical-url";
 
 interface SEOProps {
   title: string;
@@ -20,16 +21,17 @@ const SEO = ({
   jsonLd,
 }: SEOProps) => {
   const imageAlt = ogImageAlt ?? title;
+  const href = canonicalUrl(canonical);
 
   return (
     <Helmet>
       <title>{title}</title>
       <meta name="description" content={description} />
-      <link rel="canonical" href={canonical} />
+      <link rel="canonical" href={href} />
 
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
-      <meta property="og:url" content={canonical} />
+      <meta property="og:url" content={href} />
       <meta property="og:type" content={ogType} />
       {ogImage && <meta property="og:image" content={ogImage} />}
       {ogImage && <meta property="og:image:alt" content={imageAlt} />}

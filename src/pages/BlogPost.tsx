@@ -5,6 +5,7 @@ import ReactMarkdown, { Components } from "react-markdown";
 import { getPostBySlug } from "@/data/blog-posts/registry";
 import NotFound from "./NotFound";
 import SEO from "@/components/SEO";
+import { canonicalUrl } from "@/lib/canonical-url";
 
 const markdownComponents: Components = {
   h2: ({ children }) => (
@@ -55,7 +56,7 @@ const BlogPost = () => {
       description: post.subtitle,
       datePublished: post.dateISO,
       image: ogImage,
-      url: `https://pratik.pa.tel/blog/${post.slug}`,
+      url: canonicalUrl(`https://pratik.pa.tel/blog/${post.slug}`),
       author: {
         "@type": "Person",
         name: "Pratik Patel",
@@ -82,13 +83,13 @@ const BlogPost = () => {
           "@type": "ListItem",
           position: 2,
           name: "Blog",
-          item: "https://pratik.pa.tel/blog",
+          item: canonicalUrl("https://pratik.pa.tel/blog"),
         },
         {
           "@type": "ListItem",
           position: 3,
           name: post.title,
-          item: `https://pratik.pa.tel/blog/${post.slug}`,
+          item: canonicalUrl(`https://pratik.pa.tel/blog/${post.slug}`),
         },
       ],
     },
