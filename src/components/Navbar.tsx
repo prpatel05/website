@@ -19,6 +19,16 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // The overlay covers the whole viewport, so without this the icon-only close
+  // button is the only way out. Matches the terminal's Escape handling.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && open) setOpen(false);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [open]);
+
   return (
     <>
       <nav
@@ -45,6 +55,7 @@ const Navbar = () => {
           </div>
           <button
             onClick={() => setOpen(true)}
+            aria-expanded={open}
             className="md:hidden font-mono text-xs text-primary border border-primary/30 px-3 py-1.5 hover:bg-primary/10 transition-colors"
           >
             [menu]
@@ -59,13 +70,17 @@ const Navbar = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Site menu"
             className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-xl flex items-center justify-center scanline"
           >
             <button
               onClick={() => setOpen(false)}
+              aria-label="Close menu"
               className="absolute top-5 right-6 text-primary hover:text-foreground transition-colors"
             >
-              <X className="w-6 h-6" />
+              <X className="w-6 h-6" aria-hidden="true" />
             </button>
             <div className="flex flex-col items-center gap-6">
               {links.map((link, i) => (

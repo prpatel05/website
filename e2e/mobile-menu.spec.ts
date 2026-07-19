@@ -37,8 +37,7 @@ test.describe("Mobile menu", () => {
     await page.getByText("[menu]").click();
     await expect(page.getByText("about()").nth(1)).toBeVisible();
 
-    // Click the X close button
-    await page.locator("button").filter({ has: page.locator("svg.w-6.h-6") }).click();
+    await page.getByRole("button", { name: "Close menu" }).click();
 
     await expect(page.locator(".font-display.text-4xl").filter({ hasText: "about()" })).not.toBeVisible();
   });
