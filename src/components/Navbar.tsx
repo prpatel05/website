@@ -73,6 +73,11 @@ const Navbar = () => {
             role="dialog"
             aria-modal="true"
             aria-label="Site menu"
+            // Only a click that lands on the overlay itself dismisses; clicks
+            // that bubble up from the links or the close button are theirs.
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setOpen(false);
+            }}
             className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-xl flex items-center justify-center scanline"
           >
             <button

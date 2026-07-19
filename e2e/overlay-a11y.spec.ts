@@ -26,6 +26,21 @@ test.describe("Mobile menu accessibility", () => {
     await expect(page.getByRole("dialog", { name: "Site menu" })).not.toBeVisible();
   });
 
+  test("clicking the backdrop dismisses the menu", async ({ page }) => {
+    // Bottom-left corner: clear of the centred link stack and of the close
+    // button in the top-right, so the click lands on the overlay itself.
+    await page.mouse.click(10, 640);
+    await expect(page.getByRole("dialog", { name: "Site menu" })).not.toBeVisible();
+  });
+
+  test("clicking a link does not leave the menu open", async ({ page }) => {
+    // Guards the e.target === e.currentTarget check: a bubbled click from a
+    // child must not be mistaken for a backdrop click, and the link's own
+    // handler must still close the menu.
+    await page.getByRole("link", { name: "about()" }).click();
+    await expect(page.getByRole("dialog", { name: "Site menu" })).not.toBeVisible();
+  });
+
   test("menu button reports its expanded state", async ({ page }) => {
     await expect(page.getByText("[menu]")).toHaveAttribute("aria-expanded", "true");
 
