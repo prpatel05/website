@@ -5,17 +5,15 @@ import BlogPreview from "@/components/BlogPreview";
 import Contact from "@/components/Contact";
 import InteractiveTerminal from "@/components/InteractiveTerminal";
 import SEO from "@/components/SEO";
+import { SITE_CARD } from "@/lib/social-cards";
 
 // The portrait, used for the Person JSON-LD where a headshot is what's wanted.
 const HEADSHOT_URL = "https://pratik.pa.tel/images/headshot.png";
 
-// The share card. Distinct from the headshot: og:image is consumed as a
-// 1.91:1 banner, and the 556x556 portrait fell under the 1200x630 that
-// LinkedIn and Facebook require to render the large card instead of a
-// small thumbnail. Regenerate with `node scripts/generate-social-card.mjs`.
-const SOCIAL_CARD_URL = "https://pratik.pa.tel/images/social-card.png";
-const SOCIAL_CARD_WIDTH = 1200;
-const SOCIAL_CARD_HEIGHT = 630;
+// The share card is SITE_CARD, in @/lib/social-cards — distinct from the
+// headshot because og:image is consumed as a 1.91:1 banner, and the 556x556
+// portrait fell under the 1200x630 that LinkedIn and Facebook require to
+// render the large card instead of a small thumbnail.
 
 const personJsonLd = [
   {
@@ -74,10 +72,10 @@ const Index = () => {
         title="Pratik Patel — CTO & Chief Architect"
         description="Technology executive, CTO, and 3x company builder with 11+ years scaling engineering orgs across AI, Cloud, and Web3. Currently Chief Architect at Tarobase."
         canonical="https://pratik.pa.tel/"
-        ogImage={SOCIAL_CARD_URL}
+        ogImage={SITE_CARD.url}
         ogImageAlt="Pratik Patel — CTO & Chief Architect — pratik.pa.tel"
-        ogImageWidth={SOCIAL_CARD_WIDTH}
-        ogImageHeight={SOCIAL_CARD_HEIGHT}
+        ogImageWidth={SITE_CARD.width}
+        ogImageHeight={SITE_CARD.height}
         jsonLd={personJsonLd}
       />
       <Navbar />

@@ -32,6 +32,7 @@ vi.mock("react-helmet-async", () => ({
 }));
 
 import Blog from "../Blog";
+import { SITE_CARD } from "@/lib/social-cards";
 
 const { testPosts } = vi.hoisted(() => ({
   testPosts: [
@@ -134,6 +135,25 @@ describe("Blog archive", () => {
       "https://pratik.pa.tel/images/second.png",
       "https://cdn.example.com/first.png",
     ]);
+  });
+
+  // The archive used to borrow posts[0].image, so every publish silently
+  // changed what an already-shared /blog/ link previewed as — and the alt text
+  // described one article on a page listing the whole archive. The newest
+  // fixture post is /images/second.png, so borrowing would be visible here.
+  it("shares the stable site card, not whichever post is newest", () => {
+    const { container } = renderBlog();
+    const meta = (property: string) =>
+      container
+        .querySelector(`meta[property="${property}"]`)
+        ?.getAttribute("content");
+
+    expect(meta("og:image")).toBe(SITE_CARD.url);
+    expect(meta("og:image:alt")).toBe(
+      "Pratik Patel — CTO & Chief Architect — pratik.pa.tel",
+    );
+    expect(meta("og:image:width")).toBe(String(SITE_CARD.width));
+    expect(meta("og:image:height")).toBe(String(SITE_CARD.height));
   });
 
   it("emits a Home > Blog breadcrumb trail", () => {
