@@ -133,4 +133,34 @@ describe("BlogPost", () => {
     const img = screen.getByAltText("Test Post Title");
     expect(img).toBeInTheDocument();
   });
+
+  // The JSON-LD here is hand-built, so it does not pick up the normalization
+  // SEO.tsx applies to canonical/og:url. Every page URL it declares has to
+  // carry the trailing slash on its own, or the structured data points at
+  // addresses that 301.
+  describe("structured data URLs", () => {
+    const jsonLd = () => {
+      const { container } = renderBlogPost("test-post");
+      const scripts = container.querySelectorAll(
+        'script[type="application/ld+json"]'
+      );
+      return Array.from(scripts).flatMap((s) => JSON.parse(s.textContent ?? ""));
+    };
+
+    it("declares the post URL in its non-redirecting form", () => {
+      const posting = jsonLd().find((n) => n["@type"] === "BlogPosting");
+      expect(posting.url).toBe("https://pratik.pa.tel/blog/test-post/");
+    });
+
+    it("points every breadcrumb at a URL that serves 200", () => {
+      const crumbs = jsonLd().find((n) => n["@type"] === "BreadcrumbList");
+      expect(crumbs.itemListElement.map((i) => i.item)).toEqual([
+        // The bare origin is the one path GitHub Pages serves without a
+        // redirect, so it stays slashless.
+        "https://pratik.pa.tel",
+        "https://pratik.pa.tel/blog/",
+        "https://pratik.pa.tel/blog/test-post/",
+      ]);
+    });
+  });
 });
