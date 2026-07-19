@@ -56,6 +56,13 @@ beforeAll(() => {
     join(postsDir, "newer.ts"),
     post("newer-post", "Newer & Bolder", "2026-07-14", 'Quotes "and" ampersands & such.')
   );
+  // blog-automerge.sh merges a post once its dateISO is no later than tomorrow,
+  // so a post dated the day after FEED_TODAY is already live on the site and
+  // belongs in the feed. Anything beyond that is not.
+  writeFileSync(
+    join(postsDir, "tomorrow.ts"),
+    post("tomorrow-post", "Tomorrow Post", "2026-07-20", "Live on the site today.")
+  );
   writeFileSync(
     join(postsDir, "future.ts"),
     post("future-post", "Future Post", "2026-08-30", "Not due yet.")
@@ -77,10 +84,14 @@ describe("generate-feed", () => {
     const titles = [...feed.matchAll(/<item>[\s\S]*?<title>([^<]+)<\/title>/g)].map(
       (m) => m[1]
     );
-    expect(titles).toEqual(["Newer &amp; Bolder", "Older Post"]);
+    expect(titles).toEqual(["Tomorrow Post", "Newer &amp; Bolder", "Older Post"]);
   });
 
-  it("withholds posts dated after today", () => {
+  it("includes a post dated tomorrow, which auto-merge has already published", () => {
+    expect(feed).toContain("https://pratik.pa.tel/blog/tomorrow-post/");
+  });
+
+  it("withholds posts dated beyond the auto-merge window", () => {
     expect(feed).not.toContain("future-post");
     expect(feed).not.toContain("Future Post");
   });
@@ -102,10 +113,15 @@ describe("generate-feed", () => {
 
   it("dates are RFC 822 and land on the intended day", () => {
     const dates = [...feed.matchAll(/<pubDate>([^<]+)<\/pubDate>/g)].map((m) => m[1]);
-    expect(dates[0]).toBe("Tue, 14 Jul 2026 12:00:00 GMT");
-    for (const d of dates) {
-      expect(Number.isNaN(new Date(d).getTime())).toBe(false);
-    }
+    expect(dates).toEqual([
+      "Mon, 20 Jul 2026 12:00:00 GMT",
+      "Tue, 14 Jul 2026 12:00:00 GMT",
+      "Wed, 01 Jul 2026 12:00:00 GMT",
+    ]);
+  });
+
+  it("stamps lastBuildDate with the build date, never a future post date", () => {
+    expect(feed).toContain("<lastBuildDate>Sun, 19 Jul 2026 12:00:00 GMT</lastBuildDate>");
   });
 
   it("declares a self-referencing atom link", () => {
