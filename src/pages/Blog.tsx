@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { posts } from "@/data/blog-posts/registry";
 import SEO from "@/components/SEO";
+import { SITE_CARD } from "@/lib/social-cards";
 
 const BLOG_DESCRIPTION =
   "Articles on engineering leadership, AI, career growth, and technical architecture by Pratik Patel, CTO & Chief Architect.";
@@ -68,8 +69,10 @@ const Blog = () => {
         title="Blog — Pratik Patel"
         description={BLOG_DESCRIPTION}
         canonical="https://pratik.pa.tel/blog"
-        ogImage={posts[0]?.image.startsWith("/") ? `https://pratik.pa.tel${posts[0].image}` : posts[0]?.image}
-        ogImageAlt={posts[0]?.title ?? "Pratik Patel blog"}
+        ogImage={SITE_CARD.url}
+        ogImageAlt="Pratik Patel — CTO & Chief Architect — pratik.pa.tel"
+        ogImageWidth={SITE_CARD.width}
+        ogImageHeight={SITE_CARD.height}
         jsonLd={blogJsonLd}
       />
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">

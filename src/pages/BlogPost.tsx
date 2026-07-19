@@ -6,6 +6,7 @@ import { getPostBySlug } from "@/data/blog-posts/registry";
 import NotFound from "./NotFound";
 import SEO from "@/components/SEO";
 import { canonicalUrl } from "@/lib/canonical-url";
+import { BLOG_POST_CARD } from "@/lib/social-cards";
 
 const markdownComponents: Components = {
   h2: ({ children }) => (
@@ -103,6 +104,8 @@ const BlogPost = () => {
         canonical={`https://pratik.pa.tel/blog/${post.slug}`}
         ogImage={ogImage}
         ogImageAlt={post.title}
+        ogImageWidth={BLOG_POST_CARD.width}
+        ogImageHeight={BLOG_POST_CARD.height}
         ogType="article"
         jsonLd={blogPostJsonLd}
       />

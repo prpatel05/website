@@ -32,6 +32,7 @@ vi.mock("react-helmet-async", () => ({
 }));
 
 import BlogPost from "../BlogPost";
+import { BLOG_POST_CARD } from "@/lib/social-cards";
 
 vi.mock("@/data/blog-posts/registry", async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
@@ -127,11 +128,26 @@ describe("BlogPost", () => {
   });
 
   it("normalizes relative image URLs for OG image", () => {
-    renderBlogPost("test-post");
-    // The ogImage logic prepends domain for relative paths
-    // We can verify the image element exists (the OG handling is in SEO helmet)
-    const img = screen.getByAltText("Test Post Title");
-    expect(img).toBeInTheDocument();
+    const { container } = renderBlogPost("test-post");
+    expect(
+      container
+        .querySelector('meta[property="og:image"]')
+        ?.getAttribute("content"),
+    ).toBe("https://pratik.pa.tel/images/test.png");
+  });
+
+  // Declared so the first scrape picks the large-card layout without having to
+  // fetch the image to measure it. social-cards.test.ts holds the other half:
+  // that every post image really is this size.
+  it("declares the blog card dimensions on og:image", () => {
+    const { container } = renderBlogPost("test-post");
+    const meta = (property: string) =>
+      container
+        .querySelector(`meta[property="${property}"]`)
+        ?.getAttribute("content");
+
+    expect(meta("og:image:width")).toBe(String(BLOG_POST_CARD.width));
+    expect(meta("og:image:height")).toBe(String(BLOG_POST_CARD.height));
   });
 
   // The JSON-LD here is hand-built, so it does not pick up the normalization
