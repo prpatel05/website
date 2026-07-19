@@ -22,9 +22,11 @@ This is the thing that surprises people about running more than one agent: the f
 
 There is now real data on this, and it is bracing.
 
-Researchers behind the [MAST taxonomy](https://arxiv.org/abs/2503.13657) hand-annotated 1,642 execution traces across seven state-of-the-art open-source multi-agent systems, with two human annotators reaching 0.88 Cohen's kappa on the taxonomy-development set. This is not vibes. It is the closest thing the field has to a failure epidemiology.
+Researchers behind the [MAST taxonomy](https://arxiv.org/abs/2503.13657) annotated 1,642 execution traces across seven state-of-the-art open-source multi-agent systems. It is worth knowing exactly how, because the how is what makes it usable: six human experts read 150+ traces to build the taxonomy, three of them then labeled independently until they reached 0.88 Cohen's kappa, and the full 1,642-trace dataset was labeled by an LLM-as-judge pipeline calibrated against those human annotations (94% accuracy, 0.77 kappa).
 
-Their headline: **41% to 86.7% failure rates** across those seven systems. Per system, AppWorld failed 86.7% of the time, HyperAgent 74.7%, ChatDev 66.7%, Magentic-One 62.0%, MetaGPT 60.0%, AG2 41.0%.
+So it is not 1,642 hand-reads, and anyone citing it should say so. What it is, is a human-built and human-validated taxonomy applied at a scale humans could not reach — the closest thing the field has to a failure epidemiology.
+
+Their headline: **41% to 86.7% failure rates.** The six systems the paper breaks out individually: AppWorld failed 86.7% of the time, HyperAgent 74.7%, ChatDev 66.7%, Magentic-One 62.0%, MetaGPT 60.0%, AG2 41.0%.
 
 One honest caveat before anyone quotes that range at a standup, and it is the paper's own: these systems were measured on *different benchmarks*, so the numbers are not directly comparable to each other. It is not a leaderboard. What it is, is a floor-level observation that serious multi-agent systems built by serious people fail a lot, and the good ones still fail more than you would guess from a demo video.
 
@@ -34,12 +36,14 @@ Here is the number this post is actually about.
 
 MAST sorts every failure into three categories. **Inter-agent misalignment accounts for 32.3% of them.** Not the model being incapable. Not the task being impossible. Roughly a third of failures are agents failing to communicate correctly with each other.
 
-Break that category open and the sub-modes are painfully recognizable:
+Break that category open — all six sub-modes, so the arithmetic is checkable — and they are painfully recognizable:
 
 - **Reasoning-action mismatch — 13.2%.** The agent's stated reasoning and its actual action diverge. It says it will check the schema, then doesn't.
 - **Task derailment — 7.4%.** The work drifts from what was asked. Each handoff nudges it slightly, and no single step looks wrong.
 - **Failure to ask for clarification — 6.8%.** The agent receives an ambiguous brief and resolves the ambiguity by guessing, silently.
-- **Information withholding — 0.8%.** An agent knows something relevant and does not pass it on.
+- **Conversation reset — 2.2%.** The thread restarts and everything established up to that point is gone.
+- **Ignoring another agent's input — 1.9%.** The information arrived. It was not used.
+- **Information withholding — 0.85%.** An agent knows something relevant and does not pass it on.
 
 Look at that list as a whole and a pattern falls out. Almost none of these are intelligence failures. They are **protocol** failures. The receiving agent was never told what it needed, never told what it was allowed to assume, and never given a way to say "this brief is underspecified."
 
