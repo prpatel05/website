@@ -4,9 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "node scripts/generate-thumbnails.mjs && vite",
-    "build": "node scripts/generate-thumbnails.mjs && vite build && node scripts/prerender.mjs && node scripts/generate-sitemap.mjs && node scripts/generate-feed.mjs",
-    "build:dev": "node scripts/generate-thumbnails.mjs && vite build --mode development",
+    "dev": "node scripts/generate-images.mjs && vite",
+    "build": "node scripts/generate-images.mjs && vite build && node scripts/prerender.mjs && node scripts/generate-sitemap.mjs && node scripts/generate-feed.mjs",
+    "build:dev": "node scripts/generate-images.mjs && vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
