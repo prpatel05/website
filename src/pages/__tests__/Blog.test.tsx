@@ -208,4 +208,20 @@ describe("Blog archive", () => {
     expect(remote.getAttribute("srcset")).toBeNull();
     expect(remote.getAttribute("sizes")).toBeNull();
   });
+
+  // The archive is og:type="website". article:* on a listing page dates the
+  // whole archive to one post, which is the same mistake as pointing its
+  // og:image at the newest hero.
+  it("carries the site name but no article metadata", () => {
+    const { container } = renderBlog();
+    const meta = (property: string) =>
+      container
+        .querySelector(`meta[property="${property}"]`)
+        ?.getAttribute("content");
+
+    expect(meta("og:site_name")).toBe("Pratik Patel");
+    expect(meta("og:type")).toBe("website");
+    expect(meta("article:published_time")).toBeUndefined();
+    expect(meta("article:author")).toBeUndefined();
+  });
 });

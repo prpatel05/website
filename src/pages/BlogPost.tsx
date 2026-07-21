@@ -115,6 +115,7 @@ const BlogPost = () => {
         ogImageWidth={BLOG_POST_CARD.width}
         ogImageHeight={BLOG_POST_CARD.height}
         ogType="article"
+        articlePublishedTime={post.dateISO}
         preloadImage={heroSrc}
         preloadImageSrcSet={hero?.srcSet}
         preloadImageSizes={hero ? HERO_SIZES : undefined}
