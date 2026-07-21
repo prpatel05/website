@@ -120,6 +120,30 @@ describe("BlogPost", () => {
     expect(img).toHaveAttribute("src", "/images/test.png");
   });
 
+  // The hero is the LCP element on a post page. It was lazy for a while, which
+  // hides it from the preload scanner and defers the fetch until after layout.
+  describe("hero image is treated as the LCP element", () => {
+    it("loads the hero eagerly", () => {
+      renderBlogPost("test-post");
+      expect(screen.getByAltText("Test Post Title")).toHaveAttribute(
+        "loading",
+        "eager"
+      );
+    });
+
+    it("preloads the hero from the head at the same URL the img requests", () => {
+      const { container } = renderBlogPost("test-post");
+      const preload = container.querySelector('link[rel="preload"][as="image"]');
+      expect(preload).toBeTruthy();
+      expect(preload!.getAttribute("fetchpriority")).toBe("high");
+      // A mismatch here — an absolute origin, say — costs a second download
+      // instead of priming the one the <img> makes.
+      expect(preload!.getAttribute("href")).toBe(
+        screen.getByAltText("Test Post Title").getAttribute("src")
+      );
+    });
+  });
+
   it("renders back navigation link", () => {
     renderBlogPost("test-post");
     expect(screen.getByText("cd ~")).toBeInTheDocument();

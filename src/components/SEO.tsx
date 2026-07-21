@@ -15,6 +15,13 @@ interface SEOProps {
   ogImageWidth?: number;
   ogImageHeight?: number;
   ogType?: string;
+  /**
+   * Same-origin path of the image that paints as LCP. Preloading it from the
+   * head lets the scanner start the fetch before the parser reaches the <img>.
+   * Must be the identical URL the <img> requests — an absolute origin here
+   * would resolve to a second, separate download off pratik.pa.tel.
+   */
+  preloadImage?: string;
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
 
@@ -27,6 +34,7 @@ const SEO = ({
   ogImageWidth,
   ogImageHeight,
   ogType = "website",
+  preloadImage,
   jsonLd,
 }: SEOProps) => {
   const imageAlt = ogImageAlt ?? title;
@@ -37,6 +45,14 @@ const SEO = ({
       <title>{title}</title>
       <meta name="description" content={description} />
       <link rel="canonical" href={href} />
+      {preloadImage && (
+        <link
+          rel="preload"
+          as="image"
+          href={preloadImage}
+          fetchPriority="high"
+        />
+      )}
 
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
