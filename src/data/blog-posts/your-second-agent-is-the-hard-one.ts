@@ -20,7 +20,7 @@ It isn't. They're describing two different kinds of work, and the difference bet
 
 ## The First Agent Is an Engineering Problem
 
-Everything I've written about agent reliability so far assumes a boundary around one agent. Decide [what it's allowed to touch](/blog/agent-permissions-are-product-design). Give it [a runbook instead of a better prompt](/blog/agent-runbooks-beat-better-prompts). Notice [when it fails quietly](/blog/agents-fail-quietly). Make its mistakes [cheap to take back](/blog/give-your-agent-an-undo-button). Teach it [when to stop and ask](/blog/teach-your-agent-to-ask-for-help). Keep [a trace of what it did](/blog/trust-comes-from-the-trace).
+Everything I've written about agent reliability so far assumes a boundary around one agent. Decide [what it's allowed to touch](/blog/agent-permissions-are-product-design/). Give it [a runbook instead of a better prompt](/blog/agent-runbooks-beat-better-prompts/). Notice [when it fails quietly](/blog/agents-fail-quietly/). Make its mistakes [cheap to take back](/blog/give-your-agent-an-undo-button/). Teach it [when to stop and ask](/blog/teach-your-agent-to-ask-for-help/). Keep [a trace of what it did](/blog/trust-comes-from-the-trace/).
 
 Every one of those controls is scoped to a single actor. The permission set belongs to an agent. The undo button unwinds one agent's actions. The escalation gate pauses one agent's decision. The trace reconstructs one agent's run.
 
@@ -68,7 +68,7 @@ Once you accept that constraint, the rest of a fleet design falls out of it.
 
 **Give shared state an owner.** For every resource two agents can touch, name the one that writes. The others read. If two agents genuinely must write the same thing, that's not a coordination problem to solve with better prompts. That's a design smell telling you the work was split along the wrong seam.
 
-**Trace across the fleet, not per agent.** A per-agent trace tells you what each one did. It won't tell you that agent B's correct action was based on agent A's wrong assumption. You need spans that link, so the causal chain survives the hop between agents. Reconstruction was already [the foundation of trust in a single agent](/blog/trust-comes-from-the-trace). In a fleet it's the only thing standing between you and a bug that no single trace contains.
+**Trace across the fleet, not per agent.** A per-agent trace tells you what each one did. It won't tell you that agent B's correct action was based on agent A's wrong assumption. You need spans that link, so the causal chain survives the hop between agents. Reconstruction was already [the foundation of trust in a single agent](/blog/trust-comes-from-the-trace/). In a fleet it's the only thing standing between you and a bug that no single trace contains.
 
 **Escalate at the seams.** The most valuable place for a human pause isn't inside an agent's reasoning. It's at the handoff, where one agent's output becomes another's assumption, and where a wrong assumption is still cheap to catch.
 
