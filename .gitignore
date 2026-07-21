@@ -23,6 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 
+# Archive-card thumbnails, derived from the post heroes by
+# scripts/generate-thumbnails.mjs on every dev and build.
+public/images/thumbs/
+
 # Test artifacts
 playwright-report/
 test-results/
