@@ -22,3 +22,15 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Archive-card thumbnails, post-hero variants, and the homepage portrait
+# variants, derived from their masters by scripts/generate-images.mjs on every
+# dev and build.
+public/images/thumbs/
+public/images/hero/
+public/images/portrait/
+
+# Test artifacts
+playwright-report/
+test-results/
+coverage/

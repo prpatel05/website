@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
-import { posts } from "@/data/blog-posts";
+import { posts } from "@/data/blog-posts/registry";
 
 vi.mock("framer-motion", () => {
   const motionProxy = new Proxy(
@@ -44,7 +44,7 @@ describe("BlogPreview", () => {
       </MemoryRouter>
     );
 
-    const postLinks = container.querySelectorAll('a[href^="/blog/"]');
+    const postLinks = container.querySelectorAll("article a");
     expect(postLinks).toHaveLength(5);
 
     for (const post of posts.slice(0, 5)) {
@@ -52,5 +52,26 @@ describe("BlogPreview", () => {
     }
 
     expect(screen.queryByText(posts[5].title)).not.toBeInTheDocument();
+  });
+
+  // Every pratik.pa.tel path 301s to its trailing-slash form, so a slashless
+  // href is a link the crawler has to follow twice. The homepage carries the
+  // archive link plus the five newest posts, so it is where that cost lands
+  // first.
+  it("points every internal link at its non-redirecting trailing-slash form", () => {
+    const { container } = render(
+      <MemoryRouter>
+        <BlogPreview />
+      </MemoryRouter>
+    );
+
+    const hrefs = Array.from(container.querySelectorAll("a[href^='/']")).map(
+      (a) => a.getAttribute("href")
+    );
+
+    expect(hrefs).toEqual([
+      "/blog/",
+      ...posts.slice(0, 5).map((post) => `/blog/${post.slug}/`),
+    ]);
   });
 });

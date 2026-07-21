@@ -4,14 +4,15 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build && node scripts/prerender.mjs && node scripts/generate-sitemap.mjs",
-    "build:dev": "vite build --mode development",
+    "dev": "node scripts/generate-images.mjs && vite",
+    "build": "node scripts/generate-images.mjs && vite build && node scripts/prerender.mjs && node scripts/generate-sitemap.mjs && node scripts/generate-feed.mjs",
+    "build:dev": "node scripts/generate-images.mjs && vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "verify:hero": "node scripts/verify-hero-requests.mjs",
     "analyze": "ANALYZE=true vite build"
   },
   "dependencies": {
@@ -47,6 +48,7 @@
     "lovable-tagger": "^1.1.13",
     "postcss": "^8.5.6",
     "rollup-plugin-visualizer": "^5.14.0",
+    "sharp": "^0.35.3",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0",

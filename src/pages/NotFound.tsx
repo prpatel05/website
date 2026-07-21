@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
-import { posts } from "@/data/blog-posts";
+import { posts } from "@/data/blog-posts/registry";
 
 const NotFound = () => {
   const recentPosts = posts.slice(0, 3);
@@ -46,7 +46,7 @@ const NotFound = () => {
             {recentPosts.map((post) => (
               <Link
                 key={post.slug}
-                to={`/blog/${post.slug}`}
+                to={`/blog/${post.slug}/`}
                 className="group block border border-border bg-card hover:border-primary/40 transition-all duration-300 p-4"
               >
                 <span className="font-mono text-[10px] text-muted-foreground block mb-1">

@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { motion, useTransform } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
-import { posts } from "@/data/blog-posts";
+import { posts } from "@/data/blog-posts/registry";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import SectionHeader from "./SectionHeader";
 
@@ -24,7 +24,7 @@ const BlogPreview = () => {
               <span className="text-accent text-glow-accent">writes</span>
             </h2>
             <Link
-              to="/blog"
+              to="/blog/"
               className="font-mono text-xs text-muted-foreground hover:text-primary transition-colors mt-4 sm:mt-0 flex items-center gap-1"
             >
               ls ./posts <ArrowUpRight className="w-3 h-3" />
@@ -42,7 +42,7 @@ const BlogPreview = () => {
               transition={{ duration: 0.6, delay: i * 0.15, ease: [0.22, 1, 0.36, 1] }}
             >
               <Link
-                to={`/blog/${post.slug}`}
+                to={`/blog/${post.slug}/`}
                 className="group block border border-border bg-card hover:border-primary/40 transition-all duration-500 p-6 lg:p-8"
               >
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
