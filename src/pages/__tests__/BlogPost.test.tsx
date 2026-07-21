@@ -47,10 +47,15 @@ vi.mock("@/data/blog-posts/registry", async (importOriginal) => {
     image: "/images/test.png",
     content: `## Introduction\n\nThis is a **test paragraph** with *emphasis*.\n\n### Sub-heading\n\n- First item\n- Second item\n- Third item`,
   };
+  // Neighbours, so the prev/next links at the end of a post have somewhere to
+  // point. Ordered newest first, the same as the real registry.
+  const newerPost = { ...testPost, slug: "newer-post", title: "Newer Post Title" };
+  const olderPost = { ...testPost, slug: "older-post", title: "Older Post Title" };
+  const all = [newerPost, testPost, olderPost];
   return {
     ...actual,
-    getPostBySlug: (slug: string) => (slug === "test-post" ? testPost : undefined),
-    posts: [testPost],
+    getPostBySlug: (slug: string) => all.find((p) => p.slug === slug),
+    posts: all,
   };
 });
 
@@ -118,6 +123,45 @@ describe("BlogPost", () => {
   it("renders back navigation link", () => {
     renderBlogPost("test-post");
     expect(screen.getByText("cd ~")).toBeInTheDocument();
+  });
+
+  // A post used to end with one link, to the homepage preview of the five most
+  // recent posts. Everything older than that was a dead end.
+  describe("adjacent post navigation", () => {
+    const navLinks = (container: HTMLElement) =>
+      Array.from(
+        container.querySelectorAll('nav[aria-label="More posts"] a')
+      ).map((a) => [a.getAttribute("href"), a.textContent]);
+
+    it("links to the newer and older post from a middle post", () => {
+      const { container } = renderBlogPost("test-post");
+      expect(navLinks(container)).toEqual([
+        ["/blog/newer-post", "newerNewer Post Title"],
+        ["/blog/older-post", "olderOlder Post Title"],
+      ]);
+    });
+
+    it("offers only an older post on the newest post", () => {
+      const { container } = renderBlogPost("newer-post");
+      expect(navLinks(container)).toEqual([
+        ["/blog/test-post", "olderTest Post Title"],
+      ]);
+    });
+
+    it("offers only a newer post on the oldest post", () => {
+      const { container } = renderBlogPost("older-post");
+      expect(navLinks(container)).toEqual([
+        ["/blog/test-post", "newerTest Post Title"],
+      ]);
+    });
+
+    it("sends the archive link to the full list, not the homepage preview", () => {
+      renderBlogPost("test-post");
+      expect(screen.getByText("ls ../posts").closest("a")).toHaveAttribute(
+        "href",
+        "/blog"
+      );
+    });
   });
 
   it("renders NotFound for unknown slug", () => {

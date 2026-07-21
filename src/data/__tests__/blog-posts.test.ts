@@ -2,7 +2,8 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it, expect } from "vitest";
-import { posts, getPostBySlug } from "../blog-posts/registry";
+import { posts, getPostBySlug, getAdjacentPosts } from "../blog-posts/registry";
+import type { BlogPost } from "../blog-posts/registry";
 
 describe("blog-posts data", () => {
   it("exports a non-empty posts array", () => {
@@ -149,6 +150,46 @@ describe("getPostBySlug", () => {
       const found = getPostBySlug(post.slug);
       expect(found).toBeDefined();
       expect(found!.title).toBe(post.title);
+    }
+  });
+});
+
+describe("getAdjacentPosts", () => {
+  // Newest first, matching the order registry.ts exports.
+  const stub = (slug: string) => ({ slug }) as BlogPost;
+  const list = [stub("newest"), stub("middle"), stub("oldest")];
+
+  it("gives the newest post no newer neighbour", () => {
+    const { newer, older } = getAdjacentPosts(list, "newest");
+    expect(newer).toBeUndefined();
+    expect(older!.slug).toBe("middle");
+  });
+
+  it("gives the oldest post no older neighbour", () => {
+    const { newer, older } = getAdjacentPosts(list, "oldest");
+    expect(newer!.slug).toBe("middle");
+    expect(older).toBeUndefined();
+  });
+
+  it("gives a middle post both neighbours", () => {
+    const { newer, older } = getAdjacentPosts(list, "middle");
+    expect(newer!.slug).toBe("newest");
+    expect(older!.slug).toBe("oldest");
+  });
+
+  it("returns no neighbours for a slug that is not in the list", () => {
+    expect(getAdjacentPosts(list, "not-a-post")).toEqual({});
+  });
+
+  it("returns no neighbours when the list holds a single post", () => {
+    expect(getAdjacentPosts([stub("only")], "only")).toEqual({});
+  });
+
+  it("walks the real post list end to end without a gap", () => {
+    for (const [i, post] of posts.entries()) {
+      const { newer, older } = getAdjacentPosts(posts, post.slug);
+      expect(newer?.slug).toBe(posts[i - 1]?.slug);
+      expect(older?.slug).toBe(posts[i + 1]?.slug);
     }
   });
 });

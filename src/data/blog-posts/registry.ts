@@ -26,3 +26,16 @@ export const posts: BlogPost[] = Object.values(modules)
 export const getPostBySlug = (slug: string): BlogPost | undefined => {
   return posts.find((p) => p.slug === slug);
 };
+
+// Neighbours of a post in the published order, for the links at the end of a
+// post. The list is newest first, so the entry before a post is the newer one.
+// The list is passed in rather than read from the module so the caller decides
+// which ordering is on screen.
+export const getAdjacentPosts = (
+  list: BlogPost[],
+  slug: string
+): { newer?: BlogPost; older?: BlogPost } => {
+  const i = list.findIndex((p) => p.slug === slug);
+  if (i === -1) return {};
+  return { newer: list[i - 1], older: list[i + 1] };
+};
