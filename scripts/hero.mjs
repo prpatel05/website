@@ -1,5 +1,5 @@
 /**
- * Where the column-width variant of a post hero lives.
+ * Where the resized variants of a post hero live.
  *
  * This is the build-side half of the derivation. The browser-side half is
  * src/lib/hero.ts, which has to repeat it because the post page renders in the
