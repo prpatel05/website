@@ -203,7 +203,7 @@ const BlogPost = () => {
               >
                 {newer && (
                   <Link
-                    to={`/blog/${newer.slug}`}
+                    to={`/blog/${newer.slug}/`}
                     className="group border border-border p-4 hover:border-primary/50 transition-colors"
                   >
                     <span className="font-mono text-[10px] text-muted-foreground flex items-center gap-2">
@@ -217,7 +217,7 @@ const BlogPost = () => {
                 )}
                 {older && (
                   <Link
-                    to={`/blog/${older.slug}`}
+                    to={`/blog/${older.slug}/`}
                     className="group border border-border p-4 hover:border-primary/50 transition-colors sm:col-start-2 sm:text-right"
                   >
                     <span className="font-mono text-[10px] text-muted-foreground flex items-center gap-2 sm:justify-end">
@@ -234,7 +234,7 @@ const BlogPost = () => {
 
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <Link
-                to="/blog"
+                to="/blog/"
                 className="font-mono text-xs text-primary hover:text-foreground transition-colors flex items-center gap-2"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />

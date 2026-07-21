@@ -46,7 +46,7 @@ const NotFound = () => {
             {recentPosts.map((post) => (
               <Link
                 key={post.slug}
-                to={`/blog/${post.slug}`}
+                to={`/blog/${post.slug}/`}
                 className="group block border border-border bg-card hover:border-primary/40 transition-all duration-300 p-4"
               >
                 <span className="font-mono text-[10px] text-muted-foreground block mb-1">

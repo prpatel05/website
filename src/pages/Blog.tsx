@@ -112,7 +112,7 @@ const Blog = () => {
                 transition={{ duration: 0.5, delay: i * 0.1 }}
               >
                 <Link
-                  to={`/blog/${post.slug}`}
+                  to={`/blog/${post.slug}/`}
                   className="group block border border-border bg-card hover:border-primary/40 transition-all duration-500 p-6 lg:p-8"
                 >
                   <div className="flex flex-col md:flex-row md:items-center gap-6">

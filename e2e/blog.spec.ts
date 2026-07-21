@@ -22,8 +22,10 @@ test.describe("Blog listing and post navigation", () => {
     const hrefs = await postLinks.evaluateAll((links) =>
       links.map((link) => link.getAttribute("href"))
     );
+    // Trailing slash: the served form of every path, so the anchor points at
+    // the URL that answers 200 rather than the one that 301s to it.
     expect(hrefs.sort()).toEqual(
-      postSlugs.map((slug) => `/blog/${slug}`).sort()
+      postSlugs.map((slug) => `/blog/${slug}/`).sort()
     );
 
     // Check first post title is visible
@@ -48,7 +50,7 @@ test.describe("Blog listing and post navigation", () => {
       .getByText("Ship It Yourself: Why the Best Time to Build Is Right Now")
       .click();
 
-    await expect(page).toHaveURL("/blog/ship-it-yourself");
+    await expect(page).toHaveURL("/blog/ship-it-yourself/");
     await expect(
       page.getByRole("heading", { name: /Ship It Yourself/i })
     ).toBeVisible();

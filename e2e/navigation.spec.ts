@@ -6,8 +6,10 @@ test.describe("Navigation between routes", () => {
     const writing = page.locator("#writing");
     await writing.scrollIntoViewIfNeeded();
 
-    // Click first blog post link in the preview section
-    const blogLink = writing.locator('a[href^="/blog/"]').first();
+    // Click first blog post link in the preview section. Scoped to the post
+    // cards so it can't pick up the section's "ls ./posts" archive link, which
+    // is also an /blog/ href.
+    const blogLink = writing.locator("article a").first();
     await blogLink.click();
 
     await expect(page).toHaveURL(/\/blog\/.+/);

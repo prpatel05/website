@@ -36,6 +36,28 @@ describe("blog-posts data", () => {
     expect(new Set(images).size).toBe(images.length);
   });
 
+  // Post bodies are the one place internal links are hand-written rather than
+  // built from a slug, so they are where the trailing-slash convention drifts
+  // back. Every pratik.pa.tel path 301s to its slash form, and a markdown link
+  // renders as a plain anchor, so a slashless one sends readers and crawlers
+  // through a redirect that the rest of the site no longer emits.
+  it("writes internal links in a post body in their non-redirecting form", () => {
+    const offenders = posts.flatMap((post) =>
+      Array.from(post.content.matchAll(/\]\((\/[^)]*)\)/g))
+        .map((match) => match[1])
+        // A path whose last segment carries an extension is a file, not a
+        // directory index, and is served without a redirect.
+        .filter((href) => {
+          const [path] = href.split(/[?#]/);
+          const lastSegment = path.slice(path.lastIndexOf("/") + 1);
+          return !path.endsWith("/") && !lastSegment.includes(".");
+        })
+        .map((href) => `${post.slug}: ${href}`)
+    );
+
+    expect(offenders).toEqual([]);
+  });
+
   // Guards the discovery contract: dropping a .ts file into the directory must
   // publish it, with no shared index to edit. Filenames need not match slugs.
   it("discovers every post file in the directory", () => {
