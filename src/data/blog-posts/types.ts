@@ -7,5 +7,4 @@ export interface BlogPost {
   readTime: string;
   tags: string[];
   image: string;
-  content: string;
 }

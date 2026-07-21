@@ -102,6 +102,21 @@ async function prerender() {
       console.warn(`  Warning: hydration check timed out for ${route}, using fallback wait`);
     });
 
+    // The post body and the post page itself are both async chunks now, so the
+    // first paint can beat them. Settle the network again, then refuse to write
+    // a post page whose article never arrived — an empty <article> would
+    // otherwise ship as valid-looking HTML.
+    await page.waitForLoadState("networkidle");
+
+    if (route.startsWith("/blog/")) {
+      const paragraphs = await page.locator("article p").count();
+      if (paragraphs < 3) {
+        throw new Error(
+          `${route} rendered ${paragraphs} paragraph(s) — post body did not load`
+        );
+      }
+    }
+
     const html = await page.content();
 
     // Determine output path

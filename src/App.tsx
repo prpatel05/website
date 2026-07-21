@@ -1,12 +1,16 @@
-import { Component, type ReactNode, useEffect } from "react";
+import { Component, Suspense, lazy, type ReactNode, useEffect } from "react";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { AnimatePresence } from "framer-motion";
 import PageTransition from "@/components/PageTransition";
 import Index from "./pages/Index.tsx";
 import Blog from "./pages/Blog.tsx";
-import BlogPost from "./pages/BlogPost.tsx";
 import NotFound from "./pages/NotFound.tsx";
+
+// The post page is the only screen that renders markdown, so react-markdown
+// (118KB, 36KB over the wire) rides in with it instead of in the chunk the
+// homepage and archive load.
+const BlogPost = lazy(() => import("./pages/BlogPost.tsx"));
 
 /* ---------- Error Boundary ---------- */
 
@@ -69,7 +73,16 @@ const AnimatedRoutes = () => {
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<PageTransition><Index /></PageTransition>} />
         <Route path="/blog" element={<PageTransition><Blog /></PageTransition>} />
-        <Route path="/blog/:slug" element={<PageTransition><BlogPost /></PageTransition>} />
+        <Route
+          path="/blog/:slug"
+          element={
+            <PageTransition>
+              <Suspense fallback={null}>
+                <BlogPost />
+              </Suspense>
+            </PageTransition>
+          }
+        />
         <Route path="/resume" element={<ResumePdfRedirect />} />
         <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
       </Routes>
