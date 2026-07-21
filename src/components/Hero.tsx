@@ -1,5 +1,6 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
+import { useEntrance } from "@/hooks/useEntrance";
 import {
   PORTRAIT_SIZES,
   PORTRAIT_SRC,
@@ -18,6 +19,7 @@ const Hero = () => {
   const [displayText, setDisplayText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
+  const entrance = useEntrance();
 
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -87,7 +89,7 @@ const Hero = () => {
 
       {/* Terminal-like status bar with parallax */}
       <motion.div
-        initial={{ opacity: 0, x: -20 }}
+        initial={entrance({ opacity: 0, x: -20 })}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 1.2, duration: 0.6 }}
         style={{ x: statusX, opacity }}
@@ -110,7 +112,7 @@ const Hero = () => {
       <motion.div className="container relative z-10" style={{ y: textY, opacity, scale }}>
         <div className="max-w-4xl">
           <motion.div
-            initial={{ opacity: 0 }}
+            initial={entrance({ opacity: 0 })}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
             className="font-mono text-xs text-primary/60 mb-6 tracking-widest"
@@ -119,7 +121,7 @@ const Hero = () => {
           </motion.div>
 
           <motion.h1
-            initial={{ opacity: 0, y: 40 }}
+            initial={entrance({ opacity: 0, y: 40 })}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
             className="font-display text-5xl sm:text-7xl lg:text-9xl font-bold leading-[0.9] tracking-tighter"
@@ -130,7 +132,7 @@ const Hero = () => {
           </motion.h1>
 
           <motion.div
-            initial={{ opacity: 0 }}
+            initial={entrance({ opacity: 0 })}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5, duration: 0.5 }}
             className="mt-6 sm:mt-8 font-mono text-base sm:text-xl text-muted-foreground"
@@ -141,7 +143,7 @@ const Hero = () => {
           </motion.div>
 
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
+            initial={entrance({ opacity: 0, y: 20 })}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8, duration: 0.6 }}
             className="mt-6 sm:mt-8 font-mono text-xs sm:text-sm text-muted-foreground max-w-lg leading-relaxed"
@@ -152,7 +154,7 @@ const Hero = () => {
           </motion.p>
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={entrance({ opacity: 0, y: 20 })}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1, duration: 0.6 }}
             className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4"
@@ -176,7 +178,7 @@ const Hero = () => {
 
         {/* Photo with parallax */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.8, rotate: 5 }}
+          initial={entrance({ opacity: 0, scale: 0.8, rotate: 5 })}
           animate={{ opacity: 1, scale: 1, rotate: 0 }}
           transition={{ delay: 0.6, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
           style={{ y: photoY }}
@@ -210,7 +212,7 @@ const Hero = () => {
 
       {/* Scroll indicator */}
       <motion.div
-        initial={{ opacity: 0 }}
+        initial={entrance({ opacity: 0 })}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.5, duration: 0.5 }}
         style={{ opacity }}

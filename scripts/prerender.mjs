@@ -119,6 +119,25 @@ async function prerender() {
 
     const html = await page.content();
 
+    // Prerendered markup only helps if the browser can paint it. framer-motion
+    // writes its `initial` state into the inline style, which used to ship the
+    // route wrapper and the <h1> at opacity:0 — the HTML landed at ~0.8s and
+    // the page did not appear until hydration finished at ~2s. src/hooks/
+    // useEntrance skips the entrance on first load; this keeps a regression
+    // from shipping silently.
+    const hidden = [
+      /<main[^>]*id="main-content"[^>]*>\s*<div[^>]*>/,
+      /<h1[^>]*>/,
+    ]
+      .map((pattern) => html.match(pattern)?.[0])
+      .filter((tag) => tag && /opacity:\s*0[;"]/.test(tag));
+
+    if (hidden.length > 0) {
+      throw new Error(
+        `${route} prerendered invisible — ${hidden.join(" ")}`
+      );
+    }
+
     // Determine output path
     const outputDir =
       route === "/" ? DIST : join(DIST, route.replace(/^\//, ""));

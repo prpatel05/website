@@ -5,6 +5,7 @@ import { posts } from "@/data/blog-posts/registry";
 import SEO from "@/components/SEO";
 import { SITE_CARD } from "@/lib/social-cards";
 import { THUMBNAIL_SIZES, thumbnailFor } from "@/lib/blog-thumbnails";
+import { useEntrance } from "@/hooks/useEntrance";
 
 const BLOG_DESCRIPTION =
   "Articles on engineering leadership, AI, career growth, and technical architecture by Pratik Patel, CTO & Chief Architect.";
@@ -16,6 +17,7 @@ const author = {
 };
 
 const Blog = () => {
+  const entrance = useEntrance();
   // The archive is the entry point crawlers reach before any individual post,
   // so it names every post here rather than leaving them to be discovered one
   // BlogPosting at a time.
@@ -91,7 +93,7 @@ const Blog = () => {
       <div className="pt-28 pb-24">
         <div className="container">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={entrance({ opacity: 0, y: 20 })}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
@@ -111,7 +113,7 @@ const Blog = () => {
               return (
                 <motion.article
                   key={post.slug}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={entrance({ opacity: 0, y: 20 })}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: i * 0.1 }}
                 >

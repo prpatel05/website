@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { motion } from "framer-motion";
 import { useLocation } from "react-router-dom";
+import { useEntrance } from "@/hooks/useEntrance";
 
 const pageVariants = {
   initial: {
@@ -30,12 +31,13 @@ const pageVariants = {
 
 const PageTransition = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
+  const entrance = useEntrance();
 
   return (
     <motion.div
       key={location.pathname}
       variants={pageVariants}
-      initial="initial"
+      initial={entrance("initial")}
       animate="animate"
       exit="exit"
     >
