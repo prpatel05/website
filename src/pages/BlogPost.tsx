@@ -109,6 +109,7 @@ const BlogPost = () => {
         ogImageWidth={BLOG_POST_CARD.width}
         ogImageHeight={BLOG_POST_CARD.height}
         ogType="article"
+        preloadImage={post.image}
         jsonLd={blogPostJsonLd}
       />
       {/* Header */}
@@ -167,10 +168,18 @@ const BlogPost = () => {
             transition={{ delay: 0.2, duration: 0.5 }}
             className="my-10 border border-border overflow-hidden"
           >
+            {/*
+              This is the LCP element on a post page — it sits in the initial
+              viewport at every breakpoint. It must stay eager: lazy hides an
+              image from the preload scanner, so the fetch cannot start until
+              layout has run. The priority hint rides on the <link rel="preload">
+              in the head — react-dom 18 does not map a fetchPriority prop onto
+              an <img>, so putting it here only produces a console warning.
+            */}
             <img
               src={post.image}
               alt={post.title}
-              loading="lazy"
+              loading="eager"
               width={768}
               height={432}
               className="w-full aspect-video object-cover"
