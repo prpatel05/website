@@ -16,7 +16,7 @@ So you open the last agent's trace. You read its prompt, its reasoning, its tool
 
 The agent was fine. The brief it received wasn't.
 
-This is the thing that surprises people about running more than one agent: the failures stop living inside the agents and start living in the space between them. We [wrote about that shift](/blog/your-second-agent-is-the-hard-one) when you go from one agent to two. This post is about the part that comes after the realization — actually engineering that space.
+This is the thing that surprises people about running more than one agent: the failures stop living inside the agents and start living in the space between them. We [wrote about that shift](/blog/your-second-agent-is-the-hard-one/) when you go from one agent to two. This post is about the part that comes after the realization — actually engineering that space.
 
 ## The Failure Rates Are Worse Than the Demos Suggest
 
@@ -65,7 +65,7 @@ The fix is not more intelligence. It is treating the handoff as an interface wit
 
 **Pass structure, not prose.** The single highest-leverage change is to stop letting agents hand each other paragraphs. A paragraph invites paraphrase; a schema doesn't. If agent two must produce \`{ file, change, constraints[], unresolved[] }\`, then \`constraints\` cannot get quietly dropped in a rewrite — a missing field is a visible, checkable error rather than an absence nobody notices.
 
-**Make "I don't know" a first-class value.** The 6.8% clarification-failure mode exists because the schema had no slot for uncertainty. Give every handoff an explicit \`unresolved\` list, and make it legal — expected, even — for an agent to hand back work with three open questions instead of a confidently guessed answer. An agent that guesses silently is not being helpful; it is [failing quietly](/blog/agents-fail-quietly), and quiet failure is the expensive kind.
+**Make "I don't know" a first-class value.** The 6.8% clarification-failure mode exists because the schema had no slot for uncertainty. Give every handoff an explicit \`unresolved\` list, and make it legal — expected, even — for an agent to hand back work with three open questions instead of a confidently guessed answer. An agent that guesses silently is not being helpful; it is [failing quietly](/blog/agents-fail-quietly/), and quiet failure is the expensive kind.
 
 **Validate at the boundary, not at the end.** Check the handoff artifact the moment it is produced, against the contract, before the next agent starts. A malformed brief caught at the seam costs one retry. The same brief caught after three more agents have built on it costs the whole run — and by then the evidence of what went wrong has been paraphrased out of existence.
 
