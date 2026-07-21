@@ -136,22 +136,22 @@ describe("BlogPost", () => {
     it("links to the newer and older post from a middle post", () => {
       const { container } = renderBlogPost("test-post");
       expect(navLinks(container)).toEqual([
-        ["/blog/newer-post", "newerNewer Post Title"],
-        ["/blog/older-post", "olderOlder Post Title"],
+        ["/blog/newer-post/", "newerNewer Post Title"],
+        ["/blog/older-post/", "olderOlder Post Title"],
       ]);
     });
 
     it("offers only an older post on the newest post", () => {
       const { container } = renderBlogPost("newer-post");
       expect(navLinks(container)).toEqual([
-        ["/blog/test-post", "olderTest Post Title"],
+        ["/blog/test-post/", "olderTest Post Title"],
       ]);
     });
 
     it("offers only a newer post on the oldest post", () => {
       const { container } = renderBlogPost("older-post");
       expect(navLinks(container)).toEqual([
-        ["/blog/test-post", "newerTest Post Title"],
+        ["/blog/test-post/", "newerTest Post Title"],
       ]);
     });
 
@@ -159,9 +159,47 @@ describe("BlogPost", () => {
       renderBlogPost("test-post");
       expect(screen.getByText("ls ../posts").closest("a")).toHaveAttribute(
         "href",
-        "/blog"
+        "/blog/"
       );
     });
+  });
+
+  // The href half of the same rule the structured-data tests below enforce.
+  // A post page is the densest internal linking on the site — two adjacent-post
+  // links plus the archive link — so a slashless href here sends a crawler
+  // through a 301 on nearly every edge of the site graph.
+  it("points every internal link at its non-redirecting trailing-slash form", () => {
+    const { container } = renderBlogPost("test-post");
+    const hrefs = Array.from(container.querySelectorAll("a[href^='/']")).map(
+      (a) => a.getAttribute("href")
+    );
+
+    expect(hrefs).toEqual([
+      // The bare origin is the one path served without a redirect.
+      "/",
+      "/blog/newer-post/",
+      "/blog/older-post/",
+      "/blog/",
+    ]);
+  });
+
+  // Every internal href on the site now carries a trailing slash, so a client
+  // -side click hands the router "/blog/test-post/" rather than the slashless
+  // form. React Router ignores the trailing slash when matching and keeps it
+  // out of the param — if that ever stops being true, every in-app navigation
+  // on the site falls through to the 404 route.
+  it("matches the trailing-slash form of its own route", () => {
+    render(
+      <MemoryRouter initialEntries={["/blog/test-post/"]}>
+        <Routes>
+          <Route path="/blog/:slug" element={<BlogPost />} />
+          <Route path="*" element={<div>404 fallback</div>} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText("Test Post Title")).toBeInTheDocument();
+    expect(screen.queryByText("404 fallback")).not.toBeInTheDocument();
   });
 
   it("renders NotFound for unknown slug", () => {

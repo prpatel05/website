@@ -94,6 +94,22 @@ describe("Blog archive", () => {
     expect(screen.getByText("First Post")).toBeInTheDocument();
   });
 
+  // The href counterpart of the structured-data rule below: the archive is the
+  // page a crawler is most likely to enter the blog through, so a slashless
+  // post href costs a 301 on the way to every post.
+  it("points every internal link at its non-redirecting trailing-slash form", () => {
+    const { container } = renderBlog();
+    const hrefs = Array.from(container.querySelectorAll("a[href^='/']")).map(
+      (a) => a.getAttribute("href")
+    );
+
+    expect(hrefs).toEqual([
+      // The bare origin is the one path served without a redirect.
+      "/",
+      ...testPosts.map((post) => `/blog/${post.slug}/`),
+    ]);
+  });
+
   // Guard for the defect: the archive was the only page on the site emitting no
   // structured data, so crawlers had to find posts one BlogPosting at a time.
   it("emits Blog structured data listing every post", () => {

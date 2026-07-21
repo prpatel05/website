@@ -36,7 +36,7 @@ The way we sort it: every action an agent can take falls into one of four tiers,
 
 **Tier 1. Read-only.** Queries, searches, analysis. Nothing changes in the outside world. Let the agent run. Gating these just manufactures friction and trains your reviewers to rubber-stamp.
 
-**Tier 2. Reversible.** Drafts, internal state, anything that can be cleanly undone. Let the agent act, but log everything so you can walk it back. This is where an [undo button](/blog/give-your-agent-an-undo-button) earns its keep.
+**Tier 2. Reversible.** Drafts, internal state, anything that can be cleanly undone. Let the agent act, but log everything so you can walk it back. This is where an [undo button](/blog/give-your-agent-an-undo-button/) earns its keep.
 
 **Tier 3. External or third-party.** Actions that touch systems you don't fully control. Route these to a review queue instead of firing them off. The cost of being wrong just left your building.
 
