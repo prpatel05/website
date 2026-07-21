@@ -27,6 +27,22 @@ export const getPostBySlug = (slug: string): BlogPost | undefined => {
   return posts.find((p) => p.slug === slug);
 };
 
+// Bodies live beside the metadata as markdown and are fetched per post. They
+// used to be template literals on the post objects, which put all 21 articles
+// (~53KB brotli) into the chunk every route loads to render five titles on the
+// homepage. This glob is deliberately not eager: only the post on screen is
+// downloaded.
+const contents = import.meta.glob<string>("./content/*.md", {
+  query: "?raw",
+  import: "default",
+});
+
+export const loadPostContent = (slug: string): Promise<string> => {
+  const load = contents[`./content/${slug}.md`];
+  if (!load) return Promise.reject(new Error(`No content for post: ${slug}`));
+  return load();
+};
+
 // Neighbours of a post in the published order, for the links at the end of a
 // post. The list is newest first, so the entry before a post is the newer one.
 // The list is passed in rather than read from the module so the caller decides

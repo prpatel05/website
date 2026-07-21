@@ -1,8 +1,14 @@
+import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Clock, Calendar } from "lucide-react";
 import ReactMarkdown, { Components } from "react-markdown";
-import { getAdjacentPosts, getPostBySlug, posts } from "@/data/blog-posts/registry";
+import {
+  getAdjacentPosts,
+  getPostBySlug,
+  loadPostContent,
+  posts,
+} from "@/data/blog-posts/registry";
 import NotFound from "./NotFound";
 import SEO from "@/components/SEO";
 import { canonicalUrl } from "@/lib/canonical-url";
@@ -43,6 +49,18 @@ const markdownComponents: Components = {
 const BlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
   const post = slug ? getPostBySlug(slug) : undefined;
+  const [content, setContent] = useState("");
+
+  useEffect(() => {
+    if (!post) return;
+    let live = true;
+    loadPostContent(post.slug).then((md) => {
+      if (live) setContent(md);
+    });
+    return () => {
+      live = false;
+    };
+  }, [post]);
 
   if (!post) return <NotFound />;
 
@@ -209,7 +227,7 @@ const BlogPost = () => {
             className="font-mono text-sm"
           >
             <ReactMarkdown components={markdownComponents}>
-              {post.content}
+              {content}
             </ReactMarkdown>
           </motion.div>
 

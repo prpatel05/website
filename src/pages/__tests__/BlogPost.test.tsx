@@ -45,8 +45,8 @@ vi.mock("@/data/blog-posts/registry", async (importOriginal) => {
     readTime: "5 min read",
     tags: ["testing", "vitest", "react"],
     image: "/images/test.png",
-    content: `## Introduction\n\nThis is a **test paragraph** with *emphasis*.\n\n### Sub-heading\n\n- First item\n- Second item\n- Third item`,
   };
+  const testContent = `## Introduction\n\nThis is a **test paragraph** with *emphasis*.\n\n### Sub-heading\n\n- First item\n- Second item\n- Third item`;
   // Neighbours, so the prev/next links at the end of a post have somewhere to
   // point. Ordered newest first, the same as the real registry.
   const newerPost = { ...testPost, slug: "newer-post", title: "Newer Post Title" };
@@ -55,6 +55,7 @@ vi.mock("@/data/blog-posts/registry", async (importOriginal) => {
   return {
     ...actual,
     getPostBySlug: (slug: string) => all.find((p) => p.slug === slug),
+    loadPostContent: () => Promise.resolve(testContent),
     posts: all,
   };
 });
@@ -86,28 +87,29 @@ describe("BlogPost", () => {
     expect(screen.getByText("#react")).toBeInTheDocument();
   });
 
-  it("renders markdown headings", () => {
+  it("renders markdown headings", async () => {
     renderBlogPost("test-post");
-    expect(screen.getByText("Introduction")).toBeInTheDocument();
+    expect(await screen.findByText("Introduction")).toBeInTheDocument();
     expect(screen.getByText("Sub-heading")).toBeInTheDocument();
   });
 
-  it("renders markdown bold text", () => {
+  it("renders markdown bold text", async () => {
     renderBlogPost("test-post");
-    const bold = screen.getByText("test paragraph");
+    const bold = await screen.findByText("test paragraph");
     expect(bold.tagName).toBe("STRONG");
   });
 
-  it("renders custom h2 with border-left styling", () => {
+  it("renders custom h2 with border-left styling", async () => {
     const { container } = renderBlogPost("test-post");
+    await screen.findByText("Introduction");
     const h2 = container.querySelector("h2.border-l-2");
     expect(h2).toBeTruthy();
     expect(h2!.textContent).toBe("Introduction");
   });
 
-  it("renders markdown list items with custom bullets", () => {
+  it("renders markdown list items with custom bullets", async () => {
     renderBlogPost("test-post");
-    expect(screen.getByText("First item")).toBeInTheDocument();
+    expect(await screen.findByText("First item")).toBeInTheDocument();
     expect(screen.getByText("Second item")).toBeInTheDocument();
     // Check the ▸ bullet markers
     const bullets = screen.getAllByText("▸");

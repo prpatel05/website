@@ -2,7 +2,12 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it, expect } from "vitest";
-import { posts, getPostBySlug, getAdjacentPosts } from "../blog-posts/registry";
+import {
+  posts,
+  getPostBySlug,
+  getAdjacentPosts,
+  loadPostContent,
+} from "../blog-posts/registry";
 import type { BlogPost } from "../blog-posts/registry";
 
 describe("blog-posts data", () => {
@@ -22,7 +27,16 @@ describe("blog-posts data", () => {
       expect(Array.isArray(post.tags)).toBe(true);
       expect(post.tags.length).toBeGreaterThan(0);
       expect(post.image).toBeTruthy();
-      expect(post.content).toBeTruthy();
+    }
+  });
+
+  // The body lives in content/<slug>.md and is fetched on demand, so a post
+  // whose file is missing or misnamed still renders a title, a hero and an
+  // empty article. This is the check that turns that into a failure.
+  it("each post has a body file that loads", async () => {
+    for (const post of posts) {
+      const content = await loadPostContent(post.slug);
+      expect(content.trim(), `${post.slug} has an empty body`).toBeTruthy();
     }
   });
 
@@ -41,9 +55,10 @@ describe("blog-posts data", () => {
   // back. Every pratik.pa.tel path 301s to its slash form, and a markdown link
   // renders as a plain anchor, so a slashless one sends readers and crawlers
   // through a redirect that the rest of the site no longer emits.
-  it("writes internal links in a post body in their non-redirecting form", () => {
-    const offenders = posts.flatMap((post) =>
-      Array.from(post.content.matchAll(/\]\((\/[^)]*)\)/g))
+  it("writes internal links in a post body in their non-redirecting form", async () => {
+    const bodies = await Promise.all(posts.map((p) => loadPostContent(p.slug)));
+    const offenders = posts.flatMap((post, i) =>
+      Array.from(bodies[i].matchAll(/\]\((\/[^)]*)\)/g))
         .map((match) => match[1])
         // A path whose last segment carries an extension is a file, not a
         // directory index, and is served without a redirect.
