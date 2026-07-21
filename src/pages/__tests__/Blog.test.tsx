@@ -33,6 +33,7 @@ vi.mock("react-helmet-async", () => ({
 
 import Blog from "../Blog";
 import { SITE_CARD } from "@/lib/social-cards";
+import { THUMBNAIL_SIZES } from "@/lib/blog-thumbnails";
 
 const { testPosts } = vi.hoisted(() => ({
   testPosts: [
@@ -177,5 +178,34 @@ describe("Blog archive", () => {
     const crumbs = blogJsonLd(container).find((n) => n["@type"] === "BreadcrumbList");
 
     expect(crumbs.itemListElement.map((c: { name: string }) => c.name)).toEqual(["Home", "Blog"]);
+  });
+
+  // The card paints a 128x96 box. Pointing it at the 1200x670 hero shipped
+  // roughly 200x the pixels it displays — about 1.0MB across the archive — so
+  // it has to ask for the thumbnail the build emits instead.
+  it("paints the card from the generated thumbnail, not the full hero", () => {
+    const { container } = renderBlog();
+    const thumb = container.querySelector<HTMLImageElement>(
+      'img[alt="Second Post"]'
+    );
+
+    expect(thumb.getAttribute("src")).toBe("/images/thumbs/second-320w.webp");
+    expect(thumb.getAttribute("srcset")).toBe(
+      "/images/thumbs/second-320w.webp 320w, /images/thumbs/second-640w.webp 640w"
+    );
+    expect(thumb.getAttribute("sizes")).toBe(THUMBNAIL_SIZES);
+  });
+
+  // A hero the build does not own has no thumbnail to point at, so the card
+  // keeps the original rather than requesting a file that will never exist.
+  it("falls back to the hero when there is no thumbnail for it", () => {
+    const { container } = renderBlog();
+    const remote = container.querySelector<HTMLImageElement>(
+      'img[alt="First Post"]'
+    );
+
+    expect(remote.getAttribute("src")).toBe("https://cdn.example.com/first.png");
+    expect(remote.getAttribute("srcset")).toBeNull();
+    expect(remote.getAttribute("sizes")).toBeNull();
   });
 });
