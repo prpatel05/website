@@ -1,13 +1,14 @@
 /**
  * Emits the derived raster variants the site loads: the archive-card
- * thumbnails in public/images/thumbs/, and the homepage portrait in
- * public/images/portrait/.
+ * thumbnails in public/images/thumbs/, the column-width post heroes in
+ * public/images/hero/, and the homepage portrait in public/images/portrait/.
  *
- * Both exist for the same reason. The blog archive paints each hero into a
- * 128x96 box but loaded the full 1200x670 asset to do it — about 1.0MB across
- * the archive. The homepage paints a 556x556, 341KB PNG portrait into a 288px
- * box, and ships it to phones where that box is `hidden`. This resizes each
- * source once per width and the components point at the results.
+ * All three exist for the same reason. The blog archive paints each hero into
+ * a 128x96 box but loaded the full 1200x670 asset to do it — about 1.0MB
+ * across the archive. The post page paints that same asset into a 704px
+ * column. The homepage paints a 556x556, 341KB PNG portrait into a 288px box,
+ * and ships it to phones where that box is `hidden`. This resizes each source
+ * once per width and the components point at the results.
  *
  * Wired into `bun run dev` and `bun run build` rather than run by hand. New
  * posts land through an unattended auto-merge routine, so a hand-run step
@@ -22,6 +23,7 @@ import { mkdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { discoverPosts } from "./blog-posts.mjs";
+import { assertMasterWidth, HERO_QUALITY, heroTargets } from "./hero.mjs";
 import { THUMBNAIL_QUALITY, thumbnailTargets } from "./thumbnails.mjs";
 import {
   PORTRAIT_QUALITY,
@@ -83,7 +85,8 @@ for (const post of posts) {
   const targets = thumbnailTargets(post.image);
 
   if (targets.length === 0) {
-    // A remote hero, which the build does not own. The card keeps using it.
+    // A remote hero, which the build does not own. The card and the post page
+    // keep using it at full size.
     continue;
   }
 
@@ -91,6 +94,22 @@ for (const post of posts) {
     source: post.image,
     targets,
     quality: THUMBNAIL_QUALITY,
+    describe: post.slug,
+  });
+
+  // The post page's srcSet names the master itself as the wide candidate, so
+  // the master has to be as wide as the descriptor claims. Checked on every
+  // run rather than only when a variant is rebuilt: the claim is about the
+  // master, not about whether the derived file is stale.
+  const { width } = await sharp(
+    join(PUBLIC_DIR, post.image.slice(1))
+  ).metadata();
+  assertMasterWidth({ image: post.image, width, describe: post.slug });
+
+  await emit({
+    source: post.image,
+    targets: heroTargets(post.image),
+    quality: HERO_QUALITY,
     describe: post.slug,
   });
 }

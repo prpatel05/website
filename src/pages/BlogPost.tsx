@@ -6,6 +6,7 @@ import { getAdjacentPosts, getPostBySlug, posts } from "@/data/blog-posts/regist
 import NotFound from "./NotFound";
 import SEO from "@/components/SEO";
 import { canonicalUrl } from "@/lib/canonical-url";
+import { heroFor, HERO_SIZES } from "@/lib/hero";
 import { BLOG_POST_CARD } from "@/lib/social-cards";
 
 const markdownComponents: Components = {
@@ -50,6 +51,11 @@ const BlogPost = () => {
   const ogImage = post.image.startsWith("/")
     ? `https://pratik.pa.tel${post.image}`
     : post.image;
+
+  // The card scrapers keep getting the full-size master via `ogImage`; only
+  // what the page paints picks from the candidate list.
+  const hero = heroFor(post.image);
+  const heroSrc = hero?.src ?? post.image;
 
   const blogPostJsonLd = [
     {
@@ -109,7 +115,9 @@ const BlogPost = () => {
         ogImageWidth={BLOG_POST_CARD.width}
         ogImageHeight={BLOG_POST_CARD.height}
         ogType="article"
-        preloadImage={post.image}
+        preloadImage={heroSrc}
+        preloadImageSrcSet={hero?.srcSet}
+        preloadImageSizes={hero ? HERO_SIZES : undefined}
         jsonLd={blogPostJsonLd}
       />
       {/* Header */}
@@ -175,9 +183,15 @@ const BlogPost = () => {
               layout has run. The priority hint rides on the <link rel="preload">
               in the head — react-dom 18 does not map a fetchPriority prop onto
               an <img>, so putting it here only produces a console warning.
+
+              The preload in the head carries this same srcSet and sizes. If it
+              named a single href instead, the scanner and the img would run
+              different selections and the page would download the hero twice.
             */}
             <img
-              src={post.image}
+              src={heroSrc}
+              srcSet={hero?.srcSet}
+              sizes={hero ? HERO_SIZES : undefined}
               alt={post.title}
               loading="eager"
               width={768}
