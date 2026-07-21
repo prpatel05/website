@@ -134,28 +134,42 @@ const InteractiveTerminal = () => {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 40, scale: 0.95 }}
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Interactive terminal"
               className="fixed inset-x-2 sm:inset-x-4 bottom-2 sm:bottom-4 top-auto z-[201] max-w-2xl mx-auto sm:inset-x-auto sm:bottom-8 sm:w-full"
               onClick={() => inputRef.current?.focus()}
             >
               <div className="border border-border bg-card shadow-2xl overflow-hidden flex flex-col max-h-[60vh] sm:max-h-[70vh]">
                 {/* Title bar */}
                 <div className="h-9 bg-muted border-b border-border flex items-center px-4 gap-2 shrink-0">
-                  <button onClick={() => setOpen(false)} className="w-3 h-3 rounded-full bg-destructive/60 hover:bg-destructive transition-colors" />
-                  <span className="w-3 h-3 rounded-full bg-primary/40" />
-                  <span className="w-3 h-3 rounded-full bg-primary/60" />
+                  {/* Redundant mouse-only affordance mirroring the macOS traffic
+                      light. The labelled X button beside it is the control
+                      exposed to keyboard and assistive tech, so this one stays
+                      out of the focus order rather than duplicating the name. */}
+                  <button onClick={() => setOpen(false)} aria-hidden="true" tabIndex={-1} className="w-3 h-3 rounded-full bg-destructive/60 hover:bg-destructive transition-colors" />
+                  <span aria-hidden="true" className="w-3 h-3 rounded-full bg-primary/40" />
+                  <span aria-hidden="true" className="w-3 h-3 rounded-full bg-primary/60" />
                    <span className="font-mono text-[10px] text-muted-foreground ml-3 flex-1 text-center">
                      pratik.pa.tel — bash
                    </span>
                   <button
                     onClick={() => setOpen(false)}
+                    aria-label="Close terminal"
                     className="text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <X className="w-3.5 h-3.5" aria-hidden="true" />
                   </button>
                 </div>
 
                 {/* Output */}
-                <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 font-mono text-xs leading-relaxed min-h-[200px]">
+                <div
+                  ref={scrollRef}
+                  role="log"
+                  aria-live="polite"
+                  aria-label="Terminal output"
+                  className="flex-1 overflow-y-auto p-4 font-mono text-xs leading-relaxed min-h-[200px]"
+                >
                   {lines.map((line, i) => (
                     <div
                       key={i}
@@ -177,12 +191,13 @@ const InteractiveTerminal = () => {
 
                 {/* Input */}
                 <form onSubmit={handleSubmit} className="border-t border-border px-4 py-3 flex items-center gap-2 shrink-0">
-                  <span className="text-primary font-mono text-xs">$</span>
+                  <span aria-hidden="true" className="text-primary font-mono text-xs">$</span>
                   <input
                     ref={inputRef}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
+                    aria-label="Terminal command"
                     className="flex-1 bg-transparent font-mono text-xs text-foreground outline-none placeholder:text-muted-foreground/40 caret-primary"
                     placeholder='type "help" to get started...'
                     autoComplete="off"

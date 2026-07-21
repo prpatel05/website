@@ -8,7 +8,10 @@ const DIST = join(__dirname, "..", "dist");
 // Import blog post slugs dynamically by reading the prerender routes
 const STATIC_ROUTES = [
   { loc: "https://pratik.pa.tel/", changefreq: "monthly", priority: "1.0" },
-  { loc: "https://pratik.pa.tel/blog", changefreq: "weekly", priority: "0.8" },
+  // Trailing slashes are load-bearing: GitHub Pages 301-redirects the slashless
+  // form of every directory route, and a sitemap full of redirects is reported
+  // as "page with redirect — not indexed".
+  { loc: "https://pratik.pa.tel/blog/", changefreq: "weekly", priority: "0.8" },
 ];
 
 // Discover blog posts from the dist/blog directory
@@ -21,7 +24,7 @@ function discoverBlogPosts() {
   return readdirSync(blogDir, { withFileTypes: true })
     .filter((d) => d.isDirectory())
     .map((d) => ({
-      loc: `https://pratik.pa.tel/blog/${d.name}`,
+      loc: `https://pratik.pa.tel/blog/${d.name}/`,
       changefreq: "yearly",
       priority: "0.7",
     }));

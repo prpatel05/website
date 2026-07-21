@@ -1,10 +1,19 @@
+import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Clock, Calendar } from "lucide-react";
+import { ArrowLeft, ArrowRight, Clock, Calendar } from "lucide-react";
 import ReactMarkdown, { Components } from "react-markdown";
-import { getPostBySlug } from "@/data/blog-posts/registry";
+import {
+  getAdjacentPosts,
+  getPostBySlug,
+  loadPostContent,
+  posts,
+} from "@/data/blog-posts/registry";
 import NotFound from "./NotFound";
 import SEO from "@/components/SEO";
+import { canonicalUrl } from "@/lib/canonical-url";
+import { heroFor, HERO_SIZES } from "@/lib/hero";
+import { BLOG_POST_CARD } from "@/lib/social-cards";
 
 const markdownComponents: Components = {
   h2: ({ children }) => (
@@ -40,12 +49,31 @@ const markdownComponents: Components = {
 const BlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
   const post = slug ? getPostBySlug(slug) : undefined;
+  const [content, setContent] = useState("");
+
+  useEffect(() => {
+    if (!post) return;
+    let live = true;
+    loadPostContent(post.slug).then((md) => {
+      if (live) setContent(md);
+    });
+    return () => {
+      live = false;
+    };
+  }, [post]);
 
   if (!post) return <NotFound />;
+
+  const { newer, older } = getAdjacentPosts(posts, post.slug);
 
   const ogImage = post.image.startsWith("/")
     ? `https://pratik.pa.tel${post.image}`
     : post.image;
+
+  // The card scrapers keep getting the full-size master via `ogImage`; only
+  // what the page paints picks from the candidate list.
+  const hero = heroFor(post.image);
+  const heroSrc = hero?.src ?? post.image;
 
   const blogPostJsonLd = [
     {
@@ -55,7 +83,7 @@ const BlogPost = () => {
       description: post.subtitle,
       datePublished: post.dateISO,
       image: ogImage,
-      url: `https://pratik.pa.tel/blog/${post.slug}`,
+      url: canonicalUrl(`https://pratik.pa.tel/blog/${post.slug}`),
       author: {
         "@type": "Person",
         name: "Pratik Patel",
@@ -82,13 +110,13 @@ const BlogPost = () => {
           "@type": "ListItem",
           position: 2,
           name: "Blog",
-          item: "https://pratik.pa.tel/blog",
+          item: canonicalUrl("https://pratik.pa.tel/blog"),
         },
         {
           "@type": "ListItem",
           position: 3,
           name: post.title,
-          item: `https://pratik.pa.tel/blog/${post.slug}`,
+          item: canonicalUrl(`https://pratik.pa.tel/blog/${post.slug}`),
         },
       ],
     },
@@ -102,7 +130,13 @@ const BlogPost = () => {
         canonical={`https://pratik.pa.tel/blog/${post.slug}`}
         ogImage={ogImage}
         ogImageAlt={post.title}
+        ogImageWidth={BLOG_POST_CARD.width}
+        ogImageHeight={BLOG_POST_CARD.height}
         ogType="article"
+        articlePublishedTime={post.dateISO}
+        preloadImage={heroSrc}
+        preloadImageSrcSet={hero?.srcSet}
+        preloadImageSizes={hero ? HERO_SIZES : undefined}
         jsonLd={blogPostJsonLd}
       />
       {/* Header */}
@@ -161,10 +195,24 @@ const BlogPost = () => {
             transition={{ delay: 0.2, duration: 0.5 }}
             className="my-10 border border-border overflow-hidden"
           >
+            {/*
+              This is the LCP element on a post page — it sits in the initial
+              viewport at every breakpoint. It must stay eager: lazy hides an
+              image from the preload scanner, so the fetch cannot start until
+              layout has run. The priority hint rides on the <link rel="preload">
+              in the head — react-dom 18 does not map a fetchPriority prop onto
+              an <img>, so putting it here only produces a console warning.
+
+              The preload in the head carries this same srcSet and sizes. If it
+              named a single href instead, the scanner and the img would run
+              different selections and the page would download the hero twice.
+            */}
             <img
-              src={post.image}
+              src={heroSrc}
+              srcSet={hero?.srcSet}
+              sizes={hero ? HERO_SIZES : undefined}
               alt={post.title}
-              loading="lazy"
+              loading="eager"
               width={768}
               height={432}
               className="w-full aspect-video object-cover"
@@ -179,7 +227,7 @@ const BlogPost = () => {
             className="font-mono text-sm"
           >
             <ReactMarkdown components={markdownComponents}>
-              {post.content}
+              {content}
             </ReactMarkdown>
           </motion.div>
 
@@ -188,18 +236,56 @@ const BlogPost = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6, duration: 0.5 }}
-            className="mt-16 pt-8 border-t border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+            className="mt-16 pt-8 border-t border-border"
           >
-            <Link
-              to="/#writing"
-              className="font-mono text-xs text-primary hover:text-foreground transition-colors flex items-center gap-2"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              ls ../posts
-            </Link>
-            <span className="font-mono text-[10px] text-muted-foreground">
-              © {new Date().getFullYear()} PRATIK PATEL
-            </span>
+            {(newer || older) && (
+              <nav
+                aria-label="More posts"
+                className="grid gap-4 sm:grid-cols-2 mb-8"
+              >
+                {newer && (
+                  <Link
+                    to={`/blog/${newer.slug}/`}
+                    className="group border border-border p-4 hover:border-primary/50 transition-colors"
+                  >
+                    <span className="font-mono text-[10px] text-muted-foreground flex items-center gap-2">
+                      <ArrowLeft className="w-3 h-3" />
+                      newer
+                    </span>
+                    <span className="block mt-2 font-display text-base font-bold text-foreground group-hover:text-primary transition-colors">
+                      {newer.title}
+                    </span>
+                  </Link>
+                )}
+                {older && (
+                  <Link
+                    to={`/blog/${older.slug}/`}
+                    className="group border border-border p-4 hover:border-primary/50 transition-colors sm:col-start-2 sm:text-right"
+                  >
+                    <span className="font-mono text-[10px] text-muted-foreground flex items-center gap-2 sm:justify-end">
+                      older
+                      <ArrowRight className="w-3 h-3" />
+                    </span>
+                    <span className="block mt-2 font-display text-base font-bold text-foreground group-hover:text-primary transition-colors">
+                      {older.title}
+                    </span>
+                  </Link>
+                )}
+              </nav>
+            )}
+
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <Link
+                to="/blog/"
+                className="font-mono text-xs text-primary hover:text-foreground transition-colors flex items-center gap-2"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                ls ../posts
+              </Link>
+              <span className="font-mono text-[10px] text-muted-foreground">
+                © {new Date().getFullYear()} PRATIK PATEL
+              </span>
+            </div>
           </motion.div>
         </div>
       </article>

@@ -31,6 +31,11 @@ vi.mock("framer-motion", () => {
 });
 
 import Hero from "../Hero";
+import {
+  PORTRAIT_SIZES,
+  PORTRAIT_SRC,
+  PORTRAIT_SRCSET,
+} from "@/lib/portrait";
 
 const ROLES = [
   "CTO & Chief Architect",
@@ -162,5 +167,30 @@ describe("Hero – static content", () => {
     render(<Hero />);
     expect(screen.getByText("./contact --init")).toBeInTheDocument();
     expect(screen.getByText("cat resume.pdf")).toBeInTheDocument();
+  });
+});
+
+describe("Hero – portrait", () => {
+  // The wrapper is `hidden md:block`, which does not cancel the fetch, so a
+  // phone downloads whatever this points at. Pointing it back at the 341KB
+  // PNG master would be invisible on screen and expensive on the wire.
+  it("loads the generated variants, not the PNG master", () => {
+    render(<Hero />);
+    const portrait = screen.getByAltText("Pratik Patel");
+
+    expect(portrait.getAttribute("src")).toBe(PORTRAIT_SRC);
+    expect(portrait.getAttribute("srcset")).toBe(PORTRAIT_SRCSET);
+    expect(portrait.getAttribute("sizes")).toBe(PORTRAIT_SIZES);
+    expect(portrait.getAttribute("src")).not.toContain(".png");
+  });
+
+  // Without both, the box has no aspect ratio until the bytes arrive and the
+  // rest of the hero shifts under it.
+  it("reserves the box", () => {
+    render(<Hero />);
+    const portrait = screen.getByAltText("Pratik Patel");
+
+    expect(portrait.getAttribute("width")).toBe("288");
+    expect(portrait.getAttribute("height")).toBe("288");
   });
 });

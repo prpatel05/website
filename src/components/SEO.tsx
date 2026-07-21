@@ -1,4 +1,8 @@
 import { Helmet } from "react-helmet-async";
+import { canonicalUrl } from "@/lib/canonical-url";
+
+/** The attribution line every card renders above the title. */
+const SITE_NAME = "Pratik Patel";
 
 interface SEOProps {
   title: string;
@@ -6,7 +10,39 @@ interface SEOProps {
   canonical: string;
   ogImage?: string;
   ogImageAlt?: string;
+  /**
+   * Declared so the first scrape can pick the large-card layout without
+   * refetching the image. Blog cards and the homepage card differ in height,
+   * so these stay per-page rather than being hardcoded here.
+   */
+  ogImageWidth?: number;
+  ogImageHeight?: number;
   ogType?: string;
+  /**
+   * Publication date as `YYYY-MM-DD`. Only meaningful alongside
+   * `ogType="article"`, which is a promise to scrapers that the `article:*`
+   * block follows; without it LinkedIn renders the card with no date, so a
+   * post from this week and one from last year look the same in the feed.
+   * Widened to the feed's noon-UTC instant so the card and the RSS item
+   * cannot disagree about which day a post belongs to.
+   */
+  articlePublishedTime?: string;
+  /**
+   * Same-origin path of the image that paints as LCP. Preloading it from the
+   * head lets the scanner start the fetch before the parser reaches the <img>.
+   * Must be the identical URL the <img> requests — an absolute origin here
+   * would resolve to a second, separate download off pratik.pa.tel.
+   */
+  preloadImage?: string;
+  /**
+   * The `srcset`/`sizes` the <img> resolves, when it has them. A preload that
+   * names a single `href` against an <img> that picks from a srcset is two
+   * downloads, not one: the scanner fetches the href and the img then picks
+   * whatever its own candidate list says. These have to be passed through so
+   * the preload runs the same selection.
+   */
+  preloadImageSrcSet?: string;
+  preloadImageSizes?: string;
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
 
@@ -16,23 +52,68 @@ const SEO = ({
   canonical,
   ogImage,
   ogImageAlt,
+  ogImageWidth,
+  ogImageHeight,
   ogType = "website",
+  articlePublishedTime,
+  preloadImage,
+  preloadImageSrcSet,
+  preloadImageSizes,
   jsonLd,
 }: SEOProps) => {
   const imageAlt = ogImageAlt ?? title;
+  const href = canonicalUrl(canonical);
 
   return (
     <Helmet>
       <title>{title}</title>
       <meta name="description" content={description} />
-      <link rel="canonical" href={canonical} />
+      <link rel="canonical" href={href} />
+      {/*
+        The srcset pair is spread rather than passed straight through:
+        react-helmet-async writes every prop it is handed with setAttribute,
+        which turns an `undefined` into `imagesrcset=""`. An empty candidate
+        list matches nothing, so a hero with no variants — a remote one — would
+        end up preloading nothing at all.
+      */}
+      {preloadImage && (
+        <link
+          rel="preload"
+          as="image"
+          href={preloadImage}
+          {...(preloadImageSrcSet
+            ? {
+                imageSrcSet: preloadImageSrcSet,
+                imageSizes: preloadImageSizes,
+              }
+            : {})}
+          fetchPriority="high"
+        />
+      )}
 
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
-      <meta property="og:url" content={canonical} />
+      <meta property="og:url" content={href} />
       <meta property="og:type" content={ogType} />
+      <meta property="og:site_name" content={SITE_NAME} />
+      <meta property="og:locale" content="en_US" />
+      {ogType === "article" && articlePublishedTime && (
+        <meta
+          property="article:published_time"
+          content={`${articlePublishedTime}T12:00:00.000Z`}
+        />
+      )}
+      {ogType === "article" && (
+        <meta property="article:author" content={SITE_NAME} />
+      )}
       {ogImage && <meta property="og:image" content={ogImage} />}
       {ogImage && <meta property="og:image:alt" content={imageAlt} />}
+      {ogImage && ogImageWidth && (
+        <meta property="og:image:width" content={String(ogImageWidth)} />
+      )}
+      {ogImage && ogImageHeight && (
+        <meta property="og:image:height" content={String(ogImageHeight)} />
+      )}
 
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={title} />

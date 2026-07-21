@@ -2,7 +2,13 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it, expect } from "vitest";
-import { posts, getPostBySlug } from "../blog-posts/registry";
+import {
+  posts,
+  getPostBySlug,
+  getAdjacentPosts,
+  loadPostContent,
+} from "../blog-posts/registry";
+import type { BlogPost } from "../blog-posts/registry";
 
 describe("blog-posts data", () => {
   it("exports a non-empty posts array", () => {
@@ -21,7 +27,16 @@ describe("blog-posts data", () => {
       expect(Array.isArray(post.tags)).toBe(true);
       expect(post.tags.length).toBeGreaterThan(0);
       expect(post.image).toBeTruthy();
-      expect(post.content).toBeTruthy();
+    }
+  });
+
+  // The body lives in content/<slug>.md and is fetched on demand, so a post
+  // whose file is missing or misnamed still renders a title, a hero and an
+  // empty article. This is the check that turns that into a failure.
+  it("each post has a body file that loads", async () => {
+    for (const post of posts) {
+      const content = await loadPostContent(post.slug);
+      expect(content.trim(), `${post.slug} has an empty body`).toBeTruthy();
     }
   });
 
@@ -33,6 +48,29 @@ describe("blog-posts data", () => {
   it("each post has a unique image path", () => {
     const images = posts.map((p) => p.image);
     expect(new Set(images).size).toBe(images.length);
+  });
+
+  // Post bodies are the one place internal links are hand-written rather than
+  // built from a slug, so they are where the trailing-slash convention drifts
+  // back. Every pratik.pa.tel path 301s to its slash form, and a markdown link
+  // renders as a plain anchor, so a slashless one sends readers and crawlers
+  // through a redirect that the rest of the site no longer emits.
+  it("writes internal links in a post body in their non-redirecting form", async () => {
+    const bodies = await Promise.all(posts.map((p) => loadPostContent(p.slug)));
+    const offenders = posts.flatMap((post, i) =>
+      Array.from(bodies[i].matchAll(/\]\((\/[^)]*)\)/g))
+        .map((match) => match[1])
+        // A path whose last segment carries an extension is a file, not a
+        // directory index, and is served without a redirect.
+        .filter((href) => {
+          const [path] = href.split(/[?#]/);
+          const lastSegment = path.slice(path.lastIndexOf("/") + 1);
+          return !path.endsWith("/") && !lastSegment.includes(".");
+        })
+        .map((href) => `${post.slug}: ${href}`)
+    );
+
+    expect(offenders).toEqual([]);
   });
 
   // Guards the discovery contract: dropping a .ts file into the directory must
@@ -149,6 +187,46 @@ describe("getPostBySlug", () => {
       const found = getPostBySlug(post.slug);
       expect(found).toBeDefined();
       expect(found!.title).toBe(post.title);
+    }
+  });
+});
+
+describe("getAdjacentPosts", () => {
+  // Newest first, matching the order registry.ts exports.
+  const stub = (slug: string) => ({ slug }) as BlogPost;
+  const list = [stub("newest"), stub("middle"), stub("oldest")];
+
+  it("gives the newest post no newer neighbour", () => {
+    const { newer, older } = getAdjacentPosts(list, "newest");
+    expect(newer).toBeUndefined();
+    expect(older!.slug).toBe("middle");
+  });
+
+  it("gives the oldest post no older neighbour", () => {
+    const { newer, older } = getAdjacentPosts(list, "oldest");
+    expect(newer!.slug).toBe("middle");
+    expect(older).toBeUndefined();
+  });
+
+  it("gives a middle post both neighbours", () => {
+    const { newer, older } = getAdjacentPosts(list, "middle");
+    expect(newer!.slug).toBe("newest");
+    expect(older!.slug).toBe("oldest");
+  });
+
+  it("returns no neighbours for a slug that is not in the list", () => {
+    expect(getAdjacentPosts(list, "not-a-post")).toEqual({});
+  });
+
+  it("returns no neighbours when the list holds a single post", () => {
+    expect(getAdjacentPosts([stub("only")], "only")).toEqual({});
+  });
+
+  it("walks the real post list end to end without a gap", () => {
+    for (const [i, post] of posts.entries()) {
+      const { newer, older } = getAdjacentPosts(posts, post.slug);
+      expect(newer?.slug).toBe(posts[i - 1]?.slug);
+      expect(older?.slug).toBe(posts[i + 1]?.slug);
     }
   });
 });
