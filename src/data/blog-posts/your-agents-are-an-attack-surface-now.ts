@@ -56,7 +56,7 @@ The useful reframe is that agents don't have a risk level. They have an *autonom
 
 **Level 4 — Act Autonomously.** The agent acts within guardrails; humans review exceptions, logs, and aggregate outcomes rather than individual decisions. Actions now happen at a speed and scale that outpaces human oversight by design. This is the level that demands continuous monitoring, enforced guardrails, rapid rollback, circuit breakers that halt operation on threshold violations, and named ownership of agent behavior.
 
-If that ladder feels familiar, it should. We [argued a version of it from product instinct](/blog/agent-permissions-are-product-design) — that the permission surface *is* the product, and capability should be granted in increments rather than handed over wholesale. The interesting development is that the industry analysts have now converged on the same shape from the governance side. Two different disciplines, walking toward the same ladder.
+If that ladder feels familiar, it should. We [argued a version of it from product instinct](/blog/agent-permissions-are-product-design/) — that the permission surface *is* the product, and capability should be granted in increments rather than handed over wholesale. The interesting development is that the industry analysts have now converged on the same shape from the governance side. Two different disciplines, walking toward the same ladder.
 
 ## The Part That Should Worry You
 
@@ -78,7 +78,7 @@ I'm wary of ending on a checklist, because checklists are how governance became 
 
 **Make approval expensive enough to be real.** If a human is the control at Level 3, then approval fatigue is a security vulnerability, and it should be monitored like one. If people are approving 200 actions a day, you don't have a control, you have a formality with an audit trail.
 
-**Build the rollback before you need it.** Circuit breakers and rapid rollback are Level 4 requirements precisely because at Level 4 the damage outpaces the human. This is the same argument as [giving your agent an undo button](/blog/give-your-agent-an-undo-button), promoted from a nice developer affordance to an organizational control.
+**Build the rollback before you need it.** Circuit breakers and rapid rollback are Level 4 requirements precisely because at Level 4 the damage outpaces the human. This is the same argument as [giving your agent an undo button](/blog/give-your-agent-an-undo-button/), promoted from a nice developer affordance to an organizational control.
 
 **Name an owner.** An agent with no named owner has no one whose job it is to notice it drifted a rung upward when someone quietly granted it write access.
 
