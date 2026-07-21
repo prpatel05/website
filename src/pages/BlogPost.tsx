@@ -14,6 +14,7 @@ import SEO from "@/components/SEO";
 import { canonicalUrl } from "@/lib/canonical-url";
 import { heroFor, HERO_SIZES } from "@/lib/hero";
 import { BLOG_POST_CARD } from "@/lib/social-cards";
+import { useEntrance } from "@/hooks/useEntrance";
 
 const markdownComponents: Components = {
   h2: ({ children }) => (
@@ -50,6 +51,7 @@ const BlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
   const post = slug ? getPostBySlug(slug) : undefined;
   const [content, setContent] = useState("");
+  const entrance = useEntrance();
 
   useEffect(() => {
     if (!post) return;
@@ -156,7 +158,7 @@ const BlogPost = () => {
         <div className="container max-w-3xl">
           {/* Meta */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={entrance({ opacity: 0, y: 20 })}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
@@ -190,7 +192,7 @@ const BlogPost = () => {
 
           {/* Hero image */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={entrance({ opacity: 0, y: 20 })}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.5 }}
             className="my-10 border border-border overflow-hidden"
@@ -221,7 +223,7 @@ const BlogPost = () => {
 
           {/* Content */}
           <motion.div
-            initial={{ opacity: 0 }}
+            initial={entrance({ opacity: 0 })}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4, duration: 0.6 }}
             className="font-mono text-sm"
@@ -233,7 +235,7 @@ const BlogPost = () => {
 
           {/* Footer */}
           <motion.div
-            initial={{ opacity: 0 }}
+            initial={entrance({ opacity: 0 })}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6, duration: 0.5 }}
             className="mt-16 pt-8 border-t border-border"

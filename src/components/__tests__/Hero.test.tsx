@@ -30,7 +30,17 @@ vi.mock("framer-motion", () => {
   };
 });
 
+import { MemoryRouter } from "react-router-dom";
 import Hero from "../Hero";
+
+// Hero reads the router location to decide whether to play its entrance
+// animation, so it only renders under a Router.
+const renderHero = () =>
+  render(
+    <MemoryRouter>
+      <Hero />
+    </MemoryRouter>
+  );
 import {
   PORTRAIT_SIZES,
   PORTRAIT_SRC,
@@ -63,7 +73,7 @@ describe("Hero – typing effect", () => {
   });
 
   it("starts typing the first role character by character", () => {
-    render(<Hero />);
+    renderHero();
 
     const role = ROLES[0]; // "CTO & Chief Architect"
 
@@ -74,7 +84,7 @@ describe("Hero – typing effect", () => {
   });
 
   it("fully types the first role then pauses", () => {
-    render(<Hero />);
+    renderHero();
 
     const role = ROLES[0];
 
@@ -91,7 +101,7 @@ describe("Hero – typing effect", () => {
   });
 
   it("deletes the role after the pause", () => {
-    render(<Hero />);
+    renderHero();
 
     const role = ROLES[0];
 
@@ -111,7 +121,7 @@ describe("Hero – typing effect", () => {
   });
 
   it("cycles to the next role after full delete", () => {
-    render(<Hero />);
+    renderHero();
 
     const role1 = ROLES[0];
 
@@ -132,7 +142,7 @@ describe("Hero – typing effect", () => {
   });
 
   it("wraps around to the first role after all roles cycle", () => {
-    render(<Hero />);
+    renderHero();
 
     // Cycle through all 4 roles
     for (const role of ROLES) {
@@ -151,20 +161,20 @@ describe("Hero – typing effect", () => {
 
 describe("Hero – static content", () => {
   it("renders the name", () => {
-    render(<Hero />);
+    renderHero();
     expect(screen.getByText("Pratik")).toBeInTheDocument();
     expect(screen.getByText("Patel")).toBeInTheDocument();
   });
 
   it("renders the bio paragraph", () => {
-    render(<Hero />);
+    renderHero();
     expect(
       screen.getByText(/Technology executive and hands-on architect/i)
     ).toBeInTheDocument();
   });
 
   it("renders CTA links", () => {
-    render(<Hero />);
+    renderHero();
     expect(screen.getByText("./contact --init")).toBeInTheDocument();
     expect(screen.getByText("cat resume.pdf")).toBeInTheDocument();
   });
@@ -175,7 +185,7 @@ describe("Hero – portrait", () => {
   // phone downloads whatever this points at. Pointing it back at the 341KB
   // PNG master would be invisible on screen and expensive on the wire.
   it("loads the generated variants, not the PNG master", () => {
-    render(<Hero />);
+    renderHero();
     const portrait = screen.getByAltText("Pratik Patel");
 
     expect(portrait.getAttribute("src")).toBe(PORTRAIT_SRC);
@@ -187,7 +197,7 @@ describe("Hero – portrait", () => {
   // Without both, the box has no aspect ratio until the bytes arrive and the
   // rest of the hero shifts under it.
   it("reserves the box", () => {
-    render(<Hero />);
+    renderHero();
     const portrait = screen.getByAltText("Pratik Patel");
 
     expect(portrait.getAttribute("width")).toBe("288");
