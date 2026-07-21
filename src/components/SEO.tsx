@@ -22,6 +22,15 @@ interface SEOProps {
    * would resolve to a second, separate download off pratik.pa.tel.
    */
   preloadImage?: string;
+  /**
+   * The `srcset`/`sizes` the <img> resolves, when it has them. A preload that
+   * names a single `href` against an <img> that picks from a srcset is two
+   * downloads, not one: the scanner fetches the href and the img then picks
+   * whatever its own candidate list says. These have to be passed through so
+   * the preload runs the same selection.
+   */
+  preloadImageSrcSet?: string;
+  preloadImageSizes?: string;
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
 
@@ -35,6 +44,8 @@ const SEO = ({
   ogImageHeight,
   ogType = "website",
   preloadImage,
+  preloadImageSrcSet,
+  preloadImageSizes,
   jsonLd,
 }: SEOProps) => {
   const imageAlt = ogImageAlt ?? title;
@@ -45,11 +56,24 @@ const SEO = ({
       <title>{title}</title>
       <meta name="description" content={description} />
       <link rel="canonical" href={href} />
+      {/*
+        The srcset pair is spread rather than passed straight through:
+        react-helmet-async writes every prop it is handed with setAttribute,
+        which turns an `undefined` into `imagesrcset=""`. An empty candidate
+        list matches nothing, so a hero with no variants — a remote one — would
+        end up preloading nothing at all.
+      */}
       {preloadImage && (
         <link
           rel="preload"
           as="image"
           href={preloadImage}
+          {...(preloadImageSrcSet
+            ? {
+                imageSrcSet: preloadImageSrcSet,
+                imageSizes: preloadImageSizes,
+              }
+            : {})}
           fetchPriority="high"
         />
       )}

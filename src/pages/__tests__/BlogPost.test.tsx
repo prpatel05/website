@@ -117,7 +117,7 @@ describe("BlogPost", () => {
   it("renders hero image with correct src and alt", () => {
     renderBlogPost("test-post");
     const img = screen.getByAltText("Test Post Title");
-    expect(img).toHaveAttribute("src", "/images/test.png");
+    expect(img).toHaveAttribute("src", "/images/hero/test-704w.webp");
   });
 
   // The hero is the LCP element on a post page. It was lazy for a while, which
@@ -140,6 +140,33 @@ describe("BlogPost", () => {
       // instead of priming the one the <img> makes.
       expect(preload!.getAttribute("href")).toBe(
         screen.getByAltText("Test Post Title").getAttribute("src")
+      );
+    });
+
+    // The hero paints into a 704px column, so the <img> picks from a candidate
+    // list rather than naming one file. A preload that carried only `href`
+    // would run a different selection from the <img> and cost a second
+    // download — react-helmet-async passes props through with setAttribute, so
+    // this is also what proves the camelCase pair survives that pass.
+    it("gives the preload the same candidate list as the img", () => {
+      const { container } = renderBlogPost("test-post");
+      const preload = container.querySelector('link[rel="preload"][as="image"]');
+      const img = screen.getByAltText("Test Post Title");
+
+      expect(img).toHaveAttribute(
+        "srcset",
+        "/images/hero/test-704w.webp 704w, " +
+          "/images/hero/test-960w.webp 960w, " +
+          "/images/test.png 1200w"
+      );
+      expect(preload!.getAttribute("imagesrcset")).toBe(
+        img.getAttribute("srcset")
+      );
+      expect(preload!.getAttribute("imagesizes")).toBe(
+        img.getAttribute("sizes")
+      );
+      expect(preload!.getAttribute("imagesizes")).toBe(
+        "(min-width: 768px) 704px, calc(100vw - 4rem)"
       );
     });
   });
