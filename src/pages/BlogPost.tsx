@@ -1,8 +1,8 @@
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Clock, Calendar } from "lucide-react";
+import { ArrowLeft, ArrowRight, Clock, Calendar } from "lucide-react";
 import ReactMarkdown, { Components } from "react-markdown";
-import { getPostBySlug } from "@/data/blog-posts/registry";
+import { getAdjacentPosts, getPostBySlug, posts } from "@/data/blog-posts/registry";
 import NotFound from "./NotFound";
 import SEO from "@/components/SEO";
 import { canonicalUrl } from "@/lib/canonical-url";
@@ -44,6 +44,8 @@ const BlogPost = () => {
   const post = slug ? getPostBySlug(slug) : undefined;
 
   if (!post) return <NotFound />;
+
+  const { newer, older } = getAdjacentPosts(posts, post.slug);
 
   const ogImage = post.image.startsWith("/")
     ? `https://pratik.pa.tel${post.image}`
@@ -192,18 +194,56 @@ const BlogPost = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6, duration: 0.5 }}
-            className="mt-16 pt-8 border-t border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+            className="mt-16 pt-8 border-t border-border"
           >
-            <Link
-              to="/#writing"
-              className="font-mono text-xs text-primary hover:text-foreground transition-colors flex items-center gap-2"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              ls ../posts
-            </Link>
-            <span className="font-mono text-[10px] text-muted-foreground">
-              © {new Date().getFullYear()} PRATIK PATEL
-            </span>
+            {(newer || older) && (
+              <nav
+                aria-label="More posts"
+                className="grid gap-4 sm:grid-cols-2 mb-8"
+              >
+                {newer && (
+                  <Link
+                    to={`/blog/${newer.slug}`}
+                    className="group border border-border p-4 hover:border-primary/50 transition-colors"
+                  >
+                    <span className="font-mono text-[10px] text-muted-foreground flex items-center gap-2">
+                      <ArrowLeft className="w-3 h-3" />
+                      newer
+                    </span>
+                    <span className="block mt-2 font-display text-base font-bold text-foreground group-hover:text-primary transition-colors">
+                      {newer.title}
+                    </span>
+                  </Link>
+                )}
+                {older && (
+                  <Link
+                    to={`/blog/${older.slug}`}
+                    className="group border border-border p-4 hover:border-primary/50 transition-colors sm:col-start-2 sm:text-right"
+                  >
+                    <span className="font-mono text-[10px] text-muted-foreground flex items-center gap-2 sm:justify-end">
+                      older
+                      <ArrowRight className="w-3 h-3" />
+                    </span>
+                    <span className="block mt-2 font-display text-base font-bold text-foreground group-hover:text-primary transition-colors">
+                      {older.title}
+                    </span>
+                  </Link>
+                )}
+              </nav>
+            )}
+
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <Link
+                to="/blog"
+                className="font-mono text-xs text-primary hover:text-foreground transition-colors flex items-center gap-2"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                ls ../posts
+              </Link>
+              <span className="font-mono text-[10px] text-muted-foreground">
+                © {new Date().getFullYear()} PRATIK PATEL
+              </span>
+            </div>
           </motion.div>
         </div>
       </article>
