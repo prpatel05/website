@@ -1,6 +1,9 @@
 import { Helmet } from "react-helmet-async";
 import { canonicalUrl } from "@/lib/canonical-url";
 
+/** The attribution line every card renders above the title. */
+const SITE_NAME = "Pratik Patel";
+
 interface SEOProps {
   title: string;
   description: string;
@@ -15,6 +18,15 @@ interface SEOProps {
   ogImageWidth?: number;
   ogImageHeight?: number;
   ogType?: string;
+  /**
+   * Publication date as `YYYY-MM-DD`. Only meaningful alongside
+   * `ogType="article"`, which is a promise to scrapers that the `article:*`
+   * block follows; without it LinkedIn renders the card with no date, so a
+   * post from this week and one from last year look the same in the feed.
+   * Widened to the feed's noon-UTC instant so the card and the RSS item
+   * cannot disagree about which day a post belongs to.
+   */
+  articlePublishedTime?: string;
   /**
    * Same-origin path of the image that paints as LCP. Preloading it from the
    * head lets the scanner start the fetch before the parser reaches the <img>.
@@ -43,6 +55,7 @@ const SEO = ({
   ogImageWidth,
   ogImageHeight,
   ogType = "website",
+  articlePublishedTime,
   preloadImage,
   preloadImageSrcSet,
   preloadImageSizes,
@@ -82,6 +95,17 @@ const SEO = ({
       <meta property="og:description" content={description} />
       <meta property="og:url" content={href} />
       <meta property="og:type" content={ogType} />
+      <meta property="og:site_name" content={SITE_NAME} />
+      <meta property="og:locale" content="en_US" />
+      {ogType === "article" && articlePublishedTime && (
+        <meta
+          property="article:published_time"
+          content={`${articlePublishedTime}T12:00:00.000Z`}
+        />
+      )}
+      {ogType === "article" && (
+        <meta property="article:author" content={SITE_NAME} />
+      )}
       {ogImage && <meta property="og:image" content={ogImage} />}
       {ogImage && <meta property="og:image:alt" content={imageAlt} />}
       {ogImage && ogImageWidth && (

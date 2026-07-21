@@ -283,6 +283,31 @@ describe("BlogPost", () => {
     expect(meta("og:image:height")).toBe(String(BLOG_POST_CARD.height));
   });
 
+  // og:type="article" is a promise that the article:* block follows it.
+  // Scrapers that honour it — LinkedIn, where these posts are distributed —
+  // render the card with no date when it does not, so every post in the feed
+  // looks equally old.
+  describe("article metadata", () => {
+    const meta = (property: string) => {
+      const { container } = renderBlogPost("test-post");
+      return container
+        .querySelector(`meta[property="${property}"]`)
+        ?.getAttribute("content");
+    };
+
+    it("dates the article at the same instant the RSS item uses", () => {
+      // generate-feed.mjs widens dateISO with T12:00:00Z. Diverging here would
+      // put the card and the feed on different days for readers either side of
+      // UTC.
+      expect(meta("article:published_time")).toBe("2026-01-01T12:00:00.000Z");
+    });
+
+    it("names the author and the site on the card", () => {
+      expect(meta("article:author")).toBe("Pratik Patel");
+      expect(meta("og:site_name")).toBe("Pratik Patel");
+    });
+  });
+
   // The JSON-LD here is hand-built, so it does not pick up the normalization
   // SEO.tsx applies to canonical/og:url. Every page URL it declares has to
   // carry the trailing slash on its own, or the structured data points at
