@@ -1,5 +1,10 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
+import {
+  PORTRAIT_SIZES,
+  PORTRAIT_SRC,
+  PORTRAIT_SRCSET,
+} from "@/lib/portrait";
 
 const roles = [
   "CTO & Chief Architect",
@@ -179,8 +184,17 @@ const Hero = () => {
         >
           <div className="relative">
             <div className="w-56 h-56 lg:w-72 lg:h-72 overflow-hidden border border-primary/20 box-glow">
+              {/*
+                The master is a 341KB PNG for a box that is never wider than
+                288px, and this wrapper is `hidden md:block` — `display:none`
+                does not cancel the fetch, so a phone pays for all of it and
+                paints none of it. The build emits a WebP per width instead;
+                see src/lib/portrait.ts.
+              */}
               <img
-                src="/images/headshot.png"
+                src={PORTRAIT_SRC}
+                srcSet={PORTRAIT_SRCSET}
+                sizes={PORTRAIT_SIZES}
                 alt="Pratik Patel"
                 width={288}
                 height={288}
