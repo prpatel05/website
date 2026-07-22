@@ -150,3 +150,17 @@
 .glitch-hover:hover {
   animation: glitch 0.3s ease-in-out;
 }
+
+/*
+ * The CSS half of the reduced-motion contract — framer-motion's half is the
+ * `MotionConfig reducedMotion="user"` in App.tsx. The cursor stops flashing
+ * and holds visible; the logo stops jittering on hover. Hover/colour
+ * transitions stay: they are short, non-vestibular, and Radix reads their
+ * transitionend.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .cursor-blink,
+  .glitch-hover:hover {
+    animation: none;
+  }
+}

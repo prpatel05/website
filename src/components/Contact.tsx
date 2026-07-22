@@ -1,6 +1,7 @@
-import { m, useTransform } from "framer-motion";
+import { m } from "framer-motion";
 import { Mail, Phone } from "lucide-react";
 import { socials } from "@/data/socials";
+import { useParallax } from "@/hooks/useParallax";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import SectionHeader from "./SectionHeader";
 
@@ -9,7 +10,7 @@ const Contact = () => {
     opacityRange: [0, 0.2],
   });
 
-  const decorY = useTransform(scrollYProgress, [0, 1], ["100px", "-60px"]);
+  const decorY = useParallax(scrollYProgress, [0, 1], ["100px", "-60px"]);
 
   return (
     <section ref={ref} id="contact" className="py-16 sm:py-24 lg:py-40 relative overflow-hidden">
