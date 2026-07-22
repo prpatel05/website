@@ -73,6 +73,36 @@ describe("blog-posts data", () => {
     expect(offenders).toEqual([]);
   });
 
+  // Brand v1.9 §The `$` Character, a hard stop the board mandated in PRA-640
+  // after a shell variable in a post read as a ticker to someone scrolling
+  // past. A dollar sign in published copy is only ever a price, so it passes
+  // only when stuck directly to a digit ($9, $1.25, $295M). Everything else
+  // fails: a bare $, a shell variable named in a sentence, "$ 40" with a
+  // space, and the lookalikes ＄ and ﹩. The social gate has enforced this
+  // since 2026-07-21 but never saw blog copy, which is the hole this closes.
+  //
+  // Fenced blocks and inline code spans are exempt: $PATH inside a shell
+  // sample is correct, and stripping it would make the sample wrong.
+  it("uses $ in post copy only as a price", async () => {
+    const bodies = await Promise.all(posts.map((p) => loadPostContent(p.slug)));
+    const stripCode = (markdown: string) =>
+      markdown.replace(/```[\s\S]*?```/g, "").replace(/`[^`\n]*`/g, "");
+
+    const offenders = posts.flatMap((post, i) =>
+      [post.title, post.subtitle, ...post.tags, stripCode(bodies[i])].flatMap(
+        (text) =>
+          Array.from(text.matchAll(/[$＄﹩](?!\d)/g)).map(
+            (match) =>
+              `${post.slug}: ...${text
+                .slice(Math.max(0, match.index - 30), match.index + 30)
+                .replace(/\s+/g, " ")}...`
+          )
+      )
+    );
+
+    expect(offenders).toEqual([]);
+  });
+
   // Guards the discovery contract: dropping a .ts file into the directory must
   // publish it, with no shared index to edit. Filenames need not match slugs.
   it("discovers every post file in the directory", () => {
