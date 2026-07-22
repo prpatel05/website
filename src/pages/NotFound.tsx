@@ -1,15 +1,27 @@
 import { Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { posts } from "@/data/blog-posts/registry";
+import { useEntrance } from "@/hooks/useEntrance";
 
 const NotFound = () => {
+  const entrance = useEntrance();
   const recentPosts = posts.slice(0, 3);
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4">
+      {/*
+        This page is prerendered to dist/404.html, which GitHub Pages serves —
+        with a real 404 status — for every unknown URL. No canonical: pointing
+        one at the homepage is the soft-404 signal this change removes.
+      */}
+      <Helmet>
+        <title>404 — Page Not Found | Pratik Patel</title>
+        <meta name="robots" content="noindex" />
+      </Helmet>
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={entrance({ opacity: 0, y: 20 })}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="text-center max-w-lg"
@@ -34,7 +46,7 @@ const NotFound = () => {
 
       {recentPosts.length > 0 && (
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={entrance({ opacity: 0, y: 20 })}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.5 }}
           className="mt-16 max-w-lg w-full"

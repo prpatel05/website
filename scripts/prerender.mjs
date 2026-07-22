@@ -13,6 +13,12 @@ const ROUTES = [
   "/",
   "/blog",
   ...discoverPostSlugs().map((slug) => `/blog/${slug}`),
+  // Matches the app's `path="*"` route. Written to dist/404.html, which is the
+  // file GitHub Pages serves — with a real 404 status — for any URL that has no
+  // page. It replaces the spa-github-pages redirect shim: that bounced every
+  // unknown URL to /?/the/path, which is a soft 404 to a crawler and a homepage
+  // flash to a reader.
+  "/404",
 ];
 
 // Simple static file server for the dist folder
@@ -138,11 +144,14 @@ async function prerender() {
       );
     }
 
-    // Determine output path
-    const outputDir =
-      route === "/" ? DIST : join(DIST, route.replace(/^\//, ""));
+    // Determine output path. /404 is the exception to the directory-per-route
+    // rule: GitHub Pages only looks for a top-level 404.html.
     const outputFile =
-      route === "/" ? join(DIST, "index.html") : join(outputDir, "index.html");
+      route === "/"
+        ? join(DIST, "index.html")
+        : route === "/404"
+          ? join(DIST, "404.html")
+          : join(DIST, route.replace(/^\//, ""), "index.html");
 
     mkdirSync(dirname(outputFile), { recursive: true });
     writeFileSync(outputFile, html, "utf-8");
@@ -153,6 +162,14 @@ async function prerender() {
 
   await browser.close();
   server.close();
+
+  // GitHub Pages ignores dist/404/index.html and falls back to its own generic
+  // page, so a wrong output path here would fail silently in production only.
+  const notFound = join(DIST, "404.html");
+  if (!existsSync(notFound) || !readFileSync(notFound, "utf-8").includes(">404<")) {
+    throw new Error("dist/404.html is missing or is not the 404 page");
+  }
+
   console.log(
     `Blocked ${blockedTelemetry} telemetry request(s) from the build.`
   );
