@@ -15,7 +15,22 @@ const STATIC_ROUTES = [
 ];
 
 // Discover blog posts from the dist/blog directory
-import { readdirSync, existsSync } from "fs";
+import { readdirSync, existsSync, readFileSync } from "fs";
+
+// The publish date is read back out of the prerendered page rather than from
+// src/data/blog-posts, so this script stays dependency-free and can be run from
+// a bare dist/ (which is what the test does). A post whose page predates the
+// article metadata just gets no <lastmod>, which is valid.
+function publishedDate(slug) {
+  const html = join(DIST, "blog", slug, "index.html");
+  if (!existsSync(html)) return null;
+
+  const match = readFileSync(html, "utf-8").match(
+    /article:published_time"\s+content="(\d{4}-\d{2}-\d{2})/
+  );
+
+  return match ? match[1] : null;
+}
 
 function discoverBlogPosts() {
   const blogDir = join(DIST, "blog");
@@ -27,19 +42,30 @@ function discoverBlogPosts() {
       loc: `https://pratik.pa.tel/blog/${d.name}/`,
       changefreq: "yearly",
       priority: "0.7",
+      lastmod: publishedDate(d.name),
     }));
 }
 
 function generateSitemap() {
   const blogPosts = discoverBlogPosts();
-  const allRoutes = [...STATIC_ROUTES, ...blogPosts];
+  // The homepage lists the five newest posts and /blog/ lists all of them, so
+  // both change exactly when the newest post does.
+  const newest = blogPosts
+    .map((p) => p.lastmod)
+    .filter(Boolean)
+    .sort()
+    .pop();
+  const allRoutes = [
+    ...STATIC_ROUTES.map((r) => ({ ...r, lastmod: newest ?? null })),
+    ...blogPosts,
+  ];
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${allRoutes
   .map(
     (r) => `  <url>
-    <loc>${r.loc}</loc>
+    <loc>${r.loc}</loc>${r.lastmod ? `\n    <lastmod>${r.lastmod}</lastmod>` : ""}
     <changefreq>${r.changefreq}</changefreq>
     <priority>${r.priority}</priority>
   </url>`

@@ -1,6 +1,13 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { execFileSync } from "child_process";
-import { mkdtempSync, mkdirSync, copyFileSync, readFileSync, rmSync } from "fs";
+import {
+  mkdtempSync,
+  mkdirSync,
+  copyFileSync,
+  readFileSync,
+  writeFileSync,
+  rmSync,
+} from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 
@@ -14,7 +21,10 @@ import { tmpdir } from "os";
 
 // jsdom rewrites import.meta.url, so resolve from the vitest root instead.
 const SCRIPT = join(process.cwd(), "scripts/generate-sitemap.mjs");
-const SLUGS = ["taste-is-your-moat", "ship-it-yourself"];
+const POSTS = [
+  { slug: "taste-is-your-moat", date: "2026-05-04" },
+  { slug: "ship-it-yourself", date: "2026-06-11" },
+];
 
 let workDir: string;
 let sitemap: string;
@@ -23,8 +33,12 @@ beforeAll(() => {
   workDir = mkdtempSync(join(tmpdir(), "sitemap-test-"));
   mkdirSync(join(workDir, "scripts"));
   copyFileSync(SCRIPT, join(workDir, "scripts/generate-sitemap.mjs"));
-  for (const slug of SLUGS) {
+  for (const { slug, date } of POSTS) {
     mkdirSync(join(workDir, "dist/blog", slug), { recursive: true });
+    writeFileSync(
+      join(workDir, "dist/blog", slug, "index.html"),
+      `<meta property="article:published_time" content="${date}T12:00:00.000Z" data-rh="true">`
+    );
   }
 
   execFileSync("node", ["scripts/generate-sitemap.mjs"], { cwd: workDir });
@@ -46,6 +60,24 @@ describe("generate-sitemap", () => {
       "https://pratik.pa.tel/blog/ship-it-yourself/",
       "https://pratik.pa.tel/blog/taste-is-your-moat/",
     ]);
+  });
+
+  // Without <lastmod> a crawler has no signal that an old URL changed, so a
+  // republished post waits for an untargeted recrawl.
+  it("dates every URL from the post it was built from", () => {
+    const entries = [
+      ...sitemap.matchAll(
+        /<loc>([^<]+)<\/loc>\s*<lastmod>([^<]+)<\/lastmod>/g
+      ),
+    ].map((m) => [m[1], m[2]]);
+
+    expect(Object.fromEntries(entries)).toEqual({
+      // Homepage and archive both list posts, so they move with the newest one.
+      "https://pratik.pa.tel/": "2026-06-11",
+      "https://pratik.pa.tel/blog/": "2026-06-11",
+      "https://pratik.pa.tel/blog/ship-it-yourself/": "2026-06-11",
+      "https://pratik.pa.tel/blog/taste-is-your-moat/": "2026-05-04",
+    });
   });
 
   it("emits no URL that GitHub Pages would redirect", () => {
