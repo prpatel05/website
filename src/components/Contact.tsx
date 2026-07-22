@@ -1,4 +1,4 @@
-import { motion, useTransform } from "framer-motion";
+import { m, useTransform } from "framer-motion";
 import { Mail, Phone } from "lucide-react";
 import { socials } from "@/data/socials";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
@@ -14,7 +14,7 @@ const Contact = () => {
   return (
     <section ref={ref} id="contact" className="py-16 sm:py-24 lg:py-40 relative overflow-hidden">
       <div className="absolute inset-0 scanline pointer-events-none" />
-      <motion.div className="container relative z-10" style={{ opacity: sectionOpacity }}>
+      <m.div className="container relative z-10" style={{ opacity: sectionOpacity }}>
         <SectionHeader label="// section:contact" titleLeft="Let's" titleRight="connect">
           <h2 className="font-display text-3xl sm:text-5xl lg:text-7xl font-bold mb-6">
             <span className="text-foreground">Let's</span>{" "}
@@ -28,7 +28,7 @@ const Contact = () => {
 
         <div className="grid lg:grid-cols-2 gap-12">
           {/* Direct contact */}
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -59,10 +59,10 @@ const Contact = () => {
                 </span>
               </div>
             </a>
-          </motion.div>
+          </m.div>
 
           {/* Social grid */}
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -70,7 +70,7 @@ const Contact = () => {
             className="grid grid-cols-3 sm:grid-cols-5 gap-3"
           >
             {socials.map((s, i) => (
-              <motion.a
+              <m.a
                 key={s.name}
                 href={s.url}
                 target="_blank"
@@ -86,19 +86,19 @@ const Contact = () => {
                 <span className="font-mono text-[10px] text-muted-foreground group-hover:text-primary transition-colors">
                   {s.name}
                 </span>
-              </motion.a>
+              </m.a>
             ))}
-          </motion.div>
+          </m.div>
         </div>
-      </motion.div>
+      </m.div>
 
       {/* Background decoration with parallax */}
-      <motion.div
+      <m.div
         style={{ y: decorY }}
         className="absolute bottom-0 right-0 font-mono text-[10rem] lg:text-[18rem] font-bold text-primary/[0.03] leading-none select-none pointer-events-none"
       >
         {'/>'}
-      </motion.div>
+      </m.div>
     </section>
   );
 };

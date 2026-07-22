@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { useLocation } from "react-router-dom";
 import { useEntrance } from "@/hooks/useEntrance";
 
@@ -34,7 +34,7 @@ const PageTransition = ({ children }: { children: ReactNode }) => {
   const entrance = useEntrance();
 
   return (
-    <motion.div
+    <m.div
       key={location.pathname}
       variants={pageVariants}
       initial={entrance("initial")}
@@ -42,7 +42,7 @@ const PageTransition = ({ children }: { children: ReactNode }) => {
       exit="exit"
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 };
 

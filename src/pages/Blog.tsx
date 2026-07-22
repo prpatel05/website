@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { posts } from "@/data/blog-posts/registry";
 import SEO from "@/components/SEO";
@@ -92,7 +92,7 @@ const Blog = () => {
 
       <div className="pt-28 pb-24">
         <div className="container">
-          <motion.div
+          <m.div
             initial={entrance({ opacity: 0, y: 20 })}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -104,14 +104,14 @@ const Blog = () => {
               <span className="text-foreground">Blog</span>{" "}
               <span className="text-accent text-glow-accent">archive</span>
             </h1>
-          </motion.div>
+          </m.div>
 
           <div className="space-y-4">
             {posts.map((post, i) => {
               const thumb = thumbnailFor(post.image);
 
               return (
-                <motion.article
+                <m.article
                   key={post.slug}
                   initial={entrance({ opacity: 0, y: 20 })}
                   animate={{ opacity: 1, y: 0 }}
@@ -155,7 +155,7 @@ const Blog = () => {
                       </div>
                     </div>
                   </Link>
-                </motion.article>
+                </m.article>
               );
             })}
           </div>
