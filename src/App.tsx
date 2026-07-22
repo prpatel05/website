@@ -1,7 +1,7 @@
 import { Component, Suspense, lazy, type ReactNode, useEffect } from "react";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, LazyMotion, domAnimation } from "framer-motion";
 import PageTransition from "@/components/PageTransition";
 import Index from "./pages/Index.tsx";
 import Blog from "./pages/Blog.tsx";
@@ -92,6 +92,14 @@ const AnimatedRoutes = () => {
 
 /* ---------- App Shell ---------- */
 
+/**
+ * `domAnimation` is the feature set the site actually uses: enter, exit, hover
+ * and scroll-linked transforms. The full `motion` component also carries layout
+ * projection and drag handling, which nothing here asks for, and it rides in
+ * the vendor chunk every route loads. Pairing `m` with this halves that chunk.
+ * `strict` turns a stray `motion.*` into a throw rather than a silent import of
+ * the full component, which would put the savings back.
+ */
 const App = () => (
   <HelmetProvider>
     <ErrorBoundary>
@@ -104,7 +112,9 @@ const App = () => (
       <BrowserRouter>
         <ScrollToTop />
         <main id="main-content">
-          <AnimatedRoutes />
+          <LazyMotion features={domAnimation} strict>
+            <AnimatedRoutes />
+          </LazyMotion>
         </main>
       </BrowserRouter>
     </ErrorBoundary>

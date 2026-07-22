@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { motion, useTransform } from "framer-motion";
+import { m, useTransform } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { posts } from "@/data/blog-posts/registry";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
@@ -15,8 +15,8 @@ const BlogPreview = () => {
 
   return (
     <section ref={ref} id="writing" className="py-16 sm:py-24 lg:py-40 relative overflow-hidden">
-      <motion.div className="absolute inset-0 grid-bg pointer-events-none opacity-50" style={{ y: gridY }} />
-      <motion.div className="container relative z-10" style={{ opacity: sectionOpacity }}>
+      <m.div className="absolute inset-0 grid-bg pointer-events-none opacity-50" style={{ y: gridY }} />
+      <m.div className="container relative z-10" style={{ opacity: sectionOpacity }}>
         <SectionHeader label="// section:blog" titleLeft="Recent" titleRight="writes" titleRightClass="text-accent text-glow-accent">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-12">
             <h2 className="font-display text-3xl sm:text-4xl lg:text-6xl font-bold">
@@ -34,7 +34,7 @@ const BlogPreview = () => {
 
         <div className="space-y-4">
           {previewPosts.map((post, i) => (
-            <motion.article
+            <m.article
               key={post.slug}
               initial={{ opacity: 0, y: 40, scale: 0.97 }}
               whileInView={{ opacity: 1, y: 0, scale: 1 }}
@@ -76,10 +76,10 @@ const BlogPreview = () => {
                   </div>
                 </div>
               </Link>
-            </motion.article>
+            </m.article>
           ))}
         </div>
-      </motion.div>
+      </m.div>
     </section>
   );
 };

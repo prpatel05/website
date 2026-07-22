@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Terminal, X } from "lucide-react";
 import { processTerminalCommand, type TerminalLine } from "@/lib/terminal-commands";
@@ -103,7 +103,7 @@ const InteractiveTerminal = () => {
       {/* Toggle button */}
       <AnimatePresence>
         {showButton && !open && (
-          <motion.button
+          <m.button
             onClick={() => setOpen(true)}
             className="fixed bottom-6 right-6 z-50 w-12 h-12 bg-card border border-border flex items-center justify-center text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 group"
             initial={{ opacity: 0, scale: 0.8, y: 20 }}
@@ -114,7 +114,7 @@ const InteractiveTerminal = () => {
             title="Open terminal (Ctrl+K)"
           >
             <Terminal className="w-5 h-5" />
-          </motion.button>
+          </m.button>
         )}
       </AnimatePresence>
 
@@ -122,14 +122,14 @@ const InteractiveTerminal = () => {
       <AnimatePresence>
         {open && (
           <>
-            <motion.div
+            <m.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-[200] bg-background/60 backdrop-blur-sm"
               onClick={() => setOpen(false)}
             />
-            <motion.div
+            <m.div
               initial={{ opacity: 0, y: 40, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 40, scale: 0.95 }}
@@ -205,7 +205,7 @@ const InteractiveTerminal = () => {
                   />
                 </form>
               </div>
-            </motion.div>
+            </m.div>
           </>
         )}
       </AnimatePresence>

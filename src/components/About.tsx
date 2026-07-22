@@ -1,4 +1,4 @@
-import { motion, useTransform } from "framer-motion";
+import { m, useTransform } from "framer-motion";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import SectionHeader from "./SectionHeader";
 
@@ -28,14 +28,14 @@ const About = () => {
 
   return (
     <section ref={ref} id="about" className="py-16 sm:py-24 lg:py-40 relative overflow-hidden">
-      <motion.div className="absolute inset-0 scanline pointer-events-none" style={{ y: scanlineY }} />
-      <motion.div className="container relative z-10" style={{ opacity: sectionOpacity }}>
+      <m.div className="absolute inset-0 scanline pointer-events-none" style={{ y: scanlineY }} />
+      <m.div className="container relative z-10" style={{ opacity: sectionOpacity }}>
         <SectionHeader label="// section:about" titleLeft="About" titleRight="me" />
 
         <div className="grid lg:grid-cols-2 gap-16 mt-12">
           {/* Left - bio with parallax slide-in */}
-          <motion.div style={{ x: leftX }}>
-            <motion.div
+          <m.div style={{ x: leftX }}>
+            <m.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -75,7 +75,7 @@ const About = () => {
               {/* Stats */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-6">
                 {stats.map((stat, i) => (
-                  <motion.div
+                  <m.div
                     key={stat.label}
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
@@ -89,15 +89,15 @@ const About = () => {
                     <span className="font-mono text-[10px] text-muted-foreground tracking-wider">
                       {stat.label}
                     </span>
-                  </motion.div>
+                  </m.div>
                 ))}
               </div>
-            </motion.div>
-          </motion.div>
+            </m.div>
+          </m.div>
 
           {/* Right - skills with parallax slide-in */}
-          <motion.div style={{ x: rightX }}>
-            <motion.div
+          <m.div style={{ x: rightX }}>
+            <m.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -112,7 +112,7 @@ const About = () => {
                 </div>
                 <div className="mt-8 space-y-5">
                   {skills.map((skill, i) => (
-                    <motion.div
+                    <m.div
                       key={skill.name}
                       initial={{ opacity: 0, x: 20 }}
                       whileInView={{ opacity: 1, x: 0 }}
@@ -124,7 +124,7 @@ const About = () => {
                         <span className="font-mono text-xs text-primary">{skill.level}%</span>
                       </div>
                       <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                        <motion.div
+                        <m.div
                           initial={{ width: 0 }}
                           whileInView={{ width: `${skill.level}%` }}
                           viewport={{ once: true }}
@@ -132,14 +132,14 @@ const About = () => {
                           className="h-full bg-gradient-to-r from-primary to-accent rounded-full"
                         />
                       </div>
-                    </motion.div>
+                    </m.div>
                   ))}
                 </div>
               </div>
-            </motion.div>
-          </motion.div>
+            </m.div>
+          </m.div>
         </div>
-      </motion.div>
+      </m.div>
     </section>
   );
 };

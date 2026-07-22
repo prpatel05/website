@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import type { ReactNode } from "react";
 
 interface SectionHeaderProps {
@@ -16,7 +16,7 @@ const SectionHeader = ({
   titleRightClass = "text-primary text-glow",
   children,
 }: SectionHeaderProps) => (
-  <motion.div
+  <m.div
     initial={{ opacity: 0 }}
     whileInView={{ opacity: 1 }}
     viewport={{ once: true }}
@@ -31,7 +31,7 @@ const SectionHeader = ({
         <span className={titleRightClass}>{titleRight}</span>
       </h2>
     )}
-  </motion.div>
+  </m.div>
 );
 
 export default SectionHeader;

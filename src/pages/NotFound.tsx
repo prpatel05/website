@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { posts } from "@/data/blog-posts/registry";
 import { useEntrance } from "@/hooks/useEntrance";
@@ -20,7 +20,7 @@ const NotFound = () => {
         <title>404 — Page Not Found | Pratik Patel</title>
         <meta name="robots" content="noindex" />
       </Helmet>
-      <motion.div
+      <m.div
         initial={entrance({ opacity: 0, y: 20 })}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
@@ -42,10 +42,10 @@ const NotFound = () => {
           <ArrowLeft className="w-4 h-4" />
           cd ~
         </Link>
-      </motion.div>
+      </m.div>
 
       {recentPosts.length > 0 && (
-        <motion.div
+        <m.div
           initial={entrance({ opacity: 0, y: 20 })}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.5 }}
@@ -70,7 +70,7 @@ const NotFound = () => {
               </Link>
             ))}
           </div>
-        </motion.div>
+        </m.div>
       )}
     </div>
   );

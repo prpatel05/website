@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "framer-motion";
 import { Terminal, X } from "lucide-react";
 
 const links = [
@@ -65,7 +65,7 @@ const Navbar = () => {
 
       <AnimatePresence>
         {open && (
-          <motion.div
+          <m.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -89,7 +89,7 @@ const Navbar = () => {
             </button>
             <div className="flex flex-col items-center gap-6">
               {links.map((link, i) => (
-                <motion.a
+                <m.a
                   key={link.label}
                   href={link.href}
                   onClick={() => setOpen(false)}
@@ -99,10 +99,10 @@ const Navbar = () => {
                   className="font-display text-4xl font-bold text-foreground hover:text-primary transition-colors"
                 >
                   {link.label}
-                </motion.a>
+                </m.a>
               ))}
             </div>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </>

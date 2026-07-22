@@ -24,7 +24,7 @@ vi.mock("framer-motion", () => {
     }
   );
   return {
-    motion: motionProxy,
+    m: motionProxy,
     useScroll: () => ({ scrollYProgress: { get: () => 0 } }),
     useTransform: (_: unknown, __: unknown, defaults: unknown[]) => defaults?.[0] ?? 0,
   };

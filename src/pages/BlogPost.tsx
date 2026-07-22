@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { ArrowLeft, ArrowRight, Clock, Calendar } from "lucide-react";
 import ReactMarkdown, { Components } from "react-markdown";
 import {
@@ -157,7 +157,7 @@ const BlogPost = () => {
       <article className="pt-28 pb-24">
         <div className="container max-w-3xl">
           {/* Meta */}
-          <motion.div
+          <m.div
             initial={entrance({ opacity: 0, y: 20 })}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -188,10 +188,10 @@ const BlogPost = () => {
             <p className="font-mono text-lg text-accent text-glow-accent mt-3">
               {post.subtitle}
             </p>
-          </motion.div>
+          </m.div>
 
           {/* Hero image */}
-          <motion.div
+          <m.div
             initial={entrance({ opacity: 0, y: 20 })}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.5 }}
@@ -219,10 +219,10 @@ const BlogPost = () => {
               height={432}
               className="w-full aspect-video object-cover"
             />
-          </motion.div>
+          </m.div>
 
           {/* Content */}
-          <motion.div
+          <m.div
             initial={entrance({ opacity: 0 })}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4, duration: 0.6 }}
@@ -231,10 +231,10 @@ const BlogPost = () => {
             <ReactMarkdown components={markdownComponents}>
               {content}
             </ReactMarkdown>
-          </motion.div>
+          </m.div>
 
           {/* Footer */}
-          <motion.div
+          <m.div
             initial={entrance({ opacity: 0 })}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6, duration: 0.5 }}
@@ -288,7 +288,7 @@ const BlogPost = () => {
                 © {new Date().getFullYear()} PRATIK PATEL
               </span>
             </div>
-          </motion.div>
+          </m.div>
         </div>
       </article>
     </div>
