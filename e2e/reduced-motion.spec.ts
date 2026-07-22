@@ -1,5 +1,4 @@
-import type { Page } from "@playwright/test";
-import { test, expect } from "./fixtures";
+import { test, expect, type Page } from "./fixtures";
 
 /**
  * The parallax layer behind the hero. It is the load-bearing case: its offset
