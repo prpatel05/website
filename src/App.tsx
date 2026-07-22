@@ -1,7 +1,7 @@
 import { Component, Suspense, lazy, type ReactNode, useEffect } from "react";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
-import { AnimatePresence, LazyMotion, domAnimation } from "framer-motion";
+import { AnimatePresence, LazyMotion, MotionConfig, domAnimation } from "framer-motion";
 import PageTransition from "@/components/PageTransition";
 import Index from "./pages/Index.tsx";
 import Blog from "./pages/Blog.tsx";
@@ -113,7 +113,17 @@ const App = () => (
         <ScrollToTop />
         <main id="main-content">
           <LazyMotion features={domAnimation} strict>
-            <AnimatedRoutes />
+            {/*
+              `reducedMotion="user"` drops transform animations — the page
+              slide, the drifting background blobs, the 60s rotations — for
+              anyone whose OS asks for reduced motion, and keeps the opacity
+              ones so nothing goes missing. Scroll-linked offsets are not
+              animations and are not covered here; those go through
+              `useParallax`.
+            */}
+            <MotionConfig reducedMotion="user">
+              <AnimatedRoutes />
+            </MotionConfig>
           </LazyMotion>
         </main>
       </BrowserRouter>

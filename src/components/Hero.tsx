@@ -1,6 +1,7 @@
-import { m, useScroll, useTransform } from "framer-motion";
+import { m, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import { useEntrance } from "@/hooks/useEntrance";
+import { useParallax } from "@/hooks/useParallax";
 import {
   PORTRAIT_SIZES,
   PORTRAIT_SRC,
@@ -20,20 +21,28 @@ const Hero = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   const entrance = useEntrance();
+  const reduceMotion = useReducedMotion();
 
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ["start start", "end start"],
   });
 
-  const bgY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
-  const textY = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
-  const photoY = useTransform(scrollYProgress, [0, 1], ["0%", "-20%"]);
+  const bgY = useParallax(scrollYProgress, [0, 1], ["0%", "30%"]);
+  const textY = useParallax(scrollYProgress, [0, 1], ["0%", "50%"]);
+  const photoY = useParallax(scrollYProgress, [0, 1], ["0%", "-20%"]);
   const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
-  const scale = useTransform(scrollYProgress, [0, 1], [1, 0.92]);
-  const statusX = useTransform(scrollYProgress, [0, 1], ["0px", "-40px"]);
+  const scale = useParallax(scrollYProgress, [0, 1], [1, 0.92]);
+  const statusX = useParallax(scrollYProgress, [0, 1], ["0px", "-40px"]);
 
   useEffect(() => {
+    // A role line that types and retypes itself forever is the longest-running
+    // motion on the page. Reduced motion gets the first role, already typed.
+    if (reduceMotion) {
+      setDisplayText(roles[0]);
+      return;
+    }
+
     const currentRole = roles[roleIndex];
     let timeout: NodeJS.Timeout;
 
@@ -49,7 +58,7 @@ const Hero = () => {
     }
 
     return () => clearTimeout(timeout);
-  }, [displayText, isDeleting, roleIndex]);
+  }, [displayText, isDeleting, roleIndex, reduceMotion]);
 
   return (
     <section ref={sectionRef} className="relative min-h-screen flex items-center overflow-hidden grid-bg px-4 sm:px-0">

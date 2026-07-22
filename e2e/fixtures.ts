@@ -47,3 +47,4 @@ export const test = base.extend<TelemetryFixtures>({
 });
 
 export { expect };
+export type { Page } from "@playwright/test";

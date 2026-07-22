@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
-import { m, useTransform } from "framer-motion";
+import { m } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { posts } from "@/data/blog-posts/registry";
+import { useParallax } from "@/hooks/useParallax";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import SectionHeader from "./SectionHeader";
 
@@ -11,7 +12,7 @@ const BlogPreview = () => {
   const { ref, scrollYProgress, sectionOpacity } = useScrollAnimation();
   const previewPosts = posts.slice(0, HOME_BLOG_POST_LIMIT);
 
-  const gridY = useTransform(scrollYProgress, [0, 1], ["0%", "-15%"]);
+  const gridY = useParallax(scrollYProgress, [0, 1], ["0%", "-15%"]);
 
   return (
     <section ref={ref} id="writing" className="py-16 sm:py-24 lg:py-40 relative overflow-hidden">

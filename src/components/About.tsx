@@ -1,4 +1,5 @@
-import { m, useTransform } from "framer-motion";
+import { m } from "framer-motion";
+import { useParallax } from "@/hooks/useParallax";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import SectionHeader from "./SectionHeader";
 
@@ -22,9 +23,9 @@ const stats = [
 const About = () => {
   const { ref, scrollYProgress, sectionOpacity } = useScrollAnimation();
 
-  const leftX = useTransform(scrollYProgress, [0, 0.4], ["-60px", "0px"]);
-  const rightX = useTransform(scrollYProgress, [0, 0.4], ["60px", "0px"]);
-  const scanlineY = useTransform(scrollYProgress, [0, 1], ["0%", "20%"]);
+  const leftX = useParallax(scrollYProgress, [0, 0.4], ["-60px", "0px"]);
+  const rightX = useParallax(scrollYProgress, [0, 0.4], ["60px", "0px"]);
+  const scanlineY = useParallax(scrollYProgress, [0, 1], ["0%", "20%"]);
 
   return (
     <section ref={ref} id="about" className="py-16 sm:py-24 lg:py-40 relative overflow-hidden">
