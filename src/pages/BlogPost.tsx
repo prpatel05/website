@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { m } from "framer-motion";
 import { ArrowLeft, ArrowRight, Clock, Calendar } from "lucide-react";
-import ReactMarkdown, { Components } from "react-markdown";
 import {
   getAdjacentPosts,
   getPostBySlug,
@@ -16,36 +15,6 @@ import { heroFor, HERO_SIZES } from "@/lib/hero";
 import { BLOG_POST_CARD } from "@/lib/social-cards";
 import { useEntrance } from "@/hooks/useEntrance";
 
-const markdownComponents: Components = {
-  h2: ({ children }) => (
-    <h2 className="font-display text-2xl lg:text-3xl font-bold text-foreground mt-12 mb-6 border-l-2 border-primary pl-4">
-      {children}
-    </h2>
-  ),
-  h3: ({ children }) => (
-    <h3 className="font-display text-xl font-bold text-foreground mt-10 mb-4">
-      {children}
-    </h3>
-  ),
-  p: ({ children }) => (
-    <p className="text-muted-foreground leading-relaxed my-4">{children}</p>
-  ),
-  ul: ({ children }) => (
-    <ul className="space-y-2 my-6 ml-4">{children}</ul>
-  ),
-  li: ({ children }) => (
-    <li className="flex gap-3 text-muted-foreground leading-relaxed">
-      <span className="text-primary shrink-0 mt-1.5">▸</span>
-      <span>{children}</span>
-    </li>
-  ),
-  strong: ({ children }) => (
-    <strong className="text-foreground font-semibold">{children}</strong>
-  ),
-  em: ({ children }) => (
-    <em className="text-primary/80">{children}</em>
-  ),
-};
 
 const BlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -227,11 +196,15 @@ const BlogPost = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4, duration: 0.6 }}
             className="font-mono text-sm"
-          >
-            <ReactMarkdown components={markdownComponents}>
-              {content}
-            </ReactMarkdown>
-          </m.div>
+            /*
+              The body is markdown in the repo but arrives here as HTML: the
+              markdownHtml Vite plugin renders it at build time with the element
+              map this file used to hold. The string is our own content off the
+              filesystem, never user input, and the parser it replaces was 36KB
+              gzip on every post page.
+            */
+            dangerouslySetInnerHTML={{ __html: content }}
+          />
 
           {/* Footer */}
           <m.div

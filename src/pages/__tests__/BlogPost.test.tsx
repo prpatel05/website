@@ -10,7 +10,15 @@ vi.mock("framer-motion", () => {
         return ({ children, ...props }: Record<string, unknown>) => {
           const htmlProps: Record<string, unknown> = {};
           for (const [k, v] of Object.entries(props)) {
-            if (k === "className" || k === "style" || k === "href" || k === "to") {
+            if (
+              k === "className" ||
+              k === "style" ||
+              k === "href" ||
+              k === "to" ||
+              // The post body rides in on this one. Dropping it renders an
+              // empty article and every body assertion below fails.
+              k === "dangerouslySetInnerHTML"
+            ) {
               htmlProps[k] = v;
             }
           }
@@ -46,7 +54,15 @@ vi.mock("@/data/blog-posts/registry", async (importOriginal) => {
     tags: ["testing", "vitest", "react"],
     image: "/images/test.png",
   };
-  const testContent = `## Introduction\n\nThis is a **test paragraph** with *emphasis*.\n\n### Sub-heading\n\n- First item\n- Second item\n- Third item`;
+  // The page is handed HTML, not markdown, so the fixture goes through the same
+  // build-time renderer the real post bodies do. Handwriting the HTML here
+  // would let the page and the build drift apart without a test noticing.
+  const { renderMarkdownToHtml } = await import(
+    "../../../scripts/markdown-html.mjs"
+  );
+  const testContent = renderMarkdownToHtml(
+    `## Introduction\n\nThis is a **test paragraph** with *emphasis*.\n\n### Sub-heading\n\n- First item\n- Second item\n- Third item`
+  );
   // Neighbours, so the prev/next links at the end of a post have somewhere to
   // point. Ordered newest first, the same as the real registry.
   const newerPost = { ...testPost, slug: "newer-post", title: "Newer Post Title" };

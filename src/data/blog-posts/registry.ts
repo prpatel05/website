@@ -32,12 +32,17 @@ export const getPostBySlug = (slug: string): BlogPost | undefined => {
 // (~53KB brotli) into the chunk every route loads to render five titles on the
 // homepage. This glob is deliberately not eager: only the post on screen is
 // downloaded.
+//
+// The markdown is rendered to HTML at build time by the markdownHtml Vite
+// plugin, so what arrives here is a ready-to-insert HTML string. Parsing it in
+// the browser would mean shipping react-markdown (36KB gzip) to re-derive
+// markup the prerenderer has already written into the page.
 const contents = import.meta.glob<string>("./content/*.md", {
-  query: "?raw",
   import: "default",
 });
 
 export const loadPostContent = (slug: string): Promise<string> => {
+  // Returns the post body as HTML, already rendered at build time.
   const load = contents[`./content/${slug}.md`];
   if (!load) return Promise.reject(new Error(`No content for post: ${slug}`));
   return load();

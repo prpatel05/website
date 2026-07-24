@@ -7,9 +7,10 @@ import Index from "./pages/Index.tsx";
 import Blog from "./pages/Blog.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
-// The post page is the only screen that renders markdown, so react-markdown
-// (118KB, 36KB over the wire) rides in with it instead of in the chunk the
-// homepage and archive load.
+// The post page is the only screen that shows a post body, so its markup and
+// the per-post HTML it imports stay out of the chunk the homepage and archive
+// load. (The markdown parser itself no longer ships at all — see
+// scripts/markdown-html.mjs.)
 const BlogPost = lazy(() => import("./pages/BlogPost.tsx"));
 
 /* ---------- Error Boundary ---------- */
