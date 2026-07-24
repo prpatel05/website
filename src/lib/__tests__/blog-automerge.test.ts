@@ -20,6 +20,7 @@ const TODAY = "2026-07-09";
 const TOMORROW = "2026-07-10";
 
 let binDir: string;
+let realDateBinDir: string;
 let workDir: string;
 
 /** Stub `date`, supporting exactly the invocations the script makes. */
@@ -120,21 +121,26 @@ else:
     sys.exit(2)
 `;
 
-function writeShim(name: string, body: string) {
-  const p = join(binDir, name);
+function writeShim(name: string, body: string, dir = binDir) {
+  const p = join(dir, name);
   writeFileSync(p, body, { mode: 0o755 });
 }
 
 beforeAll(() => {
   binDir = mkdtempSync(join(tmpdir(), "automerge-bin-"));
+  realDateBinDir = mkdtempSync(join(tmpdir(), "automerge-realdate-bin-"));
   workDir = mkdtempSync(join(tmpdir(), "automerge-work-"));
   mkdirSync(binDir, { recursive: true });
   writeShim("gh", GH_SHIM);
   writeShim("date", DATE_SHIM);
+  // Same gh stub, no date stub: this PATH lets one test exercise whatever date
+  // dialect the host actually has.
+  writeShim("gh", GH_SHIM, realDateBinDir);
 });
 
 afterAll(() => {
   rmSync(binDir, { recursive: true, force: true });
+  rmSync(realDateBinDir, { recursive: true, force: true });
   rmSync(workDir, { recursive: true, force: true });
 });
 
@@ -163,7 +169,7 @@ type Run = {
 
 let runSeq = 0;
 
-function run(fixture: Fixture, today = TODAY): Run {
+function run(fixture: Fixture, today = TODAY, bin = () => binDir): Run {
   const id = `run-${runSeq++}`;
   const fixturePath = join(workDir, `${id}.json`);
   const actionsPath = join(workDir, `${id}.actions`);
@@ -179,7 +185,7 @@ function run(fixture: Fixture, today = TODAY): Run {
       encoding: "utf8",
       env: {
         ...process.env,
-        PATH: `${binDir}:${process.env.PATH}`,
+        PATH: `${bin()}:${process.env.PATH}`,
         GITHUB_REPOSITORY: REPO,
         GH_FIXTURE: fixturePath,
         GH_ACTIONS: actionsPath,
@@ -371,6 +377,20 @@ describe("blog auto-merge routine", () => {
     expect(r.summary).toContain("### Missed publish date");
     expect(r.summary).toContain(`#31 (\`${BRANCH}\`, dateISO: \`${TODAY}\`): merge_conflict`);
     expect(r.stdout).toContain("::error::");
+  });
+
+  // Every other test replaces `date` with a python shim, so for months the suite
+  // was green on a machine where the real script died at line 8: `date -d` is
+  // GNU-only and every agent here runs macOS. This test runs the host's own date.
+  it("runs on the host's date, not just the shimmed one", () => {
+    const r = run(
+      { prs: [pr({ mergeable: "MERGEABLE" })], files: { [BRANCH]: TODAY } },
+      TODAY,
+      () => realDateBinDir,
+    );
+    expect(r.stdout).toContain(`UTC date: ${TODAY} (tomorrow: 2026-07-10)`);
+    expect(r.merges).toEqual(["31"]);
+    expect(r.status).toBe(0);
   });
 
   it("keeps going after one PR fails, and reports every failure", () => {
