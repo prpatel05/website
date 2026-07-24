@@ -10,6 +10,16 @@ import {
 } from "../blog-posts/registry";
 import type { BlogPost } from "../blog-posts/registry";
 
+// The copy rules below lint what an author wrote, so they read the markdown off
+// disk. loadPostContent returns the built HTML, where a markdown link is an
+// <a> and the source patterns match nothing — the guards would pass on every
+// input instead of failing on a bad one.
+const markdownSource = (slug: string) =>
+  readFileSync(
+    join(process.cwd(), "src", "data", "blog-posts", "content", `${slug}.md`),
+    "utf-8"
+  );
+
 describe("blog-posts data", () => {
   it("exports a non-empty posts array", () => {
     expect(Array.isArray(posts)).toBe(true);
@@ -55,10 +65,9 @@ describe("blog-posts data", () => {
   // back. Every pratik.pa.tel path 301s to its slash form, and a markdown link
   // renders as a plain anchor, so a slashless one sends readers and crawlers
   // through a redirect that the rest of the site no longer emits.
-  it("writes internal links in a post body in their non-redirecting form", async () => {
-    const bodies = await Promise.all(posts.map((p) => loadPostContent(p.slug)));
-    const offenders = posts.flatMap((post, i) =>
-      Array.from(bodies[i].matchAll(/\]\((\/[^)]*)\)/g))
+  it("writes internal links in a post body in their non-redirecting form", () => {
+    const offenders = posts.flatMap((post) =>
+      Array.from(markdownSource(post.slug).matchAll(/\]\((\/[^)]*)\)/g))
         .map((match) => match[1])
         // A path whose last segment carries an extension is a file, not a
         // directory index, and is served without a redirect.
@@ -83,13 +92,17 @@ describe("blog-posts data", () => {
   //
   // Fenced blocks and inline code spans are exempt: $PATH inside a shell
   // sample is correct, and stripping it would make the sample wrong.
-  it("uses $ in post copy only as a price", async () => {
-    const bodies = await Promise.all(posts.map((p) => loadPostContent(p.slug)));
+  it("uses $ in post copy only as a price", () => {
     const stripCode = (markdown: string) =>
       markdown.replace(/```[\s\S]*?```/g, "").replace(/`[^`\n]*`/g, "");
 
-    const offenders = posts.flatMap((post, i) =>
-      [post.title, post.subtitle, ...post.tags, stripCode(bodies[i])].flatMap(
+    const offenders = posts.flatMap((post) =>
+      [
+        post.title,
+        post.subtitle,
+        ...post.tags,
+        stripCode(markdownSource(post.slug)),
+      ].flatMap(
         (text) =>
           Array.from(text.matchAll(/[$＄﹩](?!\d)/g)).map(
             (match) =>
