@@ -87,7 +87,7 @@ const Index = () => {
       <footer className="py-6 border-t border-border">
         <div className="container px-4 flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4 font-mono text-[10px] text-muted-foreground tracking-widest">
           <span>© {new Date().getFullYear()} PRATIK PATEL</span>
-          <span className="text-primary/40">BUILT WITH PURPOSE // v3.0</span>
+          <span className="text-primary/60">BUILT WITH PURPOSE // v3.0</span>
         </div>
       </footer>
     </div>

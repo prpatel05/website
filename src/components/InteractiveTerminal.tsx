@@ -198,7 +198,7 @@ const InteractiveTerminal = () => {
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                     aria-label="Terminal command"
-                    className="flex-1 bg-transparent font-mono text-xs text-foreground outline-none placeholder:text-muted-foreground/40 caret-primary"
+                    className="flex-1 bg-transparent font-mono text-xs text-foreground outline-none placeholder:text-muted-foreground/80 caret-primary"
                     placeholder='type "help" to get started...'
                     autoComplete="off"
                     spellCheck={false}
