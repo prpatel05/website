@@ -146,7 +146,7 @@ const Hero = () => {
             transition={{ delay: 0.5, duration: 0.5 }}
             className="mt-6 sm:mt-8 font-mono text-base sm:text-xl text-muted-foreground"
           >
-            <span className="text-primary/50">$ </span>
+            <span className="text-primary/60">$ </span>
             <span className="text-foreground/80">{displayText}</span>
             <span className="text-primary cursor-blink ml-0.5">▊</span>
           </m.div>
@@ -212,7 +212,7 @@ const Hero = () => {
                 className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
               />
             </div>
-            <div className="absolute -bottom-3 -right-3 font-mono text-[10px] text-primary/40 border border-primary/10 px-2 py-1 bg-background">
+            <div className="absolute -bottom-3 -right-3 font-mono text-[10px] text-primary/60 border border-primary/10 px-2 py-1 bg-background">
               v3.0.1
             </div>
           </div>
