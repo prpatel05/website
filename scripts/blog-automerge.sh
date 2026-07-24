@@ -3,10 +3,24 @@
 set -euo pipefail
 
 REPO="${GITHUB_REPOSITORY:-prpatel05/website}"
+
+# `date -d` is GNU-only. On macOS the BSD date rejects it at line one, so the
+# whole routine used to die before it listed a single PR -- and die quietly,
+# because a piped run still reports the pipe's exit status. Probe once and use
+# whichever dialect this machine speaks. BSD needs an explicit midnight or it
+# fills in the current time of day.
+if date -u -d 2026-01-01 +%s >/dev/null 2>&1; then
+  iso_epoch()    { date -u -d "$1" +%s; }
+  iso_tomorrow() { date -u -d "$1 +1 day" +%F; }
+else
+  iso_epoch()    { date -u -j -f "%Y-%m-%d %H:%M:%S" "$1 00:00:00" +%s; }
+  iso_tomorrow() { date -u -j -v+1d -f "%Y-%m-%d %H:%M:%S" "$1 00:00:00" +%F; }
+fi
+
 # AUTOMERGE_TODAY pins the clock so the routine's date branches are testable.
 TODAY="${AUTOMERGE_TODAY:-$(date -u +%F)}"
-TOMORROW="$(date -u -d "$TODAY +1 day" +%F)"
-TODAY_EPOCH="$(date -u -d "$TODAY" +%s)"
+TOMORROW="$(iso_tomorrow "$TODAY")"
+TODAY_EPOCH="$(iso_epoch "$TODAY")"
 
 # GitHub computes `mergeable` lazily and reports UNKNOWN until it has built the
 # test merge commit. Any push to main invalidates it for every open PR, so the
@@ -102,7 +116,7 @@ alarm_if_due() {
   local reason="$4"
   local date_epoch
 
-  date_epoch="$(date -u -d "$date_iso" +%s)"
+  date_epoch="$(iso_epoch "$date_iso")"
   if (( date_epoch <= TODAY_EPOCH + 172800 )); then
     conflict_prs+=("$number|$branch|$date_iso|$reason")
     create_blocked_merge_issue "$number" "$branch" "$date_iso" "$reason"
@@ -173,7 +187,7 @@ while IFS= read -r pr_json; do
     continue
   fi
 
-  if ! date -u -d "$date_iso" >/dev/null 2>&1; then
+  if ! iso_epoch "$date_iso" >/dev/null 2>&1; then
     echo "  Skipping: invalid dateISO '$date_iso'."
     skipped_prs+=("$number|$branch|invalid_dateISO:$date_iso")
     continue
@@ -208,7 +222,7 @@ while IFS= read -r pr_json; do
   # never merged, never reported, even though it was ready to publish. Publish
   # it late instead. Beyond the grace window it is treated as abandoned -- it is
   # reported, but never silently auto-published long after the fact.
-  date_epoch="$(date -u -d "$date_iso" +%s)"
+  date_epoch="$(iso_epoch "$date_iso")"
   if (( date_epoch < TODAY_EPOCH - GRACE_SECONDS )); then
     echo "  Skipping: publish date $date_iso is more than $PUBLISH_GRACE_DAYS days past due."
     skipped_prs+=("$number|$branch|stale_past_due:$date_iso")
