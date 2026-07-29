@@ -139,9 +139,9 @@ describe("blog-posts data", () => {
     expect(posts.map((p) => p.slug).sort()).toEqual(discovered);
   });
 
-  // index.ts is the retired hand-written list. It is left on disk untouched so
-  // the queued blog PRs that edit it still merge cleanly; importing it again
-  // would silently drop any post whose author did not also edit it.
+  // index.ts was the retired hand-written list, now deleted. Re-importing a
+  // barrel from the blog-posts directory would silently drop any post whose
+  // author did not also edit it, so this guards against it ever coming back.
   it("no source file imports the retired index", () => {
     const offenders: string[] = [];
 
