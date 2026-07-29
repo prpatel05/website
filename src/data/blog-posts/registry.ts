@@ -5,10 +5,10 @@ import type { BlogPost } from "./types";
 // list makes every queued post edit the same two lines, so two posts in flight
 // at once always collide; discovery keeps each post to a single new file.
 //
-// This lives here rather than in index.ts because the queued blog PRs already
-// edit index.ts. Rewriting that file would conflict with every one of them and
-// strand their publish dates, which is the failure this change exists to fix.
-// index.ts is now unused and is deleted once the queue drains.
+// Discovery lives here rather than in a hand-written index barrel: editing a
+// shared list on every post PR conflicted with the queued blog branches and
+// stranded their publish dates, which is the failure this change exists to fix.
+// The retired index.ts has since been deleted; the glob keeps excluding it.
 const modules = import.meta.glob<Record<string, BlogPost>>(
   ["./*.ts", "!./index.ts", "!./registry.ts", "!./types.ts"],
   { eager: true }
