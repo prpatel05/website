@@ -40,7 +40,11 @@ function discoverBlogPosts() {
     .filter((d) => d.isDirectory())
     .map((d) => ({
       loc: `https://pratik.pa.tel/blog/${d.name}/`,
-      changefreq: "yearly",
+      // `yearly` tells crawlers not to bother recrawling for a year, which is
+      // exactly wrong for a blog that republishes weekly. `monthly` invites a
+      // recrawl cadence that matches how often a post actually changes; the
+      // newest post is bumped to `weekly` below (see generateSitemap).
+      changefreq: "monthly",
       priority: "0.7",
       lastmod: publishedDate(d.name),
     }));
@@ -55,6 +59,11 @@ function generateSitemap() {
     .filter(Boolean)
     .sort()
     .pop();
+  // The most recent post is the one still gathering links and social shares, so
+  // it earns the tightest recrawl hint.
+  for (const post of blogPosts) {
+    if (newest && post.lastmod === newest) post.changefreq = "weekly";
+  }
   const allRoutes = [
     ...STATIC_ROUTES.map((r) => ({ ...r, lastmod: newest ?? null })),
     ...blogPosts,
