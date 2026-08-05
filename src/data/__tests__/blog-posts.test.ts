@@ -20,6 +20,12 @@ const markdownSource = (slug: string) =>
     "utf-8"
   );
 
+// A fenced block or an inline code span is a sample of someone else's syntax,
+// not copy the renderer is meant to interpret, so every copy rule below reads
+// the body with both removed.
+const stripCode = (markdown: string) =>
+  markdown.replace(/```[\s\S]*?```/g, "").replace(/`[^`\n]*`/g, "");
+
 describe("blog-posts data", () => {
   it("exports a non-empty posts array", () => {
     expect(Array.isArray(posts)).toBe(true);
@@ -93,9 +99,6 @@ describe("blog-posts data", () => {
   // Fenced blocks and inline code spans are exempt: $PATH inside a shell
   // sample is correct, and stripping it would make the sample wrong.
   it("uses $ in post copy only as a price", () => {
-    const stripCode = (markdown: string) =>
-      markdown.replace(/```[\s\S]*?```/g, "").replace(/`[^`\n]*`/g, "");
-
     const offenders = posts.flatMap((post) =>
       [
         post.title,
@@ -112,6 +115,67 @@ describe("blog-posts data", () => {
           )
       )
     );
+
+    expect(offenders).toEqual([]);
+  });
+
+  // scripts/markdown-html.mjs runs react-markdown with no remark-gfm, so the
+  // body is CommonMark only. The GFM-only constructs below do not fail to
+  // build, they parse as something else and ship: a pipe table emits its own
+  // source as one paragraph of raw text, ~~x~~ and - [ ] keep their literal
+  // punctuation, and a bare URL renders unlinked. The worst is the footnote,
+  // because it renders as an anchor rather than as text — Claim.[^1] plus a
+  // [^1]: Source. definition emits <a href="Source.">^1</a>, a live link whose
+  // href is the citation prose. Nothing else catches these: the body is
+  // present, so the prerenderer's paragraph-count gate passes, and the href
+  // is not an internal path, so the trailing-slash rule above never sees it.
+  //
+  // Found 2026-08-05 when a draft was written with two markdown tables. No
+  // published post had ever used one, which is why the hole stayed open. The
+  // fix is a lint rather than remark-gfm because turning GFM on would need
+  // table, thead and td styling the design system does not define yet.
+  it("writes post bodies in markdown the renderer supports", () => {
+    const unsupported = [
+      {
+        label: "table",
+        pattern: /^[ \t]*\|.*\|[ \t]*$/gm,
+        use: "a `- **Lead-in** — explanation` bullet list",
+      },
+      {
+        label: "strikethrough",
+        pattern: /~~[^~\n]+~~/g,
+        use: "plain wording, or <del> if the strike is the point",
+      },
+      {
+        label: "footnote",
+        pattern: /\[\^[^\]\n]+\]/g,
+        use: "an inline [markdown link](https://example.com/) to the source",
+      },
+      {
+        label: "task list",
+        pattern: /^[ \t]*[-*][ \t]+\[[ xX]\][ \t]+/gm,
+        use: "a plain bullet list",
+      },
+      {
+        label: "bare URL",
+        // Autolinking is GFM-only, so a URL that is not already the target of
+        // a markdown link ships as unclickable text. The lookbehind skips the
+        // ]( of a link target and the [ of a link whose text is its own URL.
+        pattern: /(?<![([])\bhttps?:\/\/[^\s)<>\]]+/g,
+        use: "[descriptive text](the-url)",
+      },
+    ];
+
+    const offenders = posts.flatMap((post) => {
+      const body = stripCode(markdownSource(post.slug));
+      return unsupported.flatMap(({ label, pattern, use }) =>
+        Array.from(body.matchAll(pattern)).map(
+          (match) =>
+            `${post.slug}: ${label} is not rendered, use ${use} — ` +
+            `"${match[0].replace(/\s+/g, " ").slice(0, 60)}"`
+        )
+      );
+    });
 
     expect(offenders).toEqual([]);
   });
