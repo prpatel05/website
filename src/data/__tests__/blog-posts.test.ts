@@ -163,13 +163,26 @@ describe("blog-posts data", () => {
         // ]( of a link target and the [ of a link whose text is its own URL.
         pattern: /(?<![([])\bhttps?:\/\/[^\s)<>\]]+/g,
         use: "[descriptive text](the-url)",
+        // A link reference definition — [ref]: https://example.com/ on its own
+        // line, paired with a [text][ref] elsewhere — is CommonMark, not GFM,
+        // and react-markdown renders it as a real <a>. Its URL is a link
+        // target rather than a bare one, so this rule has to skip the whole
+        // definition line or it rejects markdown that ships correctly.
+        //
+        // The exemption is scoped to this rule alone. A footnote definition
+        // ([^1]: Source.) is also shaped like a link reference definition, so
+        // stripping these for every rule would blind the footnote rule above
+        // to the half of the construct that supplies the bad href.
+        exempt: /^[ \t]*\[[^\]\n]+\]:[ \t]*\S+.*$/gm,
       },
     ];
 
     const offenders = posts.flatMap((post) => {
       const body = stripCode(markdownSource(post.slug));
-      return unsupported.flatMap(({ label, pattern, use }) =>
-        Array.from(body.matchAll(pattern)).map(
+      return unsupported.flatMap(({ label, pattern, use, exempt }) =>
+        Array.from(
+          (exempt ? body.replace(exempt, "") : body).matchAll(pattern)
+        ).map(
           (match) =>
             `${post.slug}: ${label} is not rendered, use ${use} — ` +
             `"${match[0].replace(/\s+/g, " ").slice(0, 60)}"`
