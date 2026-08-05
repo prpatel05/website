@@ -62,3 +62,9 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+      # Ping IndexNow only after the site (and the key file) is live, so Bing can
+      # verify the key and crawl new/changed posts within minutes. Best-effort:
+      # the script always exits 0, so a submission hiccup never fails the deploy.
+      - name: Submit sitemap to IndexNow
+        if: success()
+        run: node scripts/submit-indexnow.mjs
