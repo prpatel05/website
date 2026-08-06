@@ -63,6 +63,18 @@
     font-family: var(--font-display);
   }
 
+  /*
+    <main> carries tabIndex={-1} so the skip link can actually move focus in
+    Safari, which only focuses fragment targets that are focusable. That makes it
+    programmatically focusable but never keyboard-reachable, so a focus ring
+    around the entire page would be noise — the skip link itself is the visible
+    affordance. Scoped to :focus, not :focus-visible: this element is only ever
+    focused by script, which is exactly the case :focus-visible suppresses.
+  */
+  main:focus {
+    outline: none;
+  }
+
   ::selection {
     background-color: hsl(160 100% 50% / 0.25);
     color: hsl(160 100% 90%);

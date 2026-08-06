@@ -6,6 +6,7 @@ import SEO from "@/components/SEO";
 import { SITE_CARD } from "@/lib/social-cards";
 import { THUMBNAIL_SIZES, thumbnailFor } from "@/lib/blog-thumbnails";
 import { useEntrance } from "@/hooks/useEntrance";
+import { mainContentProps } from "@/lib/skip-target";
 
 const BLOG_DESCRIPTION =
   "Articles on engineering leadership, AI, career growth, and technical architecture by Pratik Patel, CTO & Chief Architect.";
@@ -90,7 +91,7 @@ const Blog = () => {
         </div>
       </nav>
 
-      <div className="pt-28 pb-24">
+      <main {...mainContentProps} className="pt-28 pb-24">
         <div className="container">
           <m.div
             initial={entrance({ opacity: 0, y: 20 })}
@@ -160,7 +161,7 @@ const Blog = () => {
             })}
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };
