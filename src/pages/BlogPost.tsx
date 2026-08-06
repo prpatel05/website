@@ -11,6 +11,7 @@ import {
 import NotFound from "./NotFound";
 import SEO from "@/components/SEO";
 import { canonicalUrl } from "@/lib/canonical-url";
+import { postDescription } from "@/lib/post-description";
 import { heroFor, HERO_SIZES } from "@/lib/hero";
 import { BLOG_POST_CARD } from "@/lib/social-cards";
 import { useEntrance } from "@/hooks/useEntrance";
@@ -52,7 +53,7 @@ const BlogPost = () => {
       "@context": "https://schema.org",
       "@type": "BlogPosting",
       headline: post.title,
-      description: post.subtitle,
+      description: postDescription(post),
       datePublished: post.dateISO,
       image: ogImage,
       url: canonicalUrl(`https://pratik.pa.tel/blog/${post.slug}`),
@@ -98,7 +99,7 @@ const BlogPost = () => {
     <div className="min-h-screen bg-background">
       <SEO
         title={`${post.title} — Pratik Patel`}
-        description={post.subtitle}
+        description={postDescription(post)}
         canonical={`https://pratik.pa.tel/blog/${post.slug}`}
         ogImage={ogImage}
         ogImageAlt={post.title}

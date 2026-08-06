@@ -17,13 +17,19 @@ import { join } from "path";
 const ROOT = process.cwd();
 const SCRIPTS = ["generate-feed.mjs", "blog-posts.mjs"];
 
-function post(slug: string, title: string, dateISO: string, subtitle: string) {
+function post(
+  slug: string,
+  title: string,
+  dateISO: string,
+  subtitle: string,
+  description?: string
+) {
   return `import { BlogPost } from "./types";
 export const p: BlogPost = {
   slug: ${JSON.stringify(slug)},
   title: ${JSON.stringify(title)},
   subtitle: ${JSON.stringify(subtitle)},
-  date: "2026.07",
+${description === undefined ? "" : `  description: ${JSON.stringify(description)},\n`}  date: "2026.07",
   dateISO: ${JSON.stringify(dateISO)},
   readTime: "5 min",
   tags: ["ai"],
@@ -67,6 +73,20 @@ beforeAll(() => {
     join(postsDir, "future.ts"),
     post("future-post", "Future Post", "2026-08-30", "Not due yet.")
   );
+  // A reader row shows the description with no title beside it, so a post whose
+  // subtitle only reads correctly under its own headline overrides it. The
+  // field is optional, which the three posts above also cover: blog-posts.mjs
+  // must not fail the build on its absence.
+  writeFileSync(
+    join(postsDir, "overridden.ts"),
+    post(
+      "overridden-post",
+      "Overridden Post",
+      "2026-07-02",
+      "And Why It Matters",
+      "A description written to stand on its own in a feed reader."
+    )
+  );
 
   execFileSync("node", ["scripts/generate-feed.mjs"], {
     cwd: workDir,
@@ -84,7 +104,12 @@ describe("generate-feed", () => {
     const titles = [...feed.matchAll(/<item>[\s\S]*?<title>([^<]+)<\/title>/g)].map(
       (m) => m[1]
     );
-    expect(titles).toEqual(["Tomorrow Post", "Newer &amp; Bolder", "Older Post"]);
+    expect(titles).toEqual([
+      "Tomorrow Post",
+      "Newer &amp; Bolder",
+      "Overridden Post",
+      "Older Post",
+    ]);
   });
 
   it("includes a post dated tomorrow, which auto-merge has already published", () => {
@@ -106,6 +131,15 @@ describe("generate-feed", () => {
     expect(guids).toContain("https://pratik.pa.tel/blog/newer-post/");
   });
 
+  it("summarises a post from description when it has one, else subtitle", () => {
+    expect(feed).toContain(
+      "<description>A description written to stand on its own in a feed reader.</description>"
+    );
+    expect(feed).not.toContain("And Why It Matters");
+    // The posts with no description still summarise from subtitle.
+    expect(feed).toContain("<description>An older subtitle.</description>");
+  });
+
   it("escapes XML-significant characters in text", () => {
     expect(feed).toContain("Quotes &quot;and&quot; ampersands &amp; such.");
     expect(feed).not.toMatch(/<description>[^<]*[&][^a-z#]/);
@@ -116,6 +150,7 @@ describe("generate-feed", () => {
     expect(dates).toEqual([
       "Mon, 20 Jul 2026 12:00:00 GMT",
       "Tue, 14 Jul 2026 12:00:00 GMT",
+      "Thu, 02 Jul 2026 12:00:00 GMT",
       "Wed, 01 Jul 2026 12:00:00 GMT",
     ]);
   });

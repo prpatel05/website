@@ -7,6 +7,7 @@ import { SITE_CARD } from "@/lib/social-cards";
 import { THUMBNAIL_SIZES, thumbnailFor } from "@/lib/blog-thumbnails";
 import { useEntrance } from "@/hooks/useEntrance";
 import { mainContentProps } from "@/lib/skip-target";
+import { postDescription } from "@/lib/post-description";
 
 const BLOG_DESCRIPTION =
   "Articles on engineering leadership, AI, career growth, and technical architecture by Pratik Patel, CTO & Chief Architect.";
@@ -37,7 +38,7 @@ const Blog = () => {
       blogPost: posts.map((post) => ({
         "@type": "BlogPosting",
         headline: post.title,
-        description: post.subtitle,
+        description: postDescription(post),
         datePublished: post.dateISO,
         url: `https://pratik.pa.tel/blog/${post.slug}/`,
         image: post.image.startsWith("/")

@@ -29,8 +29,10 @@ function getPropertyName(name) {
 
 // Reads the string-valued fields off the exported post object. `content` is a
 // template literal rather than a plain string, so it is deliberately not
-// readable here — the feed summarises posts from `subtitle` instead.
-function findPostFields(filePath, fields) {
+// readable here — the feed summarises posts from `description`/`subtitle`
+// instead. Fields listed in `optional` are returned when present and simply
+// omitted when absent, rather than failing the build.
+function findPostFields(filePath, fields, optional = []) {
   const sourceFile = ts.createSourceFile(
     filePath,
     readFileSync(filePath, "utf-8"),
@@ -38,7 +40,7 @@ function findPostFields(filePath, fields) {
     true,
     ts.ScriptKind.TS
   );
-  const wanted = new Set(fields);
+  const wanted = new Set([...fields, ...optional]);
   const found = {};
 
   function visit(node) {
@@ -91,6 +93,12 @@ function postFilePaths() {
   return postFiles.map((name) => join(BLOG_POSTS_DIR, name));
 }
 
+// Mirrors src/lib/post-description.ts for the Node scripts, which run outside
+// Vite and cannot import the app's TypeScript.
+export function postDescription(post) {
+  return post.description?.trim() || post.subtitle;
+}
+
 export function discoverPostSlugs() {
   return postFilePaths().map(
     (filePath) => findPostFields(filePath, ["slug"]).slug
@@ -102,13 +110,11 @@ export function discoverPostSlugs() {
 export function discoverPosts() {
   return postFilePaths()
     .map((filePath) =>
-      findPostFields(filePath, [
-        "slug",
-        "title",
-        "subtitle",
-        "dateISO",
-        "image",
-      ])
+      findPostFields(
+        filePath,
+        ["slug", "title", "subtitle", "dateISO", "image"],
+        ["description"]
+      )
     )
     .sort(
       (a, b) =>
