@@ -62,37 +62,53 @@ const Hero = () => {
 
   return (
     <section ref={sectionRef} className="relative min-h-screen flex items-center overflow-hidden grid-bg px-4 sm:px-0">
-      {/* Parallax floating geometric elements */}
+      {/*
+        Parallax floating geometric elements.
+
+        Every one of these loops forever, so its inline transform is a frame of
+        a running animation: the prerender captured whichever frame the snapshot
+        landed on, and the client's first render has none. There is no shared
+        value that would make the two agree, and a mismatch React cannot resolve
+        is one it would resolve by throwing the prerendered page away. Hence
+        `suppressHydrationWarning` on each — framer takes them over a frame
+        later regardless of what the attribute said.
+      */}
       <m.div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ y: bgY }}>
         <m.div
           animate={{ rotate: 360 }}
           transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
           className="absolute -top-32 -right-32 w-96 h-96 border border-primary/10 rounded-full"
+          suppressHydrationWarning
         />
         <m.div
           animate={{ rotate: -360 }}
           transition={{ duration: 45, repeat: Infinity, ease: "linear" }}
           className="absolute -bottom-20 -left-20 w-72 h-72 border border-accent/10 rounded-full"
+          suppressHydrationWarning
         />
         <m.div
           animate={{ y: [0, -20, 0] }}
           transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
           className="absolute top-1/4 right-1/4 w-2 h-2 bg-primary rounded-full opacity-60"
+          suppressHydrationWarning
         />
         <m.div
           animate={{ y: [0, 15, 0] }}
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
           className="absolute top-2/3 left-1/3 w-1.5 h-1.5 bg-accent rounded-full opacity-40"
+          suppressHydrationWarning
         />
         <m.div
           animate={{ x: [0, 10, 0], y: [0, -10, 0] }}
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
           className="absolute top-1/3 left-1/4 w-1 h-1 bg-primary/40 rounded-full"
+          suppressHydrationWarning
         />
         <m.div
           animate={{ x: [0, -8, 0], y: [0, 12, 0] }}
           transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
           className="absolute top-1/2 right-1/3 w-1 h-8 bg-gradient-to-b from-primary/20 to-transparent"
+          suppressHydrationWarning
         />
       </m.div>
 
@@ -147,7 +163,18 @@ const Hero = () => {
             className="mt-6 sm:mt-8 font-mono text-base sm:text-xl text-muted-foreground"
           >
             <span className="text-primary/60">$ </span>
-            <span className="text-foreground/80">{displayText}</span>
+            {/*
+              A frame of a running animation, so the prerender captured this
+              line part-typed and the client's first render starts it empty
+              again. That is a text mismatch React treats as fatal: it throws
+              and re-renders the whole root, which is precisely the discarded
+              prerender this page is trying to keep. `suppressHydrationWarning`
+              is the documented escape for content that is legitimately
+              client-owned — the typing effect resumes on its own a frame later.
+            */}
+            <span className="text-foreground/80" suppressHydrationWarning>
+              {displayText}
+            </span>
             <span className="text-primary cursor-blink ml-0.5">▊</span>
           </m.div>
 
@@ -228,10 +255,12 @@ const Hero = () => {
         className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
       >
         <span className="font-mono text-[10px] text-muted-foreground tracking-widest">SCROLL</span>
+        {/* Another endless loop — see the note on the drifting shapes above. */}
         <m.div
           animate={{ y: [0, 8, 0] }}
           transition={{ duration: 1.5, repeat: Infinity }}
           className="w-px h-8 bg-gradient-to-b from-primary/50 to-transparent"
+          suppressHydrationWarning
         />
       </m.div>
     </section>

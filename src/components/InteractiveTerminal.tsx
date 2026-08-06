@@ -4,8 +4,10 @@ import { useNavigate } from "react-router-dom";
 import { Terminal, X } from "lucide-react";
 import { processTerminalCommand, type TerminalLine } from "@/lib/terminal-commands";
 import { useTerminalHistory } from "@/hooks/useTerminalHistory";
+import { useEntrance } from "@/hooks/useEntrance";
 
 const InteractiveTerminal = () => {
+  const entrance = useEntrance();
   const [open, setOpen] = useState(false);
   const [showButton] = useState(true);
   const [lines, setLines] = useState<TerminalLine[]>([
@@ -106,7 +108,16 @@ const InteractiveTerminal = () => {
           <m.button
             onClick={() => setOpen(true)}
             className="fixed bottom-6 right-6 z-50 w-12 h-12 bg-card border border-border flex items-center justify-center text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 group"
-            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+            /*
+              Through `entrance()` like every other first-paint animation on the
+              site. This one was missed because the button is quick enough that
+              the prerender always captured it already faded in — the HTML never
+              carried the opacity:0, so the build's invisible-markup guard had
+              nothing to catch. Hydration is what surfaces it: the client's
+              first render wants opacity:0 over markup that is already visible,
+              which both mismatches and blinks the button out and back.
+            */
+            initial={entrance({ opacity: 0, scale: 0.8, y: 20 })}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
             whileHover={{ scale: 1.05 }}
