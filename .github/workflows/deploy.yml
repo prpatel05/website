@@ -62,6 +62,16 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          # The action's default is 10 minutes. On 2026-08-06 a deploy sat in
+          # `deployment_queued` for the whole of it and aborted, leaving a green
+          # build that never reached the site. Retrying does not recover it: a
+          # Pages deployment is identified by the commit SHA, so every re-run of
+          # the same commit collides with the cancelled deployment and returns
+          # "Deployment cancelled" within seconds. The only clean retry is a new
+          # commit, which is a poor answer to a queue simply being slow — so
+          # wait longer rather than abort.
+          timeout: 1800000
       # Ping IndexNow only after the site (and the key file) is live, so Bing can
       # verify the key and crawl new/changed posts within minutes. Best-effort:
       # the script always exits 0, so a submission hiccup never fails the deploy.
