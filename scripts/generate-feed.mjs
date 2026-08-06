@@ -1,7 +1,7 @@
 import { writeFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
-import { discoverPosts } from "./blog-posts.mjs";
+import { discoverPosts, postDescription } from "./blog-posts.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DIST = join(__dirname, "..", "dist");
@@ -84,7 +84,7 @@ function generateFeed(today) {
       <title>${escapeXml(post.title)}</title>
       <link>${postUrl(post.slug)}</link>
       <guid isPermaLink="true">${postUrl(post.slug)}</guid>
-      <description>${escapeXml(post.subtitle)}</description>
+      <description>${escapeXml(postDescription(post))}</description>
       <pubDate>${toRfc822(post.dateISO)}</pubDate>
     </item>`
     )

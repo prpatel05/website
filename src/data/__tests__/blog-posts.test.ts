@@ -9,6 +9,7 @@ import {
   loadPostContent,
 } from "../blog-posts/registry";
 import type { BlogPost } from "../blog-posts/registry";
+import { postDescription } from "@/lib/post-description";
 
 // The copy rules below lint what an author wrote, so they read the markdown off
 // disk. loadPostContent returns the built HTML, where a markdown link is an
@@ -189,6 +190,31 @@ describe("blog-posts data", () => {
         )
       );
     });
+
+    expect(offenders).toEqual([]);
+  });
+
+  // `subtitle` renders directly under the title, so it is allowed to be a
+  // fragment ("And How It Can Save Your Sanity"). The same string used to be
+  // the only description the meta tags, the JSON-LD and the RSS feed had — and
+  // there it appears with no title beside it, where a fragment reads as broken
+  // copy and Google throws it out to synthesise its own snippet. `description`
+  // is the override for those posts; this is the tripwire that says a post
+  // needs one.
+  //
+  // 50 is a tripwire, not a quality bar. The three posts this rule was written
+  // for measured 28, 31 and 34 characters; the thinnest subtitle that stands
+  // alone measures 58. The floor sits in that gap deliberately, so it fires on
+  // a detached fragment without forcing churn on short, complete sentences.
+  it("gives every post a description that stands on its own", () => {
+    const offenders = posts
+      .map((post) => ({ post, description: postDescription(post) }))
+      .filter(({ description }) => description.length < 50)
+      .map(
+        ({ post, description }) =>
+          `${post.slug}: ${description.length}ch — "${description}". ` +
+          `Add a \`description\` to src/data/blog-posts/${post.slug}.ts.`
+      );
 
     expect(offenders).toEqual([]);
   });
