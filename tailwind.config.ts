@@ -3,7 +3,18 @@ import tailwindcssAnimate from "tailwindcss-animate";
 
 export default {
   darkMode: ["class"],
-  content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
+  content: [
+    "./pages/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    "./app/**/*.{ts,tsx}",
+    "./src/**/*.{ts,tsx}",
+    // The build-time markdown renderer emits classNames too, and it lives
+    // outside src/. Without this glob Tailwind never sees them: a class that
+    // happens to be used elsewhere in the app still works, while a new one is
+    // silently dropped from the stylesheet and the markup references a rule
+    // that does not exist. Nothing fails — the style just never applies.
+    "./scripts/**/*.mjs",
+  ],
   prefix: "",
   theme: {
     container: {

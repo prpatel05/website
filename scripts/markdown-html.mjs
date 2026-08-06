@@ -44,6 +44,22 @@ const components = {
   strong: ({ children }) =>
     h("strong", { className: "text-foreground font-semibold" }, children),
   em: ({ children }) => h("em", { className: "text-primary/80" }, children),
+  // Without an entry here a markdown link emits a bare <a>, and Tailwind's
+  // preflight resets anchors to `color: inherit; text-decoration: inherit`.
+  // That paints the link in the exact colour, weight and decoration as the
+  // paragraph around it — indistinguishable from body text unless you happen
+  // to hover it. Colour alone would not be enough anyway (WCAG 1.4.1), so the
+  // underline is the part doing the real work.
+  a: ({ href, children }) =>
+    h(
+      "a",
+      {
+        href,
+        className:
+          "text-primary underline underline-offset-2 decoration-primary/40 hover:decoration-primary transition-colors",
+      },
+      children
+    ),
 };
 
 export const renderMarkdownToHtml = (markdown) =>
