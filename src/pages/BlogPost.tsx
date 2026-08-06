@@ -14,18 +14,23 @@ import { canonicalUrl } from "@/lib/canonical-url";
 import { postDescription } from "@/lib/post-description";
 import { heroFor, HERO_SIZES } from "@/lib/hero";
 import { BLOG_POST_CARD } from "@/lib/social-cards";
-import { useEntrance } from "@/hooks/useEntrance";
+import { useEntrance, useFirstLoad } from "@/hooks/useEntrance";
 import { mainContentProps } from "@/lib/skip-target";
-
+import { POST_BODY_ATTR, prerenderedBody } from "@/lib/prerendered-body";
 
 const BlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
   const post = slug ? getPostBySlug(slug) : undefined;
-  const [content, setContent] = useState("");
+  const firstLoad = useFirstLoad();
+  // Read once, during the first render — the moment at which the prerendered
+  // markup is still on the page and React has not touched it yet.
+  const [prerendered] = useState(() => (firstLoad ? prerenderedBody(slug) : ""));
+  const [content, setContent] = useState(prerendered);
   const entrance = useEntrance();
 
   useEffect(() => {
-    if (!post) return;
+    // Nothing to fetch when the body arrived with the document.
+    if (!post || prerendered) return;
     let live = true;
     loadPostContent(post.slug).then((md) => {
       if (live) setContent(md);
@@ -33,7 +38,7 @@ const BlogPost = () => {
     return () => {
       live = false;
     };
-  }, [post]);
+  }, [post, prerendered]);
 
   if (!post) return <NotFound />;
 
@@ -199,6 +204,9 @@ const BlogPost = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4, duration: 0.6 }}
             className="font-mono text-sm"
+            // Read back by `prerenderedBody` on first load, so hydration finds
+            // the body already in state instead of replacing this subtree.
+            {...{ [POST_BODY_ATTR]: post.slug }}
             /*
               The body is markdown in the repo but arrives here as HTML: the
               markdownHtml Vite plugin renders it at build time with the element

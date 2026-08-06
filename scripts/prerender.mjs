@@ -21,8 +21,15 @@ const ROUTES = [
   "/404",
 ];
 
-// Simple static file server for the dist folder
-function startServer() {
+// Simple static file server for the dist folder.
+//
+// `shell` is dist/index.html as the bundler left it — an empty `<div id="root">`
+// — captured before the loop starts overwriting it, and served for every route
+// that has no file of its own yet. It matters now that the app hydrates: the
+// loop's first pass replaces dist/index.html with the rendered homepage, so a
+// disk-backed SPA fallback would hand every later route the *homepage's* markup
+// and ask React to hydrate a different page into it.
+function startServer(shell) {
   const mimeTypes = {
     ".html": "text/html",
     ".js": "application/javascript",
@@ -38,17 +45,27 @@ function startServer() {
     ".txt": "text/plain",
   };
 
-  const server = createServer((req, res) => {
-    let filePath = join(DIST, req.url === "/" ? "index.html" : req.url);
+  const sendShell = (res) => {
+    res.writeHead(200, { "Content-Type": "text/html" });
+    res.end(shell);
+  };
 
-    // SPA fallback: if file doesn't exist, serve index.html
+  const server = createServer((req, res) => {
+    // "/" too, not just the fallback: the homepage is prerendered from the
+    // shell like every other route, and by the second build pass the file on
+    // disk is last build's output.
+    if (req.url === "/") return sendShell(res);
+
+    let filePath = join(DIST, req.url);
+
     if (!existsSync(filePath)) {
       // Check if it's a directory with index.html
       const indexPath = join(filePath, "index.html");
       if (existsSync(indexPath)) {
         filePath = indexPath;
       } else {
-        filePath = join(DIST, "index.html");
+        // SPA fallback.
+        return sendShell(res);
       }
     }
 
@@ -76,7 +93,17 @@ function startServer() {
 async function prerender() {
   console.log("Prerendering pages with Playwright...");
 
-  const { server, port } = await startServer();
+  // Captured before the first write below turns it into the rendered homepage.
+  const shell = readFileSync(join(DIST, "index.html"));
+  if (!/<div id="root">\s*<\/div>/.test(shell.toString())) {
+    throw new Error(
+      "dist/index.html does not have an empty #root — the prerender would be " +
+        "rendering on top of a previous pass instead of the bundler's shell, " +
+        "and every page would hydrate against the wrong markup"
+    );
+  }
+
+  const { server, port } = await startServer(shell);
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext();
 
@@ -122,6 +149,56 @@ async function prerender() {
         );
       }
     }
+
+    // React gives every text child its own DOM node, but the HTML serializer
+    // writes two adjacent text nodes as one run of characters and the browser
+    // that re-parses this file gets a single node back. `<span>#{tag}</span>`
+    // is two text fibers on the client and `#ai` in the file, so hydration
+    // looks for "#", finds "#ai", and — a text mismatch is fatal in a
+    // concurrent root — throws the whole prerendered page away and rebuilds it.
+    //
+    // `renderToString` never hits this because it emits a `<!-- -->` between
+    // adjacent text. A DOM snapshot has to insert those itself. React's
+    // hydration walk skips comment nodes, and nothing else on the page reads
+    // them, so they are inert everywhere except where they are load-bearing.
+    const hydratable = await page.evaluate(() => {
+      const walker = document.createTreeWalker(
+        document.body,
+        NodeFilter.SHOW_TEXT
+      );
+      const boundaries = [];
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        if (node.previousSibling?.nodeType === Node.TEXT_NODE) {
+          boundaries.push(node);
+        }
+      }
+      // Inserted after the walk rather than during it, so the walker is not
+      // stepping over a tree it is also mutating.
+      for (const node of boundaries) {
+        node.parentNode.insertBefore(document.createComment(""), node);
+      }
+
+      // Same story one attribute over. React builds the `style` attribute it
+      // expects as `name:value` joined with `;`; the CSSOM hands the serializer
+      // `name: value; ` with the spaces in. Identical CSS, different string, so
+      // every styled element reports a prop mismatch. Rewritten through the
+      // CSSOM rather than by regex so a `url(a b)` or a quoted value cannot be
+      // mangled on the way.
+      let restyled = 0;
+      for (const el of document.querySelectorAll("[style]")) {
+        const parts = [];
+        for (const name of el.style) {
+          parts.push(`${name}:${el.style.getPropertyValue(name)}`);
+        }
+        const normalized = parts.join(";");
+        if (normalized !== el.getAttribute("style")) {
+          el.setAttribute("style", normalized);
+          restyled += 1;
+        }
+      }
+
+      return { separators: boundaries.length, restyled };
+    });
 
     const html = await page.content();
 
@@ -198,7 +275,10 @@ async function prerender() {
 
     mkdirSync(dirname(outputFile), { recursive: true });
     writeFileSync(outputFile, html, "utf-8");
-    console.log(`  Wrote ${outputFile}`);
+    console.log(
+      `  Wrote ${outputFile} (${hydratable.separators} text separator(s), ` +
+        `${hydratable.restyled} style attribute(s) normalized)`
+    );
 
     await page.close();
   }

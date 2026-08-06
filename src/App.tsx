@@ -1,18 +1,14 @@
-import { Component, Suspense, lazy, type ReactNode, useEffect } from "react";
+import { Component, Suspense, type ReactNode, useEffect } from "react";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { AnimatePresence, LazyMotion, MotionConfig, domAnimation } from "framer-motion";
 import PageTransition from "@/components/PageTransition";
 import { MAIN_CONTENT_ID } from "@/lib/skip-target";
+import { useFirstLoad } from "@/hooks/useEntrance";
+import { BlogPostRoute, POST_PATH } from "./routes";
 import Index from "./pages/Index.tsx";
 import Blog from "./pages/Blog.tsx";
 import NotFound from "./pages/NotFound.tsx";
-
-// The post page is the only screen that shows a post body, so its markup and
-// the per-post HTML it imports stay out of the chunk the homepage and archive
-// load. (The markdown parser itself no longer ships at all — see
-// scripts/markdown-html.mjs.)
-const BlogPost = lazy(() => import("./pages/BlogPost.tsx"));
 
 /* ---------- Error Boundary ---------- */
 
@@ -67,6 +63,25 @@ const ResumePdfRedirect = () => {
   return null;
 };
 
+/**
+ * `<Suspense>`, except on the load that hydrates.
+ *
+ * React 18 claims a Suspense boundary during hydration by looking for the
+ * `<!--$-->` / `<!--/$-->` markers `renderToString` writes around it. Our
+ * prerendered HTML is a DOM snapshot taken from a live browser, and a
+ * client-side render emits no such markers — so a boundary that exists during
+ * hydration can never be matched, and React responds by deleting the page and
+ * rebuilding it. That is the defect, arriving one layer up from the route.
+ *
+ * Dropping the boundary is safe precisely on the load where it cannot work:
+ * src/main.tsx has already awaited the matched route's chunk before mounting,
+ * so nothing under here can suspend. A client-side navigation is the opposite
+ * case — the chunk may well be missing and there is no prerendered markup left
+ * to protect — so it keeps the boundary.
+ */
+const RouteBoundary = ({ children }: { children: ReactNode }) =>
+  useFirstLoad() ? <>{children}</> : <Suspense fallback={null}>{children}</Suspense>;
+
 const AnimatedRoutes = () => {
   const location = useLocation();
 
@@ -76,12 +91,12 @@ const AnimatedRoutes = () => {
         <Route path="/" element={<PageTransition><Index /></PageTransition>} />
         <Route path="/blog" element={<PageTransition><Blog /></PageTransition>} />
         <Route
-          path="/blog/:slug"
+          path={POST_PATH}
           element={
             <PageTransition>
-              <Suspense fallback={null}>
-                <BlogPost />
-              </Suspense>
+              <RouteBoundary>
+                <BlogPostRoute />
+              </RouteBoundary>
             </PageTransition>
           }
         />
