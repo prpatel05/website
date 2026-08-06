@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { m } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { posts } from "@/data/blog-posts/registry";
+import { useEntrance } from "@/hooks/useEntrance";
 import { useParallax } from "@/hooks/useParallax";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import SectionHeader from "./SectionHeader";
@@ -10,6 +11,7 @@ const HOME_BLOG_POST_LIMIT = 5;
 
 const BlogPreview = () => {
   const { ref, scrollYProgress, sectionOpacity } = useScrollAnimation();
+  const entrance = useEntrance();
   const previewPosts = posts.slice(0, HOME_BLOG_POST_LIMIT);
 
   const gridY = useParallax(scrollYProgress, [0, 1], ["0%", "-15%"]);
@@ -37,7 +39,7 @@ const BlogPreview = () => {
           {previewPosts.map((post, i) => (
             <m.article
               key={post.slug}
-              initial={{ opacity: 0, y: 40, scale: 0.97 }}
+              initial={entrance({ opacity: 0, y: 40, scale: 0.97 })}
               whileInView={{ opacity: 1, y: 0, scale: 1 }}
               viewport={{ once: true, margin: "-50px" }}
               transition={{ duration: 0.6, delay: i * 0.15, ease: [0.22, 1, 0.36, 1] }}

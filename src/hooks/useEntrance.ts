@@ -18,8 +18,17 @@ import { useLocation } from "react-router-dom";
  * HTML never contains the hidden state in the first place — no timing
  * assumption about when hydration or a lazy route chunk happens to finish.
  */
+
+/**
+ * The raw "this document was loaded, not navigated to" signal, for the callers
+ * that need it as a boolean rather than as an `initial` wrapper — a
+ * scroll-linked `style` value cannot be switched off with `false`, it has to be
+ * left off the element entirely. See `useScrollAnimation`.
+ */
+export const useFirstLoad = () => useLocation().key === "default";
+
 export const useEntrance = () => {
-  const firstLoad = useLocation().key === "default";
+  const firstLoad = useFirstLoad();
 
   return useCallback(
     <T,>(initial: T): T | false => (firstLoad ? false : initial),

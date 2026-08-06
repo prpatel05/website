@@ -1,6 +1,7 @@
 import { m } from "framer-motion";
 import { Mail, Phone } from "lucide-react";
 import { socials } from "@/data/socials";
+import { useEntrance } from "@/hooks/useEntrance";
 import { useParallax } from "@/hooks/useParallax";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import SectionHeader from "./SectionHeader";
@@ -9,6 +10,7 @@ const Contact = () => {
   const { ref, scrollYProgress, sectionOpacity } = useScrollAnimation({
     opacityRange: [0, 0.2],
   });
+  const entrance = useEntrance();
 
   const decorY = useParallax(scrollYProgress, [0, 1], ["100px", "-60px"]);
 
@@ -30,7 +32,7 @@ const Contact = () => {
         <div className="grid lg:grid-cols-2 gap-12">
           {/* Direct contact */}
           <m.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={entrance({ opacity: 0, y: 30 })}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
@@ -64,7 +66,7 @@ const Contact = () => {
 
           {/* Social grid */}
           <m.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={entrance({ opacity: 0, y: 30 })}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.3, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
@@ -76,7 +78,7 @@ const Contact = () => {
                 href={s.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                initial={entrance({ opacity: 0, scale: 0.8, y: 20 })}
                 whileInView={{ opacity: 1, scale: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.4 + i * 0.07, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
