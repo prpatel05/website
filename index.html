@@ -40,6 +40,43 @@
 
   <body>
     <div id="root"></div>
+    <!--
+      Ctrl+K opens the terminal, but the handler that does it lives in a React
+      effect, so it cannot bind until the bundle has downloaded, parsed and
+      hydrated. Every route is prerendered, so the page is painted and readable
+      long before that — on a slow connection, seconds before. A visitor who
+      hits the shortcut in that window gets nothing, and worse: with no
+      preventDefault bound yet the keystroke falls through to the browser, which
+      takes Ctrl+K for its own search bar. The shortcut is advertised on the
+      toggle button that is already on screen, so the window is real.
+
+      This stand-in binds at parse time — ahead of the module script, which is
+      deferred — and does the one thing that must not wait: swallow the key and
+      remember it. React claims the press on mount and retires the stand-in, so
+      only ever one handler is live.
+
+      Inline and unbundled on purpose: anything imported from `src/` arrives in
+      the very bundle whose download this exists to cover.
+    -->
+    <script>
+      (function () {
+        var pending = false;
+        function onKeyDown(e) {
+          if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+            e.preventDefault();
+            pending = true;
+          }
+        }
+        window.addEventListener("keydown", onKeyDown);
+        window.__terminalBoot = {
+          claim: function () {
+            window.removeEventListener("keydown", onKeyDown);
+            window.__terminalBoot = undefined;
+            return pending;
+          },
+        };
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

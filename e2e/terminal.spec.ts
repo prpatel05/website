@@ -108,3 +108,52 @@ test.describe("Interactive terminal", () => {
     });
   });
 });
+
+/**
+ * The other half of PRA-744. Making the tests wait for hydration stops them
+ * flaking, but it does that by no longer exercising the window a real visitor
+ * can land in: every route is prerendered, so the page — including the button
+ * advertising "Ctrl+K" — is painted and readable while the bundle is still
+ * downloading. Press the shortcut there and, before the fix, nothing happened
+ * and the browser took the keystroke for its own search bar.
+ *
+ * This holds the bundle outright rather than leaning on CPU throttling, so the
+ * press is pre-hydration by construction instead of by luck — the same reason
+ * the old flaky tests were not a usable regression test for this.
+ */
+test.describe("Ctrl+K before hydration", () => {
+  test("opens the terminal once React arrives", async ({ page }) => {
+    let release!: () => void;
+    const bundleHeld = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+
+    await page.route("**/assets/**.js", async (route) => {
+      await bundleHeld;
+      await route.continue();
+    });
+
+    // `commit`, not the default `load`: the module script is deferred, so
+    // waiting for load would wait for the very bundle being held.
+    await page.goto("/", { waitUntil: "commit" });
+
+    // The stand-in is bound and React has not claimed it yet. This is the
+    // precondition the whole test rests on, so it is asserted, not assumed —
+    // React's mount effect clears `__terminalBoot`, so its presence is direct
+    // proof we are still pre-hydration.
+    await page.waitForFunction(() => window.__terminalBoot !== undefined);
+    await expect(page.locator(TERMINAL_TOGGLE)).toBeVisible();
+
+    await page.keyboard.press("Control+k");
+
+    // Still pre-hydration, and still nothing on screen: the stand-in only
+    // records the intent, it does not render a terminal of its own.
+    expect(await page.evaluate(() => window.__terminalBoot !== undefined)).toBe(true);
+    await expect(page.getByText("pratik.pa.tel — bash")).not.toBeVisible();
+
+    release();
+
+    await expect(page.getByText("pratik.pa.tel — bash")).toBeVisible();
+    await expect(page.getByRole("dialog", { name: "Interactive terminal" })).toBeVisible();
+  });
+});
