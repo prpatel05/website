@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { AnimatePresence, LazyMotion, MotionConfig, domAnimation } from "framer-motion";
 import PageTransition from "@/components/PageTransition";
+import { MAIN_CONTENT_ID } from "@/lib/skip-target";
 import Index from "./pages/Index.tsx";
 import Blog from "./pages/Blog.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -105,14 +106,21 @@ const App = () => (
   <HelmetProvider>
     <ErrorBoundary>
       <a
-        href="#main-content"
+        href={`#${MAIN_CONTENT_ID}`}
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:outline-none"
       >
         Skip to main content
       </a>
       <BrowserRouter>
         <ScrollToTop />
-        <main id="main-content">
+        {/*
+          Deliberately not <main>. This is the router's layout wrapper, so every
+          page's <nav> and <footer> render inside it — a <main> here would have
+          contained the very blocks the skip link is supposed to jump over, and
+          would have stripped <footer> of its implicit contentinfo role. Each
+          page owns its own <main> around its actual content instead.
+        */}
+        <div>
           <LazyMotion features={domAnimation} strict>
             {/*
               `reducedMotion="user"` drops transform animations — the page
@@ -126,7 +134,7 @@ const App = () => (
               <AnimatedRoutes />
             </MotionConfig>
           </LazyMotion>
-        </main>
+        </div>
       </BrowserRouter>
     </ErrorBoundary>
   </HelmetProvider>

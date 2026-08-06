@@ -6,6 +6,7 @@ import Contact from "@/components/Contact";
 import InteractiveTerminal from "@/components/InteractiveTerminal";
 import SEO from "@/components/SEO";
 import { SITE_CARD } from "@/lib/social-cards";
+import { mainContentProps } from "@/lib/skip-target";
 
 // The portrait, used for the Person JSON-LD where a headshot is what's wanted.
 const HEADSHOT_URL = "https://pratik.pa.tel/images/headshot.png";
@@ -79,10 +80,13 @@ const Index = () => {
         jsonLd={personJsonLd}
       />
       <Navbar />
-      <Hero />
-      <About />
-      <BlogPreview />
-      <Contact />
+      <main {...mainContentProps}>
+        <Hero />
+        <About />
+        <BlogPreview />
+        <Contact />
+      </main>
+      {/* Outside <main>: a floating command palette, not page content. */}
       <InteractiveTerminal />
       <footer className="py-6 border-t border-border">
         <div className="container px-4 flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4 font-mono text-[10px] text-muted-foreground tracking-widest">

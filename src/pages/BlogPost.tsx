@@ -14,6 +14,7 @@ import { canonicalUrl } from "@/lib/canonical-url";
 import { heroFor, HERO_SIZES } from "@/lib/hero";
 import { BLOG_POST_CARD } from "@/lib/social-cards";
 import { useEntrance } from "@/hooks/useEntrance";
+import { mainContentProps } from "@/lib/skip-target";
 
 
 const BlogPost = () => {
@@ -123,8 +124,9 @@ const BlogPost = () => {
         </div>
       </nav>
 
-      <article className="pt-28 pb-24">
-        <div className="container max-w-3xl">
+      <main {...mainContentProps}>
+        <article className="pt-28 pb-24">
+          <div className="container max-w-3xl">
           {/* Meta */}
           <m.div
             initial={entrance({ opacity: 0, y: 20 })}
@@ -262,8 +264,9 @@ const BlogPost = () => {
               </span>
             </div>
           </m.div>
-        </div>
-      </article>
+          </div>
+        </article>
+      </main>
     </div>
   );
 };

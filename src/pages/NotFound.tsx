@@ -4,13 +4,18 @@ import { m } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { posts } from "@/data/blog-posts/registry";
 import { useEntrance } from "@/hooks/useEntrance";
+import { mainContentProps } from "@/lib/skip-target";
 
 const NotFound = () => {
   const entrance = useEntrance();
   const recentPosts = posts.slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4">
+    // This page has no nav, so the whole page is the content region.
+    <main
+      {...mainContentProps}
+      className="min-h-screen bg-background flex flex-col items-center justify-center px-4"
+    >
       {/*
         This page is prerendered to dist/404.html, which GitHub Pages serves —
         with a real 404 status — for every unknown URL. No canonical: pointing
@@ -72,7 +77,7 @@ const NotFound = () => {
           </div>
         </m.div>
       )}
-    </div>
+    </main>
   );
 };
 

@@ -131,11 +131,32 @@ async function prerender() {
     // the page did not appear until hydration finished at ~2s. src/hooks/
     // useEntrance skips the entrance on first load; this keeps a regression
     // from shipping silently.
-    const hidden = [
-      /<main[^>]*id="main-content"[^>]*>\s*<div[^>]*>/,
-      /<h1[^>]*>/,
-    ]
-      .map((pattern) => html.match(pattern)?.[0])
+    // Each probe must find its anchor. A regex that silently stops matching after
+    // a refactor turns this guard green forever, which is worse than not having
+    // it — so a missing anchor is an error, not a skipped check.
+    const probes = [
+      { name: "<main id=main-content>", pattern: /<main[^>]*id="main-content"[^>]*>/ },
+      // The first element inside <main>: the route wrapper framer-motion writes
+      // `initial` onto. Matched by position rather than by tag name, so moving
+      // from <div> to <section> does not quietly disarm it.
+      {
+        name: "first child of <main>",
+        pattern: /<main[^>]*id="main-content"[^>]*>\s*<[a-z]+[^>]*>/,
+      },
+      { name: "<h1>", pattern: /<h1[^>]*>/ },
+    ];
+
+    const missing = probes.filter((p) => !p.pattern.test(html));
+    if (missing.length > 0) {
+      throw new Error(
+        `${route}: prerender visibility guard found no ${missing
+          .map((p) => p.name)
+          .join(", ")} — the probe is stale, not the page healthy`
+      );
+    }
+
+    const hidden = probes
+      .map((p) => html.match(p.pattern)?.[0])
       .filter((tag) => tag && /opacity:\s*0[;"]/.test(tag));
 
     if (hidden.length > 0) {
