@@ -1,6 +1,11 @@
-import { test, expect, type Page } from "./fixtures";
-
-const openTerminal = 'button[title="Open terminal (Ctrl+K)"]';
+import {
+  test,
+  expect,
+  TERMINAL_TOGGLE as openTerminal,
+  openTerminalByClick,
+  proveReactIsLive,
+  type Page,
+} from "./fixtures";
 
 /**
  * Where the keyboard actually is, relative to the open dialog.
@@ -131,8 +136,7 @@ test.describe("Mobile menu accessibility", () => {
 test.describe("Terminal accessibility", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
-    await page.locator(openTerminal).click();
-    await expect(page.getByRole("dialog", { name: "Interactive terminal" })).toBeVisible();
+    await openTerminalByClick(page);
   });
 
   test("command input has an accessible name, not just a placeholder", async ({ page }) => {
@@ -178,29 +182,12 @@ test.describe("Terminal accessibility", () => {
   });
 });
 
-/**
- * Ctrl+K is bound in a `useEffect`, so a press that lands before React has
- * hydrated is silently dropped and the test sees a terminal that never opened.
- * Locally hydration always wins the race; on a CI runner it does not, which is
- * why every Ctrl+K test in the suite is flaky there.
- *
- * Opening once through the click handler proves React is live before any of
- * that matters, then Escape puts the page back to a closed terminal. Focus is
- * left on the toggle button, so callers that care about the starting focus set
- * it themselves afterwards.
- */
-async function openWithClickToProveHydration(page: Page) {
-  const dialog = page.getByRole("dialog", { name: "Interactive terminal" });
-  await page.locator(openTerminal).click();
-  await expect(dialog).toBeVisible();
-  await page.keyboard.press("Escape");
-  await expect(dialog).not.toBeVisible();
-}
-
+// `proveReactIsLive` lives in ./fixtures now, shared with terminal.spec.ts —
+// see there for why a click gates on hydration and a keypress does not.
 test.describe("Terminal opened by keyboard", () => {
   test("Escape returns focus to wherever Ctrl+K was pressed", async ({ page }) => {
     await page.goto("/");
-    await openWithClickToProveHydration(page);
+    await proveReactIsLive(page);
 
     const invoker = page.getByRole("link", { name: "pratik.pa.tel" });
     await invoker.focus();
@@ -217,7 +204,7 @@ test.describe("Terminal opened by keyboard", () => {
     page,
   }) => {
     await page.goto("/");
-    await openWithClickToProveHydration(page);
+    await proveReactIsLive(page);
 
     // The state under test: document.activeElement is <body>, which the trap
     // has to reject rather than restore to, or closing drops the keyboard at
