@@ -35,6 +35,15 @@ const InteractiveTerminal = () => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [lines]);
 
+  // A Ctrl+K that landed before this component could bind anything was caught
+  // and held by the stand-in in index.html. Take it over: open if the visitor
+  // already asked, and retire the stand-in either way, so the toggle below is
+  // the only live handler. Mount-only — the stand-in answers once and then
+  // removes itself, so a later mount finds nothing to claim.
+  useEffect(() => {
+    if (window.__terminalBoot?.claim()) setOpen(true);
+  }, []);
+
   // Keyboard shortcut to toggle
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {

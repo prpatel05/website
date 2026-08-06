@@ -40,6 +40,59 @@
 
   <body>
     <div id="root"></div>
+    <!--
+      Ctrl+K opens the terminal, but the handler that does it lives in a React
+      effect, so it cannot bind until the bundle has downloaded, parsed and
+      hydrated. Every route is prerendered, so the page is painted and readable
+      long before that — on a slow connection, seconds before. A visitor who
+      hits the shortcut in that window gets nothing, and worse: with no
+      preventDefault bound yet the keystroke falls through to the browser, which
+      takes Ctrl+K for its own search bar. The shortcut is advertised on the
+      toggle button that is already on screen, so the window is real.
+
+      This stand-in binds at parse time — ahead of the module script, which is
+      deferred — and does the one thing that must not wait: swallow the key and
+      remember it. React claims the press on mount and retires the stand-in, so
+      only ever one handler is live.
+
+      Inline and unbundled on purpose: anything imported from `src/` arrives in
+      the very bundle whose download this exists to cover.
+
+      Only the home route mounts the terminal, but this file is the shell for
+      every route, so the stand-in first checks that the page it landed on
+      actually has a terminal to open. Without that check it would bind on
+      /blog, /404 and the rest, where nothing ever mounts to claim it, and go on
+      swallowing Ctrl+K for the life of the page — leaving the shortcut worse off
+      than the gap it exists to close. The prerendered markup is already in the
+      DOM above, so the toggle is a reliable tell at this point.
+    -->
+    <script>
+      (function () {
+        var armed = !!document.querySelector('button[title="Open terminal (Ctrl+K)"]');
+        var pending = false;
+
+        function onKeyDown(e) {
+          if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+            e.preventDefault();
+            pending = true;
+          }
+        }
+
+        if (armed) window.addEventListener("keydown", onKeyDown);
+
+        // Published either way, so "this script has run" is observable on every
+        // route — on the unarmed ones that is the only way to tell the guard
+        // apart from a page that simply has not parsed this far yet.
+        window.__terminalBoot = {
+          armed: armed,
+          claim: function () {
+            if (armed) window.removeEventListener("keydown", onKeyDown);
+            window.__terminalBoot = undefined;
+            return pending;
+          },
+        };
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

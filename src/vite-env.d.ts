@@ -8,3 +8,22 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+interface Window {
+  /**
+   * The pre-hydration Ctrl+K stand-in defined inline in `index.html`. Present
+   * from parse time until React claims it; `undefined` afterwards.
+   */
+  __terminalBoot?: {
+    /**
+     * Whether this route had a terminal to guard, and so whether a keydown
+     * listener was actually bound. False on every route except home.
+     */
+    armed: boolean;
+    /**
+     * Retires the stand-in and reports whether a Ctrl+K landed before React was
+     * live. Call once, from the terminal's mount effect.
+     */
+    claim(): boolean;
+  };
+}
