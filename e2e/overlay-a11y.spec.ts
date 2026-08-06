@@ -178,9 +178,29 @@ test.describe("Terminal accessibility", () => {
   });
 });
 
+/**
+ * Ctrl+K is bound in a `useEffect`, so a press that lands before React has
+ * hydrated is silently dropped and the test sees a terminal that never opened.
+ * Locally hydration always wins the race; on a CI runner it does not, which is
+ * why every Ctrl+K test in the suite is flaky there.
+ *
+ * Opening once through the click handler proves React is live before any of
+ * that matters, then Escape puts the page back to a closed terminal. Focus is
+ * left on the toggle button, so callers that care about the starting focus set
+ * it themselves afterwards.
+ */
+async function openWithClickToProveHydration(page: Page) {
+  const dialog = page.getByRole("dialog", { name: "Interactive terminal" });
+  await page.locator(openTerminal).click();
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).not.toBeVisible();
+}
+
 test.describe("Terminal opened by keyboard", () => {
   test("Escape returns focus to wherever Ctrl+K was pressed", async ({ page }) => {
     await page.goto("/");
+    await openWithClickToProveHydration(page);
 
     const invoker = page.getByRole("link", { name: "pratik.pa.tel" });
     await invoker.focus();
@@ -197,9 +217,17 @@ test.describe("Terminal opened by keyboard", () => {
     page,
   }) => {
     await page.goto("/");
-    // No .focus() first: document.activeElement is <body>, which is a value
-    // the trap has to reject rather than restore to, or closing drops the
-    // keyboard at the top of the document with nothing selected.
+    await openWithClickToProveHydration(page);
+
+    // The state under test: document.activeElement is <body>, which the trap
+    // has to reject rather than restore to, or closing drops the keyboard at
+    // the top of the document with nothing selected. Escape above left focus
+    // on the toggle button, so clear it explicitly.
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    await expect
+      .poll(() => page.evaluate(() => document.activeElement?.tagName))
+      .toBe("BODY");
+
     await page.keyboard.press("Control+k");
     await expect(page.getByRole("textbox", { name: "Terminal command" })).toBeFocused();
 
