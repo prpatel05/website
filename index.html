@@ -57,20 +57,36 @@
 
       Inline and unbundled on purpose: anything imported from `src/` arrives in
       the very bundle whose download this exists to cover.
+
+      Only the home route mounts the terminal, but this file is the shell for
+      every route, so the stand-in first checks that the page it landed on
+      actually has a terminal to open. Without that check it would bind on
+      /blog, /404 and the rest, where nothing ever mounts to claim it, and go on
+      swallowing Ctrl+K for the life of the page — leaving the shortcut worse off
+      than the gap it exists to close. The prerendered markup is already in the
+      DOM above, so the toggle is a reliable tell at this point.
     -->
     <script>
       (function () {
+        var armed = !!document.querySelector('button[title="Open terminal (Ctrl+K)"]');
         var pending = false;
+
         function onKeyDown(e) {
           if ((e.metaKey || e.ctrlKey) && e.key === "k") {
             e.preventDefault();
             pending = true;
           }
         }
-        window.addEventListener("keydown", onKeyDown);
+
+        if (armed) window.addEventListener("keydown", onKeyDown);
+
+        // Published either way, so "this script has run" is observable on every
+        // route — on the unarmed ones that is the only way to tell the guard
+        // apart from a page that simply has not parsed this far yet.
         window.__terminalBoot = {
+          armed: armed,
           claim: function () {
-            window.removeEventListener("keydown", onKeyDown);
+            if (armed) window.removeEventListener("keydown", onKeyDown);
             window.__terminalBoot = undefined;
             return pending;
           },

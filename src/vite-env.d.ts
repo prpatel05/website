@@ -16,6 +16,11 @@ interface Window {
    */
   __terminalBoot?: {
     /**
+     * Whether this route had a terminal to guard, and so whether a keydown
+     * listener was actually bound. False on every route except home.
+     */
+    armed: boolean;
+    /**
      * Retires the stand-in and reports whether a Ctrl+K landed before React was
      * live. Call once, from the terminal's mount effect.
      */

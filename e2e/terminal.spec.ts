@@ -156,4 +156,52 @@ test.describe("Ctrl+K before hydration", () => {
     await expect(page.getByText("pratik.pa.tel — bash")).toBeVisible();
     await expect(page.getByRole("dialog", { name: "Interactive terminal" })).toBeVisible();
   });
+
+  /**
+   * `index.html` is the shell for every route, but only the home route mounts a
+   * terminal. So the stand-in must not bind on the others: there is nothing
+   * there to claim it, and an unclaimed stand-in keeps calling preventDefault
+   * for the life of the page — permanently eating a shortcut that, before any of
+   * this, at least still reached the browser.
+   *
+   * The home route runs the same probe as a positive control. Without it this
+   * would pass just as happily against a stand-in that had been deleted
+   * outright, or one whose toggle selector had rotted into matching nothing.
+   */
+  for (const { route, path, armed } of [
+    { route: "a route with no terminal", path: "/blog/", armed: false },
+    { route: "the home route", path: "/", armed: true },
+  ]) {
+    test(`Ctrl+K is ${armed ? "" : "not "}swallowed pre-hydration on ${route}`, async ({ page }) => {
+      await page.route("**/assets/**.js", () => {
+        /* never continued: holds the page pre-hydration for the whole test */
+      });
+
+      await page.goto(path, { waitUntil: "commit" });
+
+      // `commit` resolves before the body is parsed, and the stand-in is the
+      // last thing in it. Waiting on the toggle is not enough — it parses in
+      // first, so probing then reads a page that has not run the script yet and
+      // an unguarded build looks identical to a guarded one.
+      await page.waitForFunction(() => window.__terminalBoot !== undefined);
+      expect(await page.evaluate(() => window.__terminalBoot?.armed)).toBe(armed);
+      await expect(page.locator(TERMINAL_TOGGLE)).toHaveCount(armed ? 1 : 0);
+
+      // Registered after the stand-in, so it observes whether that handler
+      // called preventDefault — the actual user-visible stake, not bookkeeping.
+      await page.evaluate(() => {
+        window.addEventListener("keydown", (e) => {
+          (window as unknown as { __sawPrevented?: boolean }).__sawPrevented = e.defaultPrevented;
+        });
+      });
+
+      await page.keyboard.press("Control+k");
+
+      expect(
+        await page.evaluate(
+          () => (window as unknown as { __sawPrevented?: boolean }).__sawPrevented,
+        ),
+      ).toBe(armed);
+    });
+  }
 });
