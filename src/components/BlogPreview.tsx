@@ -54,7 +54,7 @@ const BlogPreview = () => {
                       <span className="font-mono text-[10px] text-muted-foreground">
                         {post.date}
                       </span>
-                      <span className="text-border hidden sm:inline">|</span>
+                      <span aria-hidden="true" className="text-border hidden sm:inline">|</span>
                       <span className="font-mono text-[10px] text-muted-foreground">
                         {post.readTime}
                       </span>

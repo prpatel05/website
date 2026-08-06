@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { m, AnimatePresence } from "framer-motion";
 import { Terminal, X } from "lucide-react";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 const links = [
   { label: "about()", href: "#about" },
@@ -12,6 +13,11 @@ const links = [
 const Navbar = () => {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  // The toggle stays mounted behind the overlay, so the trap's own bookkeeping
+  // is enough to hand focus back to it on close — no fallback needed here.
+  useFocusTrap(dialogRef, open);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -32,6 +38,7 @@ const Navbar = () => {
   return (
     <>
       <nav
+        aria-label="Main"
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
           scrolled ? "bg-background/80 backdrop-blur-xl border-b border-border" : ""
         }`}
@@ -66,6 +73,7 @@ const Navbar = () => {
       <AnimatePresence>
         {open && (
           <m.div
+            ref={dialogRef}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
