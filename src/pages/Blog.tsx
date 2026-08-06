@@ -80,7 +80,7 @@ const Blog = () => {
         ogImageHeight={SITE_CARD.height}
         jsonLd={blogJsonLd}
       />
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
+      <nav aria-label="Main" className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="container flex items-center h-16">
           <Link
             to="/"
@@ -139,7 +139,7 @@ const Blog = () => {
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <span className="font-mono text-[10px] text-muted-foreground">{post.date}</span>
-                          <span className="text-border">|</span>
+                          <span aria-hidden="true" className="text-border">|</span>
                           <span className="font-mono text-[10px] text-muted-foreground">{post.readTime}</span>
                           {post.tags.map((tag) => (
                             <span key={tag} className="font-mono text-[10px] text-primary/60 border border-primary/20 px-2 py-0.5">

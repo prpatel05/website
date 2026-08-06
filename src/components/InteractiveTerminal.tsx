@@ -5,6 +5,7 @@ import { Terminal, X } from "lucide-react";
 import { processTerminalCommand, type TerminalLine } from "@/lib/terminal-commands";
 import { useTerminalHistory } from "@/hooks/useTerminalHistory";
 import { useEntrance } from "@/hooks/useEntrance";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 const InteractiveTerminal = () => {
   const entrance = useEntrance();
@@ -19,11 +20,16 @@ const InteractiveTerminal = () => {
   const { push, navigateUp, navigateDown } = useTerminalHistory();
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (open) inputRef.current?.focus();
-  }, [open]);
+  // Opening lands on the command line rather than the close button — the input
+  // is the whole point of the overlay. Ctrl+K from anywhere in the page means
+  // the trap has to hand focus back to wherever it came from, falling back to
+  // the toggle button for the common case where that was the toggle itself
+  // (which unmounts while the terminal is open, so the old node is long gone).
+  useFocusTrap(dialogRef, open, { initialFocus: inputRef, fallbackFocus: toggleRef });
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -106,6 +112,7 @@ const InteractiveTerminal = () => {
       <AnimatePresence>
         {showButton && !open && (
           <m.button
+            ref={toggleRef}
             onClick={() => setOpen(true)}
             className="fixed bottom-6 right-6 z-50 w-12 h-12 bg-card border border-border flex items-center justify-center text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 group"
             /*
@@ -141,6 +148,7 @@ const InteractiveTerminal = () => {
               onClick={() => setOpen(false)}
             />
             <m.div
+              ref={dialogRef}
               initial={{ opacity: 0, y: 40, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 40, scale: 0.95 }}

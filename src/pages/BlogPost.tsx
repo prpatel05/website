@@ -118,7 +118,7 @@ const BlogPost = () => {
         jsonLd={blogPostJsonLd}
       />
       {/* Header */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
+      <nav aria-label="Main" className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="container flex items-center h-16">
           <Link
             to="/"
@@ -144,7 +144,7 @@ const BlogPost = () => {
                 <Calendar className="w-3.5 h-3.5" />
                 {post.date}
               </span>
-              <span className="text-border">|</span>
+              <span aria-hidden="true" className="text-border">|</span>
               <span className="flex items-center gap-1.5 font-mono text-xs text-muted-foreground">
                 <Clock className="w-3.5 h-3.5" />
                 {post.readTime}
