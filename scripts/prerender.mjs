@@ -165,6 +165,28 @@ async function prerender() {
       );
     }
 
+    // Those three probes are anchors, not coverage: they see the route wrapper
+    // and the <h1> and nothing else. The homepage shipped 31 hidden elements —
+    // its entire body below the hero — with all three green, because each
+    // section carries its own `initial` states and its own scroll-linked
+    // opacity, none of which the probes pass over. Nothing in prerendered HTML
+    // has a good reason to be transparent, so count every inline one rather
+    // than trying to name the elements worth checking.
+    const invisible = [
+      ...html.matchAll(/<[a-z][^>]*style="[^"]*opacity:\s*0[;"][^>]*>/g),
+    ].map((match) => match[0]);
+
+    if (invisible.length > 0) {
+      const sample = invisible.slice(0, 5).join("\n    ");
+      throw new Error(
+        `${route} prerendered ${invisible.length} element(s) at inline ` +
+          `opacity:0 — invisible until React downloads and hydrates. Wrap the ` +
+          `framer-motion \`initial\` in \`entrance()\` (src/hooks/useEntrance.ts), ` +
+          `and check any scroll-linked opacity bound into \`style\`.\n    ${sample}` +
+          (invisible.length > 5 ? `\n    ...and ${invisible.length - 5} more` : "")
+      );
+    }
+
     // Determine output path. /404 is the exception to the directory-per-route
     // rule: GitHub Pages only looks for a top-level 404.html.
     const outputFile =

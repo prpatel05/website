@@ -1,4 +1,5 @@
 import { m } from "framer-motion";
+import { useEntrance } from "@/hooks/useEntrance";
 import { useParallax } from "@/hooks/useParallax";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import SectionHeader from "./SectionHeader";
@@ -22,6 +23,7 @@ const stats = [
 
 const About = () => {
   const { ref, scrollYProgress, sectionOpacity } = useScrollAnimation();
+  const entrance = useEntrance();
 
   const leftX = useParallax(scrollYProgress, [0, 0.4], ["-60px", "0px"]);
   const rightX = useParallax(scrollYProgress, [0, 0.4], ["60px", "0px"]);
@@ -37,7 +39,7 @@ const About = () => {
           {/* Left - bio with parallax slide-in */}
           <m.div style={{ x: leftX }}>
             <m.div
-              initial={{ opacity: 0, y: 30 }}
+              initial={entrance({ opacity: 0, y: 30 })}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.2 }}
@@ -78,7 +80,7 @@ const About = () => {
                 {stats.map((stat, i) => (
                   <m.div
                     key={stat.label}
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={entrance({ opacity: 0, y: 20 })}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: 0.4 + i * 0.1, duration: 0.5 }}
@@ -99,7 +101,7 @@ const About = () => {
           {/* Right - skills with parallax slide-in */}
           <m.div style={{ x: rightX }}>
             <m.div
-              initial={{ opacity: 0, y: 30 }}
+              initial={entrance({ opacity: 0, y: 30 })}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.3 }}
@@ -115,7 +117,7 @@ const About = () => {
                   {skills.map((skill, i) => (
                     <m.div
                       key={skill.name}
-                      initial={{ opacity: 0, x: 20 }}
+                      initial={entrance({ opacity: 0, x: 20 })}
                       whileInView={{ opacity: 1, x: 0 }}
                       viewport={{ once: true }}
                       transition={{ delay: 0.4 + i * 0.08, duration: 0.4 }}
@@ -126,7 +128,7 @@ const About = () => {
                       </div>
                       <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                         <m.div
-                          initial={{ width: 0 }}
+                          initial={entrance({ width: 0 })}
                           whileInView={{ width: `${skill.level}%` }}
                           viewport={{ once: true }}
                           transition={{ delay: 0.6 + i * 0.08, duration: 0.8, ease: "easeOut" }}

@@ -1,5 +1,6 @@
 import { m } from "framer-motion";
 import type { ReactNode } from "react";
+import { useEntrance } from "@/hooks/useEntrance";
 
 interface SectionHeaderProps {
   label: string;
@@ -15,23 +16,27 @@ const SectionHeader = ({
   titleRight,
   titleRightClass = "text-primary text-glow",
   children,
-}: SectionHeaderProps) => (
-  <m.div
-    initial={{ opacity: 0 }}
-    whileInView={{ opacity: 1 }}
-    viewport={{ once: true }}
-    transition={{ duration: 0.6 }}
-  >
-    <span className="font-mono text-xs text-primary/60 tracking-widest block mb-2">
-      {label}
-    </span>
-    {children ?? (
-      <h2 className="font-display text-3xl sm:text-4xl lg:text-6xl font-bold">
-        <span className="text-foreground">{titleLeft}</span>{" "}
-        <span className={titleRightClass}>{titleRight}</span>
-      </h2>
-    )}
-  </m.div>
-);
+}: SectionHeaderProps) => {
+  const entrance = useEntrance();
+
+  return (
+    <m.div
+      initial={entrance({ opacity: 0 })}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.6 }}
+    >
+      <span className="font-mono text-xs text-primary/60 tracking-widest block mb-2">
+        {label}
+      </span>
+      {children ?? (
+        <h2 className="font-display text-3xl sm:text-4xl lg:text-6xl font-bold">
+          <span className="text-foreground">{titleLeft}</span>{" "}
+          <span className={titleRightClass}>{titleRight}</span>
+        </h2>
+      )}
+    </m.div>
+  );
+};
 
 export default SectionHeader;
