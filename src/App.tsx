@@ -59,11 +59,6 @@ const ScrollToTop = () => {
 
 /* ---------- Routes ---------- */
 
-const ResumePdfRedirect = () => {
-  window.location.replace(`${import.meta.env.BASE_URL}resume.pdf`);
-  return null;
-};
-
 /**
  * `<Suspense>`, except on the load that hydrates.
  *
@@ -101,7 +96,12 @@ const AnimatedRoutes = () => {
             </PageTransition>
           }
         />
-        <Route path="/resume" element={<ResumePdfRedirect />} />
+        {/*
+          No `/resume` route. public/resume/index.html is the redirect, and on
+          GitHub Pages it always wins: /resume 301s to /resume/, which is a real
+          file, so a router-side redirect could never run there. It works for
+          readers with JS off and for crawlers, which a route cannot.
+        */}
         <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
       </Routes>
     </AnimatePresence>
