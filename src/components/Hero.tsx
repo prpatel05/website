@@ -1,4 +1,4 @@
-import { m, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { m, useReducedMotion, useScroll } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import { useEntrance } from "@/hooks/useEntrance";
 import { useParallax } from "@/hooks/useParallax";
@@ -31,7 +31,12 @@ const Hero = () => {
   const bgY = useParallax(scrollYProgress, [0, 1], ["0%", "30%"]);
   const textY = useParallax(scrollYProgress, [0, 1], ["0%", "50%"]);
   const photoY = useParallax(scrollYProgress, [0, 1], ["0%", "-20%"]);
-  const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+  // Bound into `style` on the whole hero column, so it is not an animation that
+  // `MotionConfig reducedMotion="user"` can switch off — the same reason every
+  // sibling here goes through `useParallax`. Left bare, the h1, the role line,
+  // both CTAs and the portrait went on fading with the scrollbar for exactly
+  // the people who asked them not to.
+  const opacity = useParallax(scrollYProgress, [0, 0.8], [1, 0]);
   const scale = useParallax(scrollYProgress, [0, 1], [1, 0.92]);
   const statusX = useParallax(scrollYProgress, [0, 1], ["0px", "-40px"]);
 

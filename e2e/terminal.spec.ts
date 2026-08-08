@@ -98,6 +98,24 @@ test.describe("Interactive terminal", () => {
       await expect(page.getByText("command not found: fakecmd")).toBeVisible();
     });
 
+    /**
+     * The only command that routes, and so the only one that leaves a URL in
+     * the address bar for the reader to copy or bookmark. It asked for the
+     * unslashed `/blog`, which Pages 301s — the one place on the site emitting
+     * the redirecting form everything else is careful to avoid. Asserted on the
+     * landed URL rather than on the command table, so it covers the routing too:
+     * the route is declared as `/blog`, and this is what proves the slashed
+     * path still reaches it.
+     */
+    test("blog command navigates to the slash-terminated archive", async ({ page }) => {
+      await command(page).fill("blog");
+      await page.keyboard.press("Enter");
+
+      await page.waitForURL("**/blog/");
+      expect(new URL(page.url()).pathname).toBe("/blog/");
+      await expect(page.getByRole("heading", { name: "Blog archive" })).toBeVisible();
+    });
+
     test("clear command clears terminal output", async ({ page }) => {
       await expect(page.getByText("Welcome to pratik.pa.tel v3.0.1")).toBeVisible();
 
