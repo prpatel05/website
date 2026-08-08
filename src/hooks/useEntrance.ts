@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { useLocation } from "react-router-dom";
+import { useMotionFeaturesReady } from "@/lib/motion-ready";
 
 /**
  * Wraps a framer-motion `initial` value so entrance animations only run on
@@ -27,11 +28,21 @@ import { useLocation } from "react-router-dom";
  */
 export const useFirstLoad = () => useLocation().key === "default";
 
+/**
+ * The second suppression case is the animation features not being here yet.
+ * They load from their own chunk, and until it lands `m` can write `initial`
+ * into the inline style but cannot run the variant that clears it — so a
+ * navigation made inside that window would leave the incoming route sitting at
+ * `opacity: 0` for as long as the chunk took. Skipping the entrance costs that
+ * one navigation its decoration; keeping it costs the reader the page.
+ */
 export const useEntrance = () => {
   const firstLoad = useFirstLoad();
+  const motionReady = useMotionFeaturesReady();
+  const suppressed = firstLoad || !motionReady;
 
   return useCallback(
-    <T,>(initial: T): T | false => (firstLoad ? false : initial),
-    [firstLoad]
+    <T,>(initial: T): T | false => (suppressed ? false : initial),
+    [suppressed]
   );
 };
