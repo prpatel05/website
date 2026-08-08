@@ -2,6 +2,25 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
+    <!--
+      The only implementation of /resume. GitHub Pages 301s /resume to /resume/
+      and serves this file, so a router-side redirect in the app could never run
+      in production; there used to be one, and it was dead code.
+
+      The zero-second refresh is the redirect. Google reads an instant meta
+      refresh as a permanent one, which is the same signal a 301 would carry —
+      and 301 is not on the table, because Pages serves static files and sets no
+      headers we control.
+
+      The canonical is deliberately left alone. It is redundant with the refresh
+      rather than wrong: pointing an HTML document at a PDF is not the supported
+      shape (Google's cross-format mechanism is a `Link:` header on the PDF,
+      which Pages cannot send), so it is ignored rather than obeyed, and it
+      agrees with the refresh in any case. Relative is exact here too — vite's
+      `base` is "/" and the site is served from the apex — so rewriting it
+      absolute would change no byte a crawler resolves. Both edits are churn on
+      a page no reader ever finishes loading.
+    -->
     <meta http-equiv="refresh" content="0;url=/resume.pdf">
     <link rel="canonical" href="/resume.pdf">
     <title>Redirecting to Resume...</title>
