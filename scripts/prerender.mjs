@@ -200,6 +200,37 @@ async function prerender() {
       return { separators: boundaries.length, restyled };
     });
 
+    // Vite's runtime preload helper injects a <link rel="modulepreload"> the
+    // moment LazyMotion asks for its feature chunk, and the snapshot below
+    // would bake that link into all 27 pages — putting the chunk back on the
+    // critical path that the dynamic import in src/App.tsx exists to keep it
+    // off. Drop it from the captured head. The chunk still loads; it loads when
+    // React asks for it rather than while the HTML is parsing.
+    //
+    // The route's own lazily imported chunk gets the same injected link and is
+    // deliberately left alone — BlogPost is needed to hydrate the page it is
+    // preloaded on, so there the artifact is doing useful work.
+    const droppedPreloads = await page.evaluate(() => {
+      const links = [
+        ...document.querySelectorAll('link[rel="modulepreload"]'),
+      ].filter((link) =>
+        /\/assets\/motion-features-[^/]*\.js$/.test(new URL(link.href).pathname)
+      );
+      links.forEach((link) => link.remove());
+      return links.length;
+    });
+
+    // Same reasoning as the visibility probes below: a strip that quietly stops
+    // matching leaves the preload on every page and nothing goes red.
+    if (droppedPreloads !== 1) {
+      throw new Error(
+        `${route}: expected exactly 1 injected modulepreload for the motion ` +
+          `feature chunk, found ${droppedPreloads}. Either the chunk is no ` +
+          `longer emitted as motion-features-*.js or LazyMotion stopped ` +
+          `loading it lazily — either way this strip is doing nothing.`
+      );
+    }
+
     const html = await page.content();
 
     // Prerendered markup only helps if the browser can paint it. framer-motion

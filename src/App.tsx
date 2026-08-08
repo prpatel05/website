@@ -1,10 +1,11 @@
 import { Component, Suspense, type ReactNode, useEffect } from "react";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
-import { AnimatePresence, LazyMotion, MotionConfig, domAnimation } from "framer-motion";
+import { AnimatePresence, LazyMotion, MotionConfig } from "framer-motion";
 import PageTransition from "@/components/PageTransition";
 import { MAIN_CONTENT_ID } from "@/lib/skip-target";
 import { useFirstLoad } from "@/hooks/useEntrance";
+import { markMotionFeaturesReady } from "@/lib/motion-ready";
 import { BlogPostRoute, POST_PATH } from "./routes";
 import Index from "./pages/Index.tsx";
 import Blog from "./pages/Blog.tsx";
@@ -112,11 +113,31 @@ const AnimatedRoutes = () => {
 /**
  * `domAnimation` is the feature set the site actually uses: enter, exit, hover
  * and scroll-linked transforms. The full `motion` component also carries layout
- * projection and drag handling, which nothing here asks for, and it rides in
- * the vendor chunk every route loads. Pairing `m` with this halves that chunk.
- * `strict` turns a stray `motion.*` into a throw rather than a silent import of
- * the full component, which would put the savings back.
+ * projection and drag handling, which nothing here asks for. Pairing `m` with
+ * this halves what framer contributes. `strict` turns a stray `motion.*` into a
+ * throw rather than a silent import of the full component, which would put the
+ * savings back.
+ *
+ * Loaded as a function rather than a value so it lands in its own chunk instead
+ * of the eager preload set. Nothing on the first paint is waiting for it: the
+ * prerenderer ships every route fully rendered, and `useEntrance` returns
+ * `initial: false` on the document's first load, so elements mount in their
+ * final state.
+ *
+ * A navigation made before the chunk lands is the case that does not take care
+ * of itself — `m` would write the incoming route's `initial` into the inline
+ * style with no loaded feature able to animate it away, and the reader would
+ * wait out the download on a transparent page. Hence the flag: `useEntrance`
+ * suppresses the entrance until the features are here, so a slow chunk costs
+ * that navigation its animation and nothing else. `e2e/motion-features-late`
+ * holds the chunk and asserts it.
  */
+const loadMotionFeatures = () =>
+  import("@/lib/motion-features").then((mod) => {
+    markMotionFeaturesReady();
+    return mod.default;
+  });
+
 const App = () => (
   <HelmetProvider>
     <ErrorBoundary>
@@ -136,7 +157,7 @@ const App = () => (
           page owns its own <main> around its actual content instead.
         */}
         <div>
-          <LazyMotion features={domAnimation} strict>
+          <LazyMotion features={loadMotionFeatures} strict>
             {/*
               `reducedMotion="user"` drops transform animations — the page
               slide, the drifting background blobs, the 60s rotations — for
