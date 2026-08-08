@@ -37,8 +37,9 @@ describe("processTerminalCommand", () => {
     const result = processTerminalCommand("blog");
     expect(result.action).toBe("navigate");
     if (result.action !== "navigate") return;
-    expect(result.path).toBe("/blog");
-    expect(result.lines.some((l) => l.text.includes("Opening /blog"))).toBe(true);
+    // Slash-terminated, like every other route we emit — the bare form 301s.
+    expect(result.path).toBe("/blog/");
+    expect(result.lines.some((l) => l.text.includes("Opening /blog/"))).toBe(true);
   });
 
   // --- resume ---

@@ -128,6 +128,13 @@ const About = () => {
                       </div>
                       <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                         <m.div
+                          // Every other `entrance` call animates opacity or a transform, whose
+                          // CSS default is already the resting state — so suppressing `initial`
+                          // leaves the prerendered markup correct. `width` has no such default:
+                          // with no inline style the bar fills its track, so every skill read
+                          // 100% until hydration scrolled it into view. Keep the resting width
+                          // in `style` and let the animation override it when it does run.
+                          style={{ width: `${skill.level}%` }}
                           initial={entrance({ width: 0 })}
                           whileInView={{ width: `${skill.level}%` }}
                           viewport={{ once: true }}

@@ -85,8 +85,11 @@ export function processTerminalCommand(
     case "blog":
       return {
         action: "navigate" as const,
-        path: "/blog",
-        lines: wrapLines([{ type: "system", text: "→ Opening /blog..." }]).lines,
+        // Every other route on the site is written slash-terminated, because
+        // Pages 301s the bare form. This one goes through `navigate`, so the
+        // unslashed path would sit in the address bar for the reader to copy.
+        path: "/blog/",
+        lines: wrapLines([{ type: "system", text: "→ Opening /blog/..." }]).lines,
       };
 
     case "resume":

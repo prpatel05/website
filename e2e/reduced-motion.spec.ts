@@ -27,6 +27,15 @@ const backdropTransform = (page: Page) =>
     .first()
     .evaluate((el) => getComputedStyle(el).transform);
 
+/** The hero column that carries the scroll-linked fade. */
+const heroColumn = "section .container.relative.z-10";
+
+const heroColumnOpacity = (page: Page) =>
+  page
+    .locator(heroColumn)
+    .first()
+    .evaluate((el) => getComputedStyle(el).opacity);
+
 const scrollPastTheFold = async (page: Page) => {
   await page.mouse.wheel(0, 500);
   await page.waitForTimeout(600);
@@ -53,5 +62,29 @@ test.describe("prefers-reduced-motion", () => {
     await scrollPastTheFold(page);
 
     expect(await backdropTransform(page)).not.toBe("none");
+  });
+
+  /**
+   * The scroll-linked fade on the hero column — h1, role line, both CTAs and
+   * the portrait. It is a second scroll-bound value in the same component as
+   * the backdrop above, and it was the one that never went through
+   * `useParallax`, so it kept fading for reduced-motion readers after the
+   * parallax had been fixed. Asserted with its own default-preference control,
+   * because "opacity is 1" is also what a hero that never faded would report.
+   */
+  test("the hero column does not fade out when the visitor asks for less motion", async ({
+    page,
+  }) => {
+    await load(page, "reduce");
+    await scrollPastTheFold(page);
+
+    expect(await heroColumnOpacity(page)).toBe("1");
+  });
+
+  test("the hero column still fades by default", async ({ page }) => {
+    await load(page, "no-preference");
+    await scrollPastTheFold(page);
+
+    expect(parseFloat(await heroColumnOpacity(page))).toBeLessThan(1);
   });
 });
