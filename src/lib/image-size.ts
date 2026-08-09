@@ -1,6 +1,7 @@
 /**
- * Minimal intrinsic-size readers for the image formats this site ships as
- * social cards (PNG for the homepage card, WebP for blog cards).
+ * Minimal intrinsic-size readers for the image formats this site ships: PNG
+ * for the homepage card, JPEG for the per-post cards, WebP for the masters
+ * those cards are derived from and for everything the page itself paints.
  *
  * Exists so tests can assert share-card dimensions without pulling in an
  * image-processing dependency for what is a header read.
@@ -56,11 +57,53 @@ function webpSize(buf: Uint8Array): ImageSize {
   throw new Error(`Unsupported WebP framing: ${format}`);
 }
 
-/** Reads intrinsic dimensions from a PNG or WebP buffer. */
+/**
+ * JPEG keeps its dimensions in whichever start-of-frame marker the encoder
+ * chose (baseline SOF0, progressive SOF2, and others), so this walks the
+ * segment chain rather than assuming a fixed offset. mozjpeg — what the social
+ * cards are encoded with — emits SOF2.
+ */
+function jpegSize(buf: Uint8Array): ImageSize {
+  const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  let offset = 2; // past SOI
+
+  while (offset < buf.length) {
+    if (buf[offset] !== 0xff) {
+      throw new Error("Malformed JPEG: expected a marker");
+    }
+
+    const marker = buf[offset + 1];
+
+    // Standalone markers carry no length payload.
+    if (marker === 0xd8 || marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) {
+      offset += 2;
+      continue;
+    }
+
+    // Every SOFn except the DHT/JPG/DAC holes at C4, C8 and CC.
+    const isFrameHeader =
+      marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc;
+
+    if (isFrameHeader) {
+      // length(2) + precision(1), then height then width, both big-endian.
+      return {
+        height: view.getUint16(offset + 5),
+        width: view.getUint16(offset + 7),
+      };
+    }
+
+    offset += 2 + view.getUint16(offset + 2);
+  }
+
+  throw new Error("Malformed JPEG: no start-of-frame marker");
+}
+
+/** Reads intrinsic dimensions from a PNG, WebP or JPEG buffer. */
 export function imageSize(buf: Uint8Array): ImageSize {
   if (ascii(buf, 1, 4) === "PNG") return pngSize(buf);
   if (ascii(buf, 0, 4) === "RIFF" && ascii(buf, 8, 12) === "WEBP") {
     return webpSize(buf);
   }
-  throw new Error("Unrecognized image format: expected PNG or WebP");
+  if (buf[0] === 0xff && buf[1] === 0xd8) return jpegSize(buf);
+  throw new Error("Unrecognized image format: expected PNG, WebP or JPEG");
 }
