@@ -17,6 +17,10 @@ import { blogPostCardFor } from "@/lib/social-cards";
 import { useEntrance, useFirstLoad } from "@/hooks/useEntrance";
 import { mainContentProps } from "@/lib/skip-target";
 import { POST_BODY_ATTR, prerenderedBody } from "@/lib/prerendered-body";
+import {
+  clearPostBodyRecovery,
+  recoverPostBody,
+} from "@/lib/post-body-recovery";
 
 const BlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -26,15 +30,26 @@ const BlogPost = () => {
   // markup is still on the page and React has not touched it yet.
   const [prerendered] = useState(() => (firstLoad ? prerenderedBody(slug) : ""));
   const [content, setContent] = useState(prerendered);
+  const [unrecovered, setUnrecovered] = useState(false);
   const entrance = useEntrance();
 
   useEffect(() => {
     // Nothing to fetch when the body arrived with the document.
     if (!post || prerendered) return;
     let live = true;
-    loadPostContent(post.slug).then((md) => {
-      if (live) setContent(md);
-    });
+    loadPostContent(post.slug)
+      .then((md) => {
+        if (!live) return;
+        setContent(md);
+        clearPostBodyRecovery(post.slug);
+      })
+      // The import rejects when the chunk it names is gone, which is what a
+      // deploy does to a tab that was already open. Without this the article
+      // stays empty for good: `content` never leaves "", and the page reads as
+      // a post that was published with no words in it.
+      .catch(() => {
+        if (live && !recoverPostBody(post.slug)) setUnrecovered(true);
+      });
     return () => {
       live = false;
     };
@@ -222,6 +237,32 @@ const BlogPost = () => {
             */
             dangerouslySetInnerHTML={{ __html: content }}
           />
+
+          {/*
+            Only reachable once the reload has already been spent on this post,
+            so it is the honest end of the line rather than a first response:
+            the body did not arrive and asking for the page again did not fix
+            it. Says so, and offers the way out that does not depend on the
+            chunk — the index, which is prerendered.
+          */}
+          {unrecovered && (
+            <div className="font-mono text-sm">
+              <span className="text-primary/60 tracking-widest block mb-4">
+                {"// error:body"}
+              </span>
+              <p className="text-muted-foreground mb-8">
+                This post's text didn't load. Reloading the page usually fixes
+                it — this tab already tried once.
+              </p>
+              <Link
+                to="/blog/"
+                className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 hover:bg-primary/90 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                cd ~/blog
+              </Link>
+            </div>
+          )}
 
           {/* Footer */}
           <m.div

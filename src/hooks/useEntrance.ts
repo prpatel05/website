@@ -14,11 +14,35 @@ import { useMotionFeaturesReady } from "@/lib/motion-ready";
  * into the `animate` state, which leaves the prerendered markup on screen.
  *
  * The signal is the router's location key rather than a mount flag: react-router
- * labels the entry the document loaded with `"default"` and gives every later
- * entry a generated key. That is true during prerendering too, so the captured
- * HTML never contains the hidden state in the first place — no timing
- * assumption about when hydration or a lazy route chunk happens to finish.
+ * gives every entry a key, and comparing against the one this document loaded
+ * on says whether the markup on screen is still the server's. That is true
+ * during prerendering too, so the captured HTML never contains the hidden state
+ * in the first place — no timing assumption about when hydration or a lazy
+ * route chunk happens to finish.
  */
+
+/**
+ * The key of the history entry this document was loaded onto.
+ *
+ * `"default"` — react-router's label for an entry it did not push — is only
+ * right for an entry the router has never seen. It is wrong for the ordinary
+ * case of a reader pressing reload on a page they arrived at by clicking a
+ * link: react-router keeps its key in `history.state`, the browser restores
+ * that state before any script runs, and the reloaded document comes up on the
+ * generated key it was pushed with.
+ *
+ * Comparing against `"default"` therefore called a genuine document load a
+ * client-side navigation. On a post that meant `prerenderedBody` was never
+ * read, so React hydrated an empty article against served HTML holding the
+ * whole body: two `#418` text mismatches and a `#423` recovery, the article
+ * subtree thrown away and rebuilt, and a network round trip for a body that had
+ * already arrived in the HTML. Read at module scope because that is exactly
+ * once per document, which is the thing being identified.
+ */
+const loadedOnKey =
+  typeof window === "undefined"
+    ? "default"
+    : ((window.history.state as { key?: string } | null)?.key ?? "default");
 
 /**
  * The raw "this document was loaded, not navigated to" signal, for the callers
@@ -26,7 +50,7 @@ import { useMotionFeaturesReady } from "@/lib/motion-ready";
  * scroll-linked `style` value cannot be switched off with `false`, it has to be
  * left off the element entirely. See `useScrollAnimation`.
  */
-export const useFirstLoad = () => useLocation().key === "default";
+export const useFirstLoad = () => useLocation().key === loadedOnKey;
 
 /**
  * The second suppression case is the animation features not being here yet.
