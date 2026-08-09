@@ -137,7 +137,7 @@ const Blog = () => {
                         />
                       </div>
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
                           <span className="font-mono text-[10px] text-muted-foreground">{post.date}</span>
                           <span aria-hidden="true" className="text-border">|</span>
                           <span className="font-mono text-[10px] text-muted-foreground">{post.readTime}</span>
