@@ -278,13 +278,36 @@ describe("BlogPost", () => {
     expect(screen.getByText(/Page not found/)).toBeInTheDocument();
   });
 
-  it("normalizes relative image URLs for OG image", () => {
+  // Absolute, and pointing at the derived JPEG card rather than the post's
+  // own hero: LinkedIn's image spec does not list WebP, which is what every
+  // hero master is. What the page paints is asserted separately below.
+  it("names the derived JPEG card on og:image, absolutely", () => {
     const { container } = renderBlogPost("test-post");
     expect(
       container
         .querySelector('meta[property="og:image"]')
         ?.getAttribute("content"),
-    ).toBe("https://pratik.pa.tel/images/test.png");
+    ).toBe("https://pratik.pa.tel/images/social/test.jpg");
+  });
+
+  // A card only X renders is no better than one only LinkedIn renders.
+  it("points twitter:image at the same card", () => {
+    const { container } = renderBlogPost("test-post");
+    expect(
+      container
+        .querySelector('meta[name="twitter:image"]')
+        ?.getAttribute("content"),
+    ).toBe("https://pratik.pa.tel/images/social/test.jpg");
+  });
+
+  // Moving og:image off the hero must not move what the browser downloads:
+  // the hero is the LCP element, and its WebP srcSet is why it is small.
+  it("leaves the painted hero on its WebP variant", () => {
+    const { container } = renderBlogPost("test-post");
+    const src = container.querySelector("img")?.getAttribute("src");
+
+    expect(src).toContain(".webp");
+    expect(src).not.toContain("/social/");
   });
 
   // Declared so the first scrape picks the large-card layout without having to

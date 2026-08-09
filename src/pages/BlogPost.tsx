@@ -13,7 +13,7 @@ import SEO from "@/components/SEO";
 import { canonicalUrl } from "@/lib/canonical-url";
 import { postDescription } from "@/lib/post-description";
 import { heroFor, HERO_SIZES } from "@/lib/hero";
-import { BLOG_POST_CARD } from "@/lib/social-cards";
+import { blogPostCardFor } from "@/lib/social-cards";
 import { useEntrance, useFirstLoad } from "@/hooks/useEntrance";
 import { mainContentProps } from "@/lib/skip-target";
 import { POST_BODY_ATTR, prerenderedBody } from "@/lib/prerendered-body";
@@ -44,12 +44,18 @@ const BlogPost = () => {
 
   const { newer, older } = getAdjacentPosts(posts, post.slug);
 
-  const ogImage = post.image.startsWith("/")
-    ? `https://pratik.pa.tel${post.image}`
-    : post.image;
+  // Scrapers get the derived JPEG card, not the WebP master: LinkedIn's image
+  // spec does not list WebP. `blogPostCardFor` returns null only for a hero
+  // the build does not own, in which case the master is still the best
+  // available — and its size is unknown here, so og:image:width/height go
+  // undeclared rather than wrong. See @/lib/social-cards.
+  const card = blogPostCardFor(post.image);
+  const cardPath = card?.path ?? post.image;
+  const ogImage = cardPath.startsWith("/")
+    ? `https://pratik.pa.tel${cardPath}`
+    : cardPath;
 
-  // The card scrapers keep getting the full-size master via `ogImage`; only
-  // what the page paints picks from the candidate list.
+  // Only what the page paints picks from the candidate list.
   const hero = heroFor(post.image);
   const heroSrc = hero?.src ?? post.image;
 
@@ -108,8 +114,8 @@ const BlogPost = () => {
         canonical={`https://pratik.pa.tel/blog/${post.slug}`}
         ogImage={ogImage}
         ogImageAlt={post.title}
-        ogImageWidth={BLOG_POST_CARD.width}
-        ogImageHeight={BLOG_POST_CARD.height}
+        ogImageWidth={card?.width}
+        ogImageHeight={card?.height}
         ogType="article"
         articlePublishedTime={post.dateISO}
         preloadImage={heroSrc}
