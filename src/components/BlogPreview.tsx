@@ -28,7 +28,7 @@ const BlogPreview = () => {
             </h2>
             <Link
               to="/blog/"
-              className="font-mono text-xs text-muted-foreground hover:text-primary transition-colors mt-4 sm:mt-0 flex items-center gap-1"
+              className="font-mono text-xs text-muted-foreground hover:text-primary transition-colors mt-4 sm:mt-0 flex items-center gap-1 py-1"
             >
               ls ./posts <ArrowUpRight className="w-3 h-3" />
             </Link>
