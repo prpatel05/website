@@ -201,4 +201,64 @@ test.describe("the prerendered page survives hydration", () => {
     // Same floor the prerender build step enforces for a post body.
     expect(await page.locator("article p").count()).toBeGreaterThanOrEqual(3);
   });
+
+  /**
+   * Reload is a document load, and everything above has to hold for it too.
+   *
+   * The two tests before this both start from `goto`, which lands on a history
+   * entry react-router has never seen and therefore keys `"default"`. That is
+   * the only shape of document load they cover, and `useFirstLoad` was written
+   * against it — it asked whether the key was literally `"default"`.
+   *
+   * A reader who clicks into a post and presses reload does not produce that
+   * shape. react-router keeps its key in `history.state`, the browser restores
+   * `history.state` before any script runs, so the reloaded document comes up
+   * on the generated key from the push. `useFirstLoad` read that as a
+   * client-side navigation, `prerenderedBody` was skipped, and React hydrated
+   * an empty article against served HTML carrying the whole body: two `#418`
+   * mismatches and a `#423` recovery per reload, the article thrown away and
+   * rebuilt, and a round trip for the post chunk. Measured on the unfixed
+   * build; 0 errors and 0 chunk requests with the fix.
+   */
+  test("a reload of a post reached by a link is still a first load", async ({
+    page,
+  }) => {
+    await page.goto("/blog/");
+    await page.locator("main article a").first().click();
+    await page.waitForURL("**/blog/*/");
+    await expect(page.locator("article p").first()).toBeVisible();
+
+    // Watched only across the reload — the navigation above legitimately
+    // fetches the chunk, which is what the test before this one pins.
+    const problems: string[] = [];
+    const scripts: string[] = [];
+    page.on("pageerror", (error) => problems.push(error.message));
+    page.on("console", (message) => {
+      if (message.type() === "error") problems.push(message.text());
+    });
+    page.on("request", (request) => {
+      if (request.resourceType() === "script") scripts.push(request.url());
+    });
+
+    const slug = new URL(page.url()).pathname.split("/").filter(Boolean)[1];
+    await page.reload({ waitUntil: "networkidle" });
+    await page.waitForTimeout(800);
+
+    // Guards the guard: a reload that somehow left the entry keyed `"default"`
+    // would make this whole test a restatement of the first-load case.
+    expect(
+      await page.evaluate(() => (window.history.state as { key?: string } | null)?.key),
+      "the reload did not land on a pushed history entry, so nothing here is the reload case"
+    ).toBeTruthy();
+
+    expect(
+      problems.filter((text) => /hydrat|did not match|invariant=(418|421|422|423|425)/i.test(text)),
+      "reloading a post reported a hydration failure"
+    ).toEqual([]);
+    expect(
+      scripts.filter((url) => url.includes(slug)),
+      "the reload refetched a post body the served HTML already carried"
+    ).toEqual([]);
+    expect(await page.locator("article p").count()).toBeGreaterThanOrEqual(3);
+  });
 });
