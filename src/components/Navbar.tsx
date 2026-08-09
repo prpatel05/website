@@ -44,7 +44,7 @@ const Navbar = () => {
         }`}
       >
         <div className="container flex items-center justify-between h-16">
-          <a href="#" className="font-mono text-sm text-primary flex items-center gap-2 glitch-hover">
+          <a href="#" className="font-mono text-sm text-primary flex items-center gap-2 py-1 glitch-hover">
             <Terminal className="w-4 h-4" />
             <span>pratik.pa.tel</span>
           </a>
@@ -54,7 +54,7 @@ const Navbar = () => {
                 key={link.label}
                 href={link.href}
                 {...(link.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                className="font-mono text-xs text-muted-foreground hover:text-primary transition-colors"
+                className="font-mono text-xs text-muted-foreground hover:text-primary py-1 transition-colors"
               >
                 {link.label}
               </a>

@@ -84,7 +84,7 @@ const Blog = () => {
         <div className="container flex items-center h-16">
           <Link
             to="/"
-            className="font-mono text-xs text-primary flex items-center gap-2 hover:text-foreground transition-colors"
+            className="font-mono text-xs text-primary flex items-center gap-2 py-1 hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             cd ~

@@ -122,7 +122,7 @@ const BlogPost = () => {
         <div className="container flex items-center h-16">
           <Link
             to="/"
-            className="font-mono text-xs text-primary flex items-center gap-2 hover:text-foreground transition-colors"
+            className="font-mono text-xs text-primary flex items-center gap-2 py-1 hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             cd ~
@@ -263,7 +263,7 @@ const BlogPost = () => {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <Link
                 to="/blog/"
-                className="font-mono text-xs text-primary hover:text-foreground transition-colors flex items-center gap-2"
+                className="font-mono text-xs text-primary hover:text-foreground transition-colors flex items-center gap-2 py-1"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 ls ../posts
