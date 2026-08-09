@@ -89,4 +89,28 @@ test.describe("standalone controls meet the WCAG target size minimum", () => {
       ).toEqual([]);
     });
   }
+
+  // The overlay's links and its close button only exist in the DOM while it is
+  // open, so the per-route sweep above is blind to the entire mobile menu — the
+  // one nav surface on the site that is nothing but controls.
+  test("the open mobile menu has no undersized targets", async ({ page }) => {
+    test.skip(
+      (page.viewportSize()?.width ?? 0) >= 768,
+      "the [menu] button is md:hidden, so there is no overlay to open on desktop"
+    );
+
+    await page.goto("/");
+    // A click rather than a bare toggle, because `setOpen` is React state and
+    // Playwright's actionability checks are what wait out hydration.
+    await page.getByText("[menu]").click();
+    await expect(page.getByRole("dialog", { name: "Site menu" })).toBeVisible();
+
+    const undersized = await undersizedTargets(page, MIN_TARGET_PX);
+
+    expect(
+      undersized,
+      `the open mobile menu has ${undersized.length} target(s) under ` +
+        `${MIN_TARGET_PX}x${MIN_TARGET_PX}:\n  ${undersized.join("\n  ")}`
+    ).toEqual([]);
+  });
 });
