@@ -5,6 +5,7 @@ import { AnimatePresence, LazyMotion, MotionConfig } from "framer-motion";
 import PageTransition from "@/components/PageTransition";
 import { MAIN_CONTENT_ID } from "@/lib/skip-target";
 import { useFirstLoad } from "@/hooks/useEntrance";
+import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 import { markMotionFeaturesReady } from "@/lib/motion-ready";
 import { BlogPostRoute, POST_PATH } from "./routes";
 import Index from "./pages/Index.tsx";
@@ -85,6 +86,16 @@ const ScrollToTop = () => {
     // arrived at `pathname`, so it only carries meaning alongside one.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
+  return null;
+};
+
+/**
+ * The other half: `POP` is the set `ScrollToTop` leaves to the browser, and
+ * this is the one traversal the browser cannot get right on its own. See
+ * src/hooks/useScrollRestoration.ts.
+ */
+const ScrollRestoration = () => {
+  useScrollRestoration();
   return null;
 };
 
@@ -180,6 +191,7 @@ const App = () => (
       </a>
       <BrowserRouter>
         <ScrollToTop />
+        <ScrollRestoration />
         {/*
           Deliberately not <main>. This is the router's layout wrapper, so every
           page's <nav> and <footer> render inside it — a <main> here would have

@@ -27,6 +27,13 @@ import { test, expect, type Page } from "./fixtures";
  * `PUSH` is ours and still goes to the top, which is the regression the middle
  * test exists to catch: deleting the effect outright fixes reload and breaks
  * reading, and that build fails here.
+ *
+ * The Back test then asks the harder question the trace cannot: not whether
+ * the offset survived, but whether it is the right one. It was not — the
+ * browser restores into the outgoing post and clamps to that shorter document
+ * — and `useScrollRestoration` is what corrects it. The `pagehide` half of
+ * that hook is pinned in src/hooks/__tests__/useScrollRestoration.test.tsx
+ * instead of here; the note there says why a reload cannot pin it.
  */
 
 const scrollY = (page: Page) => page.evaluate(() => window.scrollY);
@@ -141,18 +148,48 @@ test.describe("scroll position across navigations", () => {
       .toBeLessThan(50);
   });
 
-  test("Back out of a post returns the reader into the archive, not to its top", async ({
-    page,
-  }) => {
+  test("Back out of a post returns the reader to the offset they left", async ({ page }) => {
     await page.goto("/blog/");
 
-    const link = page.locator('a[href^="/blog/"]').last();
-    await link.scrollIntoViewIfNeeded();
-    const left = await scrollY(page);
-    expect(left).toBeGreaterThan(1000);
+    // Reach the bottom, then leave from the second-to-last card. The target is
+    // then strictly inside the document rather than equal to its maximum, so
+    // "scroll to the bottom" is not a passing implementation.
+    await page.locator('a[href^="/blog/"]').last().scrollIntoViewIfNeeded();
+    const link = page.locator('a[href^="/blog/"]').nth(-2);
+
+    // Read the offset from inside the click rather than before it: Playwright
+    // scrolls an element into view as part of its actionability checks, so a
+    // reading taken beforehand is not necessarily where the reader was when
+    // the navigation started.
+    await page.evaluate(() => {
+      window.addEventListener(
+        "click",
+        () => {
+          (window as unknown as { __leftAt: number }).__leftAt = window.scrollY;
+        },
+        { capture: true }
+      );
+    });
 
     await link.click();
     await page.waitForURL(/\/blog\/.+\//);
+    // `waitForURL` resolves on the `pushState`, which happens before the route
+    // has swapped. Landing at the top is what says the navigation is finished.
+    await expect.poll(() => scrollY(page)).toBeLessThan(50);
+
+    const left = await page.evaluate(() => (window as unknown as { __leftAt: number }).__leftAt);
+    expect(left, "the reader was not deep enough in the archive to tell anything").toBeGreaterThan(
+      1000
+    );
+
+    // The reader reads. This is not padding: `AnimatePresence mode="wait"`
+    // holds the archive on screen through its exit, and the post's body
+    // arrives after that, so a Back issued immediately traverses out of a
+    // document that is still the *archive's* height — nothing to clamp to, and
+    // the defect does not exist. Measured on the unfixed build, the gap is 0
+    // at a 300ms dwell and 2034 from 600ms on.
+    await page.waitForTimeout(1000);
+    const postMax = await maxScroll(page);
 
     // Same document throughout — a client-side Back runs no init script, so the
     // sampler is restarted here instead.
@@ -160,12 +197,6 @@ test.describe("scroll position across navigations", () => {
     await page.goBack();
     await page.waitForTimeout(2500);
 
-    // Deliberately not `left` exactly. The archive's lower cards are not laid
-    // out at the moment the browser restores, so it clamps to the shorter
-    // document and the reader lands short — 8353 against a 9386 target on
-    // Pixel 5, with the document growing back to 10084 once images arrive.
-    // That gap is its own defect and its own fix. What this pins is that the
-    // reset no longer races the restore and drops the reader at the top.
     const floor = left / 2;
     const trace = await readTrace(page, floor);
 
@@ -176,5 +207,31 @@ test.describe("scroll position across navigations", () => {
       trace.lowestAfterRestore,
       "Back restored into the archive and was then reset to the top"
     ).toBeGreaterThanOrEqual(floor);
+
+    // The exact offset, which the floor above deliberately could not see.
+    //
+    // The browser restores one frame after `popstate`, while the document on
+    // screen is still the post, so it clamps to what that shorter page can
+    // scroll: 7945 against a 9979 target on Pixel 5, with the archive mounting
+    // ~300ms later and the offset staying where it was clamped.
+    // `useScrollRestoration` re-applies the stored offset once the document is
+    // tall enough to hold it. The tolerance is for layout rounding; unfixed,
+    // this lands 2034px short.
+    //
+    // Which needs the post to be the shorter page, and on the desktop project
+    // it is not: that archive is 3818px of scroll against posts of 3476-5221,
+    // so the reader's deepest possible offset is one the post can hold and
+    // there is no clamp to correct. Skipping says that out loud rather than
+    // reporting a pass no build could fail.
+    test.skip(
+      postMax >= left,
+      `no clamp on this viewport: the post scrolls ${postMax}px, past the ${left}px being restored`
+    );
+
+    await expect
+      .poll(() => scrollY(page), {
+        message: "Back landed short of where the reader left the archive",
+      })
+      .toBeGreaterThanOrEqual(left - 20);
   });
 });
