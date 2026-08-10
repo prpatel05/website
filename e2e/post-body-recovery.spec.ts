@@ -61,8 +61,39 @@ test.describe("a post body that fails to load", () => {
    * that the same journey delivers a real body when nothing is blocked.
    */
   test("arrives normally when the chunk is served", async ({ page }) => {
+    // Counting document loads of the post URL is what keeps this a control once
+    // the assertion below is patient. A reload fills the body out of the served
+    // HTML, so on a build where the chunk import always rejected the poll would
+    // still go green — via the recovery the other two tests are about — and
+    // report the ordinary path as working. The impatient read this replaces
+    // ruled that out by accident, being too early for a reload to have landed.
+    const documentLoads: string[] = [];
+    page.on("request", (req) => {
+      if (
+        req.resourceType() === "document" &&
+        req.url().endsWith(`/blog/${slug}/`)
+      )
+        documentLoads.push(req.url());
+    });
+
     await navigateToPost(page);
-    expect((await bodyTextOf(page)).trim().length).toBeGreaterThan(500);
+
+    // Patient for the same reason its siblings are. The body is a dynamic
+    // import fired from an effect, and nothing in `navigateToPost` waits for
+    // it: the click's actionability checks gate hydration, not the chunk. The
+    // window is small — measured at ~20ms, against a page transition that
+    // usually spends ~780ms before the article even attaches — but it is real,
+    // and reading straight after the click failed 3 runs in 10 on `main`.
+    await expect
+      .poll(async () => (await bodyTextOf(page)).trim().length, {
+        timeout: 15_000,
+      })
+      .toBeGreaterThan(500);
+
+    expect(
+      documentLoads,
+      "the body arrived from a recovery reload rather than from the chunk"
+    ).toEqual([]);
   });
 
   test("recovers the post instead of rendering an empty article", async ({ page }) => {
