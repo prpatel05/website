@@ -18,6 +18,30 @@ const author = {
   url: "https://pratik.pa.tel",
 };
 
+/**
+ * How many cards get the entrance cascade. The rest mount already readable.
+ *
+ * `delay: i * STAGGER_SECONDS` across the whole archive is linear in post
+ * count, and the archive gains a post a week. At 23 posts the last card became
+ * readable 2987ms after a client-side navigation, and `prefers-reduced-motion`
+ * bought nothing — `reducedMotion="user"` drops the transform and keeps the
+ * fade, so that reader waited 2989ms.
+ *
+ * Capping the *delay* alone would not have fixed the reader-facing half of it.
+ * The cascade is tied to mount, not to scroll position, so a reader who reaches
+ * the archive and scrolls straight down arrives at cards that have not started
+ * yet: five on screen at opacity < 0.05, a page with full scroll height and
+ * nothing in it. A capped delay still leaves them blank, just for less time.
+ *
+ * So past the fold there is no entrance at all. `false` is the same value
+ * `useEntrance` uses to suppress — it mounts the card directly in its `animate`
+ * state, which is also the CSS default here, so nothing is left mid-animation.
+ * The cascade survives where a reader can actually watch it happen, and the
+ * total entrance becomes a constant the archive cannot grow past.
+ */
+const STAGGER_SECONDS = 0.1;
+const STAGGERED_CARDS = 5;
+
 const Blog = () => {
   const entrance = useEntrance();
   // The archive is the entry point crawlers reach before any individual post,
@@ -111,13 +135,14 @@ const Blog = () => {
           <div className="space-y-4">
             {posts.map((post, i) => {
               const thumb = thumbnailFor(post.image);
+              const staggered = i < STAGGERED_CARDS;
 
               return (
                 <m.article
                   key={post.slug}
-                  initial={entrance({ opacity: 0, y: 20 })}
+                  initial={staggered ? entrance({ opacity: 0, y: 20 }) : false}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: i * 0.1 }}
+                  transition={{ duration: 0.5, delay: i * STAGGER_SECONDS }}
                 >
                   <Link
                     to={`/blog/${post.slug}/`}
