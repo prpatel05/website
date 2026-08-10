@@ -1,5 +1,5 @@
 import { Component, Suspense, type ReactNode, useEffect } from "react";
-import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation, useNavigationType } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { AnimatePresence, LazyMotion, MotionConfig } from "framer-motion";
 import PageTransition from "@/components/PageTransition";
@@ -49,10 +49,41 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
 
 /* ---------- Scroll Reset ---------- */
 
+/**
+ * A clicked link starts at the top of the page. A history traversal does not.
+ *
+ * Resetting on every pathname change reset it on the two navigations the
+ * browser is already handling, and handling better than we can. `history
+ * .scrollRestoration` is `"auto"`, so on Back/Forward and on reload the browser
+ * restores the offset the reader left, and this effect then threw it away.
+ *
+ * On reload that is a race the reader can lose. Traced from document start on a
+ * post at 1500px: `0 → 1500` at 44ms as the browser restored, `→ 0` at 53ms as
+ * this effect fired, `→ 1500` at 105ms as the browser restored again and won.
+ * Here that is a 52ms flicker. Let hydration land after the browser's last
+ * restore attempt — a slow phone, a cold cache — and the reset is the last
+ * writer instead, and a reader who refreshed an article they were halfway
+ * through is returned to the title. Both branches showed up in measurement.
+ *
+ * On Back the effect consistently lost that race rather than won it, so it was
+ * not visible there; it is dropped for the same reason regardless.
+ *
+ * `POP` is exactly the set to leave alone: react-router labels both a
+ * Back/Forward traversal and the initial entry a document loads on `POP`, and
+ * those are the two cases with a scroll position that predates this render.
+ * `PUSH` and `REPLACE` are the ones we own, and they still go to the top.
+ */
 const ScrollToTop = () => {
   const { pathname } = useLocation();
+  const navigationType = useNavigationType();
   useEffect(() => {
+    if (navigationType === "POP") {
+      return;
+    }
     window.scrollTo(0, 0);
+    // `navigationType` is deliberately not a dependency: it describes how we
+    // arrived at `pathname`, so it only carries meaning alongside one.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
   return null;
 };
