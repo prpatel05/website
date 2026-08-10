@@ -6,7 +6,7 @@ import { isTelemetryRequest } from "../scripts/telemetry-blocklist.mjs";
  * deploy uploads — beacon `<script src>` tag and inlined token included. Real
  * Chromium loads those pages, so without a guard every `page.goto()` fetches
  * `beacon.min.js` and posts a `cdn-cgi/rum` pageview reporting
- * `location.host = localhost:4173`.
+ * `location.host = localhost:<preview port>`.
  *
  * Those hits do not reach the traffic read-out: it filters the RUM dataset on
  * `requestHost: pratik.pa.tel`, and a synthetic hit never carries that host.
