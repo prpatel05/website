@@ -26,27 +26,50 @@ const POSTS = [
   { slug: "ship-it-yourself", date: "2026-06-11" },
 ];
 
-let workDir: string;
-let sitemap: string;
+const created: string[] = [];
 
-beforeAll(() => {
-  workDir = mkdtempSync(join(tmpdir(), "sitemap-test-"));
-  mkdirSync(join(workDir, "scripts"));
-  copyFileSync(SCRIPT, join(workDir, "scripts/generate-sitemap.mjs"));
-  for (const { slug, date } of POSTS) {
-    mkdirSync(join(workDir, "dist/blog", slug), { recursive: true });
+// Runs the real script against a throwaway dist/ of prerendered post stubs.
+// `today` drives the publish-day clamp through SITEMAP_TODAY.
+function runSitemap(
+  posts: { slug: string; date: string }[],
+  today?: string
+): string {
+  const dir = mkdtempSync(join(tmpdir(), "sitemap-test-"));
+  created.push(dir);
+  mkdirSync(join(dir, "scripts"));
+  copyFileSync(SCRIPT, join(dir, "scripts/generate-sitemap.mjs"));
+  for (const { slug, date } of posts) {
+    mkdirSync(join(dir, "dist/blog", slug), { recursive: true });
     writeFileSync(
-      join(workDir, "dist/blog", slug, "index.html"),
+      join(dir, "dist/blog", slug, "index.html"),
       `<meta property="article:published_time" content="${date}T12:00:00.000Z" data-rh="true">`
     );
   }
 
-  execFileSync("node", ["scripts/generate-sitemap.mjs"], { cwd: workDir });
-  sitemap = readFileSync(join(workDir, "dist/sitemap.xml"), "utf-8");
+  execFileSync("node", ["scripts/generate-sitemap.mjs"], {
+    cwd: dir,
+    env: today ? { ...process.env, SITEMAP_TODAY: today } : process.env,
+  });
+
+  return readFileSync(join(dir, "dist/sitemap.xml"), "utf-8");
+}
+
+function lastmods(sitemap: string): Record<string, string> {
+  return Object.fromEntries(
+    [
+      ...sitemap.matchAll(/<loc>([^<]+)<\/loc>\s*<lastmod>([^<]+)<\/lastmod>/g),
+    ].map((m) => [m[1], m[2]])
+  );
+}
+
+let sitemap: string;
+
+beforeAll(() => {
+  sitemap = runSitemap(POSTS);
 });
 
 afterAll(() => {
-  rmSync(workDir, { recursive: true, force: true });
+  for (const dir of created) rmSync(dir, { recursive: true, force: true });
 });
 
 describe("generate-sitemap", () => {
@@ -85,5 +108,60 @@ describe("generate-sitemap", () => {
     const redirecting = locs.filter((loc) => !loc.endsWith("/"));
 
     expect(redirecting).toEqual([]);
+  });
+
+  // scripts/blog-automerge.sh publishes a post the day before the date it
+  // displays, so on that deploy the prerendered article:published_time is
+  // tomorrow. A <lastmod> in the future is the documented reason a crawler
+  // stops trusting <lastmod> for the whole sitemap.
+  describe("on the deploy that publishes a post dated tomorrow", () => {
+    const TODAY = "2026-06-11";
+    const PUBLISH_DAY = [
+      { slug: "taste-is-your-moat", date: "2026-05-04" },
+      // Merged today by the automerge cutoff, displays tomorrow's date.
+      { slug: "ship-it-yourself", date: "2026-06-12" },
+    ];
+
+    it("dates no URL later than the build that produced it", () => {
+      const dates = Object.entries(lastmods(runSitemap(PUBLISH_DAY, TODAY)));
+
+      expect(dates.length).toBeGreaterThan(0);
+      expect(dates.filter(([, lastmod]) => lastmod > TODAY)).toEqual([]);
+    });
+
+    it("clamps the post and the two static routes to the build date", () => {
+      expect(lastmods(runSitemap(PUBLISH_DAY, TODAY))).toEqual({
+        // Would have read 2026-06-12 — tomorrow — on all three.
+        "https://pratik.pa.tel/": TODAY,
+        "https://pratik.pa.tel/blog/": TODAY,
+        "https://pratik.pa.tel/blog/ship-it-yourself/": TODAY,
+        // Already in the past, so it passes through untouched.
+        "https://pratik.pa.tel/blog/taste-is-your-moat/": "2026-05-04",
+      });
+    });
+
+    // Clamping collapses the publish-day post's date onto today, which is a
+    // date another post can share. `weekly` still has to follow publication
+    // order, not the clamped value, or both would claim it.
+    it("still gives the tightest recrawl hint to exactly one post", () => {
+      const xml = runSitemap(
+        [...PUBLISH_DAY, { slug: "own-your-career", date: TODAY }],
+        TODAY
+      );
+      // Matched per <url> block: a pattern spanning the whole document pairs
+      // one entry's <loc> with a later entry's <changefreq>.
+      const weekly = [...xml.matchAll(/<url>([\s\S]*?)<\/url>/g)]
+        .map((m) => m[1])
+        .filter((block) => block.includes("<changefreq>weekly</changefreq>"))
+        .map((block) => /<loc>([^<]+)<\/loc>/.exec(block)![1])
+        // Directory discovery order is filesystem-dependent.
+        .sort();
+
+      expect(weekly).toEqual([
+        // /blog/ is `weekly` by definition; the newest post joins it.
+        "https://pratik.pa.tel/blog/",
+        "https://pratik.pa.tel/blog/ship-it-yourself/",
+      ]);
+    });
   });
 });

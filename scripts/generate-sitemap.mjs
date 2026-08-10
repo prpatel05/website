@@ -32,6 +32,28 @@ function publishedDate(slug) {
   return match ? match[1] : null;
 }
 
+// scripts/blog-automerge.sh merges a queued post once its dateISO is no later
+// than tomorrow, so a post goes live the day *before* the date it displays. Its
+// `article:published_time` is therefore tomorrow's date on the deploy that
+// publishes it, and a page cannot have been last modified tomorrow.
+//
+// A future <lastmod> is the documented trigger for a crawler discarding the
+// value — and not just on that one URL: Google treats an unreliable date as a
+// reason to stop trusting <lastmod> across the whole sitemap, which is the
+// entire signal this file exists to send. Worse, `newest` is copied onto / and
+// /blog/ below, so one publish-day post poisoned the two highest-priority URLs
+// too.
+//
+// The day the page actually changed is the day it shipped, so clamp to the
+// build date. Every post but the one being published is already in the past and
+// passes through untouched. scripts/generate-feed.mjs stamps <lastBuildDate>
+// with the build date for exactly this reason.
+function clampToBuildDate(dateISO, today) {
+  if (!dateISO) return null;
+
+  return dateISO > today ? today : dateISO;
+}
+
 function discoverBlogPosts() {
   const blogDir = join(DIST, "blog");
   if (!existsSync(blogDir)) return [];
@@ -46,26 +68,34 @@ function discoverBlogPosts() {
       // newest post is bumped to `weekly` below (see generateSitemap).
       changefreq: "monthly",
       priority: "0.7",
-      lastmod: publishedDate(d.name),
+      // The date the post declares, before clamping. Which post is newest is a
+      // question about publication order, so it is asked of these rather than of
+      // the clamped values — clamping ties the publish-day post with anything
+      // else dated today and would hand `weekly` to both.
+      published: publishedDate(d.name),
     }));
 }
 
-function generateSitemap() {
+function generateSitemap(today) {
   const blogPosts = discoverBlogPosts();
   // The homepage lists the five newest posts and /blog/ lists all of them, so
   // both change exactly when the newest post does.
   const newest = blogPosts
-    .map((p) => p.lastmod)
+    .map((p) => p.published)
     .filter(Boolean)
     .sort()
     .pop();
   // The most recent post is the one still gathering links and social shares, so
   // it earns the tightest recrawl hint.
   for (const post of blogPosts) {
-    if (newest && post.lastmod === newest) post.changefreq = "weekly";
+    if (newest && post.published === newest) post.changefreq = "weekly";
+    post.lastmod = clampToBuildDate(post.published, today);
   }
   const allRoutes = [
-    ...STATIC_ROUTES.map((r) => ({ ...r, lastmod: newest ?? null })),
+    ...STATIC_ROUTES.map((r) => ({
+      ...r,
+      lastmod: clampToBuildDate(newest ?? null, today),
+    })),
     ...blogPosts,
   ];
 
@@ -88,4 +118,7 @@ ${allRoutes
   console.log(`Sitemap generated: ${outputPath} (${allRoutes.length} URLs)`);
 }
 
-generateSitemap();
+// SITEMAP_TODAY lets the test drive the publish-day clamp without rewriting
+// fixture dates every time the real date moves past them, matching FEED_TODAY
+// in scripts/generate-feed.mjs.
+generateSitemap(process.env.SITEMAP_TODAY || new Date().toISOString().slice(0, 10));
