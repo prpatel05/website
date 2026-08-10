@@ -34,5 +34,7 @@ jobs:
         run: bun run build
       - name: Verify the post hero loads once
         run: bun run verify:hero
+      - name: Verify the homepage portrait skips phones
+        run: bun run verify:portrait
       - name: Playwright tests
         run: bunx playwright test
