@@ -3,6 +3,8 @@ import { useEffect, useState, useRef } from "react";
 import { useEntrance } from "@/hooks/useEntrance";
 import { useParallax } from "@/hooks/useParallax";
 import {
+  PORTRAIT_BLANK,
+  PORTRAIT_BLANK_MEDIA,
   PORTRAIT_SIZES,
   PORTRAIT_SRC,
   PORTRAIT_SRCSET,
@@ -230,19 +232,28 @@ const Hero = () => {
               {/*
                 The master is a 341KB PNG for a box that is never wider than
                 288px, and this wrapper is `hidden md:block` — `display:none`
-                does not cancel the fetch, so a phone pays for all of it and
-                paints none of it. The build emits a WebP per width instead;
-                see src/lib/portrait.ts.
+                does not cancel the fetch, so a phone paid for all of it and
+                painted none of it. The build emits a WebP per width instead,
+                and the first `<source>` gives the range with no box a blank
+                inline pixel so it asks for nothing; see src/lib/portrait.ts for
+                why that rather than `loading="lazy"`.
+
+                The `<img>` keeps the real src/srcSet, so it stays the eager,
+                preload-scanner-visible candidate everywhere the portrait is
+                actually on screen — at 768px it is the LCP element.
               */}
-              <img
-                src={PORTRAIT_SRC}
-                srcSet={PORTRAIT_SRCSET}
-                sizes={PORTRAIT_SIZES}
-                alt="Pratik Patel"
-                width={288}
-                height={288}
-                className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
-              />
+              <picture>
+                <source media={PORTRAIT_BLANK_MEDIA} srcSet={PORTRAIT_BLANK} />
+                <img
+                  src={PORTRAIT_SRC}
+                  srcSet={PORTRAIT_SRCSET}
+                  sizes={PORTRAIT_SIZES}
+                  alt="Pratik Patel"
+                  width={288}
+                  height={288}
+                  className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
+                />
+              </picture>
             </div>
             <div className="absolute -bottom-3 -right-3 font-mono text-[10px] text-primary/60 border border-primary/10 px-2 py-1 bg-background">
               v3.0.1
