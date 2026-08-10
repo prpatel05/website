@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, render } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Link, MemoryRouter, Route, Routes } from "react-router-dom";
+import { Link, MemoryRouter, Route, Routes, useNavigate } from "react-router-dom";
 import { useScrollRestoration } from "../useScrollRestoration";
 
 /**
@@ -41,7 +41,13 @@ const setScrollHeight = (height: number) => {
 
 const Probe = () => {
   useScrollRestoration();
-  return <Link to="/next">next</Link>;
+  const navigate = useNavigate();
+  return (
+    <>
+      <Link to="/next">next</Link>
+      <button onClick={() => navigate(-1)}>back</button>
+    </>
+  );
 };
 
 const renderAt = (initialEntries: string[] = ["/"]) =>
@@ -123,17 +129,28 @@ describe("useScrollRestoration", () => {
     expect(scrollTo).not.toHaveBeenCalled();
   });
 
-  it("leaves a clicked link to ScrollToTop", async () => {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ default: 5000 }));
+  it("restores on the way back and not on the way out", async () => {
     setScrollHeight(6000);
-    const { getByText } = renderAt();
     const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+    const { getByText } = renderAt();
 
+    setScrollY(4200);
     await userEvent.click(getByText("next"));
     await aFewFrames();
 
-    // A `PUSH` has no offset that predates this render, and the one stored
-    // against the entry left behind is not this route's to restore.
-    expect(scrollTo).not.toHaveBeenCalled();
+    // The offset just recorded belongs to the entry being left, and must not
+    // follow the reader onto the page they opened. Note this holds without the
+    // `navigationType` guard too — a pushed entry has no stored offset to find
+    // — so it pins the keying, not that guard, which mirrors `ScrollToTop` and
+    // is deliberately belt-and-braces.
+    expect(scrollTo, "restored on the way out of a page").not.toHaveBeenCalled();
+
+    // Back onto the entry just left, with the reader's offset gone — which is
+    // what a browser that clamped the restore leaves behind.
+    setScrollY(0);
+    await userEvent.click(getByText("back"));
+    await aFewFrames();
+
+    expect(scrollTo).toHaveBeenCalledWith(0, 4200);
   });
 });
