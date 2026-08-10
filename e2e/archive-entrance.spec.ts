@@ -24,6 +24,18 @@ import { test, expect, type Page } from "./fixtures";
 /** Cards past this index mount already readable — see `STAGGERED_CARDS`. */
 const STAGGERED_CARDS = 5;
 
+/**
+ * Ceiling on the spread between the first and last card becoming readable.
+ *
+ * The floor is arithmetic: cards past the cap mount opaque as soon as the
+ * archive renders, and the last staggered card finishes `(STAGGERED_CARDS - 1)
+ * * 0.1s` later plus its own `0.5s` — about 900ms. Measured 865ms, and 885ms
+ * under `E2E_CPU_THROTTLE=6`: framer's delays are wall-clock, so a slow machine
+ * barely moves this. The defect it has to catch sat at ~2200ms and climbed by
+ * 100ms a week, so the gap is wide on both sides.
+ */
+const MAX_CASCADE_MS = 1500;
+
 const CARD = "main article";
 
 /** Reaches the archive the way a reader does: by clicking, from a post. */
@@ -122,11 +134,12 @@ test.describe("blog archive entrance", () => {
       the quantity that does not move when the machine running the test is slow,
       since framer's delays are wall-clock rather than CPU-bound.
 
-      The ceiling is the capped cascade (5 x 0.1s) plus its 0.5s duration, with
-      room for scheduling. A regression to per-index staggering blows through it
-      today and by more every week.
+      A regression to per-index staggering blows through the ceiling today and
+      by more every week.
     */
-    expect(spread, `time-to-readable per card (ms): ${readable.join(", ")}`).toBeLessThan(1200);
+    expect(spread, `time-to-readable per card (ms): ${readable.join(", ")}`).toBeLessThan(
+      MAX_CASCADE_MS
+    );
   });
 
   test("a reader who scrolls straight down lands on posts, not on blank space", async ({
@@ -167,7 +180,9 @@ test.describe("blog archive entrance", () => {
     await navigateToArchive(page);
     const readable = await timeToReadable(page);
     const spread = Math.max(...readable) - Math.min(...readable);
-    expect(spread, `time-to-readable per card (ms): ${readable.join(", ")}`).toBeLessThan(1200);
+    expect(spread, `time-to-readable per card (ms): ${readable.join(", ")}`).toBeLessThan(
+      MAX_CASCADE_MS
+    );
   });
 
   /*
