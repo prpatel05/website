@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { posts } from "@/data/blog-posts/registry";
 import { useEntrance } from "@/hooks/useEntrance";
 import { mainContentProps } from "@/lib/skip-target";
+import { NOT_FOUND_TITLE } from "@/lib/route-title";
 
 const NotFound = () => {
   const entrance = useEntrance();
@@ -22,7 +23,7 @@ const NotFound = () => {
         one at the homepage is the soft-404 signal this change removes.
       */}
       <Helmet>
-        <title>404 — Page Not Found | Pratik Patel</title>
+        <title>{NOT_FOUND_TITLE}</title>
         <meta name="robots" content="noindex" />
       </Helmet>
       <m.div

@@ -7,6 +7,7 @@ import { SITE_CARD } from "@/lib/social-cards";
 import { THUMBNAIL_SIZES, thumbnailFor } from "@/lib/blog-thumbnails";
 import { useEntrance } from "@/hooks/useEntrance";
 import { mainContentProps } from "@/lib/skip-target";
+import { BLOG_TITLE } from "@/lib/route-title";
 import { postDescription } from "@/lib/post-description";
 
 const BLOG_DESCRIPTION =
@@ -51,7 +52,7 @@ const Blog = () => {
     {
       "@context": "https://schema.org",
       "@type": "Blog",
-      name: "Blog — Pratik Patel",
+      name: BLOG_TITLE,
       description: BLOG_DESCRIPTION,
       // Trailing slash throughout: GitHub Pages 301s the bare form, and a
       // structured-data URL that redirects is the same defect #45 fixes for
@@ -95,7 +96,7 @@ const Blog = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEO
-        title="Blog — Pratik Patel"
+        title={BLOG_TITLE}
         description={BLOG_DESCRIPTION}
         canonical="https://pratik.pa.tel/blog"
         ogImage={SITE_CARD.url}

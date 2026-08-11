@@ -7,6 +7,7 @@ import InteractiveTerminal from "@/components/InteractiveTerminal";
 import SEO from "@/components/SEO";
 import { SITE_CARD } from "@/lib/social-cards";
 import { mainContentProps } from "@/lib/skip-target";
+import { HOME_TITLE } from "@/lib/route-title";
 
 // The portrait, used for the Person JSON-LD where a headshot is what's wanted.
 const HEADSHOT_URL = "https://pratik.pa.tel/images/headshot.png";
@@ -70,7 +71,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEO
-        title="Pratik Patel — CTO & Chief Architect"
+        title={HOME_TITLE}
         description="Technology executive, CTO, and 3x company builder with 11+ years scaling engineering orgs across AI, Cloud, and Web3. Currently Chief Architect at Tarobase."
         canonical="https://pratik.pa.tel/"
         ogImage={SITE_CARD.url}

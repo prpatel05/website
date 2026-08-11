@@ -7,6 +7,7 @@ import { MAIN_CONTENT_ID } from "@/lib/skip-target";
 import { useFirstLoad } from "@/hooks/useEntrance";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 import { useRouteFocusReset } from "@/hooks/useRouteFocusReset";
+import { useRouteAnnouncement } from "@/hooks/useRouteAnnouncement";
 import { markMotionFeaturesReady } from "@/lib/motion-ready";
 import { BlogPostRoute, POST_PATH } from "./routes";
 import Index from "./pages/Index.tsx";
@@ -109,6 +110,29 @@ const RouteFocusReset = () => {
   return null;
 };
 
+/**
+ * The announcement half of the same job: a client-side navigation should tell a
+ * screen reader where it landed, the way a fresh load's title does.
+ *
+ * Rendered here, outside `<AnimatedRoutes>`, so the region is one persistent
+ * node. A live region only announces a mutation of an element that was already
+ * present — one that mounts along with the incoming route arrives too late to
+ * announce anything, and one that unmounts with the outgoing route takes the
+ * pending announcement with it.
+ *
+ * `aria-atomic` because the whole title is the message: without it a change
+ * from one post's title to another is announced as only the words that differ.
+ * See src/hooks/useRouteAnnouncement.ts.
+ */
+const RouteAnnouncer = () => {
+  const message = useRouteAnnouncement();
+  return (
+    <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+      {message}
+    </div>
+  );
+};
+
 /* ---------- Routes ---------- */
 
 /**
@@ -203,6 +227,7 @@ const App = () => (
         <ScrollToTop />
         <ScrollRestoration />
         <RouteFocusReset />
+        <RouteAnnouncer />
         {/*
           Deliberately not <main>. This is the router's layout wrapper, so every
           page's <nav> and <footer> render inside it — a <main> here would have
