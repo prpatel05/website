@@ -16,6 +16,7 @@ import { heroFor, HERO_SIZES } from "@/lib/hero";
 import { blogPostCardFor } from "@/lib/social-cards";
 import { useEntrance, useFirstLoad } from "@/hooks/useEntrance";
 import { mainContentProps } from "@/lib/skip-target";
+import { postTitle } from "@/lib/route-title";
 import { POST_BODY_ATTR, prerenderedBody } from "@/lib/prerendered-body";
 import {
   clearPostBodyRecovery,
@@ -124,7 +125,7 @@ const BlogPost = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEO
-        title={`${post.title} — Pratik Patel`}
+        title={postTitle(post.title)}
         description={postDescription(post)}
         canonical={`https://pratik.pa.tel/blog/${post.slug}`}
         ogImage={ogImage}
