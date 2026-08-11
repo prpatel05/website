@@ -47,6 +47,58 @@ test.describe("Skip to main content", () => {
     });
   }
 
+  /**
+   * ...and it has to still be reachable after the reader moves around the site.
+   *
+   * A route change unmounts the link that was just activated, and Chrome leaves
+   * the sequential focus navigation starting point at that removed node's DOM
+   * position — inside the router, which renders after the skip link. So the next
+   * Tab resumed past it and a keyboard reader navigating within the site could
+   * not skip the navbar at all. See src/hooks/useRouteFocusReset.ts.
+   *
+   * Driven with `.click()`: a bare `keyboard.press` after `goto` races
+   * hydration, while actionability waits it out. The click is also the thing
+   * under test — it is what leaves focus on a doomed element.
+   */
+  const CLIENT_NAVIGATIONS = [
+    { name: "/blog/ -> /", from: "/blog/", click: "text=cd ~", url: "/" },
+    { name: "/blog/ -> a post", from: "/blog/", click: "article a", url: /\/blog\/.+/ },
+    { name: "/ -> /blog/", from: "/", click: 'a[href="/blog/"]', url: "/blog/" },
+  ];
+
+  for (const nav of CLIENT_NAVIGATIONS) {
+    test(`is still the first Tab stop after a client-side nav ${nav.name}`, async ({
+      page,
+      viewport,
+    }) => {
+      test.skip(
+        viewport !== null && viewport.width < 768,
+        "The links driven here live in the desktop nav / archive grid"
+      );
+
+      await page.goto(nav.from);
+
+      // Positive control, on the same page and in the same run: the skip link is
+      // reachable *before* the navigation. Without this a broken selector or a
+      // missing link would read exactly like a passing test.
+      await page.keyboard.press("Tab");
+      await expect(page.getByRole("link", { name: "Skip to main content" })).toBeFocused();
+
+      await page.locator(nav.click).first().click();
+      await expect(page).toHaveURL(nav.url);
+
+      // `mode="wait"` holds the outgoing route through its exit transition, so
+      // the element the click left focus on is unmounted well after the location
+      // changed. Wait that out before reading the tab order, or this asserts
+      // against a page that has not finished leaving.
+      await expect(page.locator("main#main-content")).toBeVisible();
+      await page.waitForTimeout(600);
+
+      await page.keyboard.press("Tab");
+      await expect(page.getByRole("link", { name: "Skip to main content" })).toBeFocused();
+    });
+  }
+
   test("exposes exactly one main landmark, with nav and footer outside it", async ({
     page,
   }) => {

@@ -6,6 +6,7 @@ import PageTransition from "@/components/PageTransition";
 import { MAIN_CONTENT_ID } from "@/lib/skip-target";
 import { useFirstLoad } from "@/hooks/useEntrance";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
+import { useRouteFocusReset } from "@/hooks/useRouteFocusReset";
 import { markMotionFeaturesReady } from "@/lib/motion-ready";
 import { BlogPostRoute, POST_PATH } from "./routes";
 import Index from "./pages/Index.tsx";
@@ -96,6 +97,15 @@ const ScrollToTop = () => {
  */
 const ScrollRestoration = () => {
   useScrollRestoration();
+  return null;
+};
+
+/**
+ * The tab order's equivalent of `ScrollToTop`: a client-side navigation should
+ * start where a fresh load starts. See src/hooks/useRouteFocusReset.ts.
+ */
+const RouteFocusReset = () => {
+  useRouteFocusReset();
   return null;
 };
 
@@ -192,6 +202,7 @@ const App = () => (
       <BrowserRouter>
         <ScrollToTop />
         <ScrollRestoration />
+        <RouteFocusReset />
         {/*
           Deliberately not <main>. This is the router's layout wrapper, so every
           page's <nav> and <footer> render inside it — a <main> here would have
