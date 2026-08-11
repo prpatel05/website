@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { m, AnimatePresence } from "framer-motion";
 import { Terminal, X } from "lucide-react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { useOverlayEntrance } from "@/hooks/useEntrance";
 
 const links = [
   { label: "about()", href: "#about" },
@@ -14,6 +15,7 @@ const Navbar = () => {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const overlayEntrance = useOverlayEntrance();
 
   // The toggle stays mounted behind the overlay, so the trap's own bookkeeping
   // is enough to hand focus back to it on close — no fallback needed here.
@@ -74,7 +76,13 @@ const Navbar = () => {
         {open && (
           <m.div
             ref={dialogRef}
-            initial={{ opacity: 0 }}
+            /*
+              Gated on the animation features being here. Ungated, a [menu] tap
+              made before that chunk lands mounted this full-screen layer at
+              `opacity: 0` with nothing loaded to clear it — invisible, and
+              swallowing every tap on the page behind it.
+            */
+            initial={overlayEntrance({ opacity: 0 })}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
@@ -101,7 +109,7 @@ const Navbar = () => {
                   key={link.label}
                   href={link.href}
                   onClick={() => setOpen(false)}
-                  initial={{ opacity: 0, x: -30 }}
+                  initial={overlayEntrance({ opacity: 0, x: -30 })}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1 + i * 0.1, duration: 0.4 }}
                   className="font-display text-4xl font-bold text-foreground hover:text-primary transition-colors"
