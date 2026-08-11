@@ -4,11 +4,12 @@ import { useNavigate } from "react-router-dom";
 import { Terminal, X } from "lucide-react";
 import { processTerminalCommand, type TerminalLine } from "@/lib/terminal-commands";
 import { useTerminalHistory } from "@/hooks/useTerminalHistory";
-import { useEntrance } from "@/hooks/useEntrance";
+import { useEntrance, useOverlayEntrance } from "@/hooks/useEntrance";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 const InteractiveTerminal = () => {
   const entrance = useEntrance();
+  const overlayEntrance = useOverlayEntrance();
   const [open, setOpen] = useState(false);
   const [showButton] = useState(true);
   const [lines, setLines] = useState<TerminalLine[]>([
@@ -150,7 +151,7 @@ const InteractiveTerminal = () => {
         {open && (
           <>
             <m.div
-              initial={{ opacity: 0 }}
+              initial={overlayEntrance({ opacity: 0 })}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-[200] bg-background/60 backdrop-blur-sm"
@@ -158,7 +159,15 @@ const InteractiveTerminal = () => {
             />
             <m.div
               ref={dialogRef}
-              initial={{ opacity: 0, y: 40, scale: 0.95 }}
+              /*
+                Through `overlayEntrance()` rather than `entrance()`: this
+                overlay is never prerendered, so only the missing-features half
+                of the suppression applies. Ungated it was not a race but a
+                certainty — the pre-hydration Ctrl+K below opens the terminal on
+                the first commit, ahead of the feature chunk, and the reader got
+                a focused input inside an invisible dialog.
+              */
+              initial={overlayEntrance({ opacity: 0, y: 40, scale: 0.95 })}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 40, scale: 0.95 }}
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}

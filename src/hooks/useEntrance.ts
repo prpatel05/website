@@ -70,3 +70,37 @@ export const useEntrance = () => {
     [suppressed]
   );
 };
+
+/**
+ * The same wrapper for an element that only ever mounts because the reader
+ * asked for it — the terminal overlay, the mobile menu.
+ *
+ * Only the second suppression case applies to those. They are behind an `open`
+ * flag that starts `false`, so they are never in the prerendered HTML and there
+ * is no baked-in `initial` for the first load to protect against. Reusing
+ * `useEntrance` here would suppress on `firstLoad` too, and since a reader
+ * almost always opens an overlay on the page they loaded rather than one they
+ * navigated to, that would cost the animation in the common case to fix a
+ * problem the overlay does not have.
+ *
+ * What it does share is the missing-features window, and there it is worse than
+ * a route entrance rather than better. The terminal's is not a race at all:
+ * `index.html` holds a pre-hydration Ctrl+K and `InteractiveTerminal` claims it
+ * in a mount-only effect, so that overlay opens on the very first commit —
+ * always before a dynamically imported chunk can have resolved. It mounted at
+ * `opacity: 0`, the focus trap put the caret in the input, and the reader typed
+ * into a dialog they could not see. The menu is the same defect on a slower
+ * trigger: a `fixed inset-0` layer, transparent and swallowing every tap.
+ *
+ * Safe to resolve to `false` because both overlays animate *to* the CSS default
+ * of every property they touch — opacity 1, no offset, no scale — so mounting
+ * straight into the `animate` state needs nothing framer has not loaded yet.
+ */
+export const useOverlayEntrance = () => {
+  const motionReady = useMotionFeaturesReady();
+
+  return useCallback(
+    <T,>(initial: T): T | false => (motionReady ? initial : false),
+    [motionReady]
+  );
+};
