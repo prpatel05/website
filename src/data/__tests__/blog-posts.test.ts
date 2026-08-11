@@ -309,6 +309,46 @@ describe("blog-posts data", () => {
       expect(parsed.toString()).not.toBe("Invalid Date");
     }
   });
+
+  /**
+   * Two posts shared `2026-06-02` while `2026-06-09` sat empty, and nothing
+   * anywhere said so.
+   *
+   * The registry's `|| a.slug.localeCompare(b.slug)` tiebreak is what hid it:
+   * a collision still sorts, deterministically, so the archive looked fine
+   * while presenting the older post as the newer one on the strength of
+   * "a" < "t". Every date surface then published the wrong value in agreement
+   * — `sitemap.xml` `<lastmod>`, `rss.xml` `<pubDate>`, and each post's JSON-LD
+   * `datePublished` and `article:published_time`. Agreement across four
+   * surfaces reads as corroboration; here it only meant one bad field with
+   * four readers.
+   *
+   * So this asserts the thing the tiebreak makes invisible. The tiebreak itself
+   * stays — it is the right answer for a genuine same-day pair, and this test is
+   * what turns such a pair into a deliberate choice rather than an accident
+   * nobody can see.
+   */
+  it("no two posts share a dateISO", () => {
+    const slugsByDate = new Map<string, string[]>();
+    for (const post of posts) {
+      slugsByDate.set(post.dateISO, [
+        ...(slugsByDate.get(post.dateISO) ?? []),
+        post.slug,
+      ]);
+    }
+
+    const collisions = [...slugsByDate.entries()]
+      .filter(([, slugs]) => slugs.length > 1)
+      .map(([dateISO, slugs]) => `${dateISO}: ${[...slugs].sort().join(", ")}`)
+      .sort();
+
+    expect(
+      collisions,
+      "posts sharing a publish date order by slug, so the archive, the newer/older " +
+        "nav, the sitemap, the feed and the JSON-LD all present an arbitrary one " +
+        "as the newer post"
+    ).toEqual([]);
+  });
 });
 
 describe("getPostBySlug", () => {
