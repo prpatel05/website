@@ -47,9 +47,13 @@ export function processTerminalCommand(
   cmd: string,
   baseUrl: string = "/"
 ): CommandResult {
-  const trimmed = cmd.trim().toLowerCase();
-  const parts = trimmed.split(" ");
-  const base = parts[0];
+  const trimmed = cmd.trim();
+  // Only the verb is case-folded. Slicing arguments out of a lowercased string
+  // meant `echo Hello World` printed `hello world` directly beneath an input
+  // line that still read `$ echo Hello World` — the site mangling the visitor's
+  // own words, with the original sitting one line above as the counterexample.
+  const base = trimmed.split(" ")[0].toLowerCase();
+  const args = trimmed.slice(base.length).trim();
 
   const wrapLines = (newLines: TerminalLine[]): CommandResult => ({
     action: "lines",
@@ -161,7 +165,7 @@ export function processTerminalCommand(
       return wrapLines([{ type: "output", text: `  ${new Date().toString()}` }]);
 
     case "echo":
-      return wrapLines([{ type: "output", text: `  ${parts.slice(1).join(" ") || ""}` }]);
+      return wrapLines([{ type: "output", text: `  ${args}` }]);
 
     case "":
       return { action: "empty" };
