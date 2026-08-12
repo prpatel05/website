@@ -133,6 +133,86 @@ test.describe("Mobile menu accessibility", () => {
   });
 });
 
+/**
+ * The two ways the menu's focus restore ends in nothing being focused. Both need
+ * their own `goto`, so they sit outside the describe above rather than fighting
+ * its beforeEach.
+ *
+ * "Nothing focused" is never neutral: the dialog node the keyboard was on is
+ * being removed, and removing a focused node does not move Chrome's sequential
+ * focus starting point — it stays in the hole, and the reader's next Tab resumes
+ * from the middle of the document. So each of these asserts on a named
+ * destination, not on `activeElement !== null`.
+ */
+test.describe("Mobile menu focus restore", () => {
+  test.use({ viewport: { width: 375, height: 667 } });
+
+  test("closing returns focus to [menu] even when opening never focused it", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await proveReactIsLive(page);
+
+    // Safari and Firefox do not focus a `<button>` on click, so there the menu
+    // opens from `<body>` on every single tap and the trap has nothing to
+    // remember. `HTMLElement.click()` is that exact state in Chromium — it runs
+    // the handler and moves focus nowhere — which is the only way to reach the
+    // case at all with chromium and mobile-chrome as the only projects.
+    // `proveReactIsLive` leaves focus on the terminal toggle, so clear it: the
+    // precondition below is the whole test, and a focused toggle would make the
+    // restore succeed for the wrong reason.
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    await expect
+      .poll(() => page.evaluate(() => document.activeElement?.tagName))
+      .toBe("BODY");
+
+    await page.evaluate(() => {
+      const toggle = Array.from(document.querySelectorAll("button")).find((b) =>
+        b.textContent?.includes("[menu]")
+      );
+      if (!toggle) throw new Error("[menu] button not found");
+      toggle.click();
+    });
+    await expect(page.getByRole("dialog", { name: "Site menu" })).toBeVisible();
+    // Focus moved into the dialog and not onto the toggle, so the node the trap
+    // remembered really was `<body>`.
+    await expect(page.getByRole("button", { name: "Close menu" })).toBeFocused();
+
+    await page.keyboard.press("Escape");
+    await expect(page.getByText("[menu]")).toBeFocused();
+  });
+
+  test("crossing the breakpoint closes the menu and puts the tab order back", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.getByText("[menu]").click();
+    await expect(page.getByRole("dialog", { name: "Site menu" })).toBeVisible();
+    // Off the toggle and into the dialog, so the restore has somewhere to come
+    // back from — asserting straight after open would pass with no handling.
+    await page.getByRole("link", { name: "writing()" }).focus();
+
+    await page.setViewportSize({ width: 1024, height: 667 });
+
+    // A CSS locator, not `getByRole`, and not interchangeable here. `getByRole`
+    // reads the accessibility tree, which `md:hidden` empties the instant the
+    // viewport crosses — so the role version reaches 0 without the menu ever
+    // closing. It would pass against a build with no breakpoint handling at all,
+    // and it also lets the Tab below race the close it is supposed to be waiting
+    // on (which is how this test failed ~50% of the time under two-worker
+    // contention while passing alone). Counting DOM nodes waits for the real
+    // unmount.
+    await expect(page.locator('[role="dialog"][aria-label="Site menu"]')).toHaveCount(0);
+    // `[menu]` is `md:hidden` at this width: in the document, `display:none`,
+    // and `.focus()` on it a silent no-op. So there is deliberately nothing to
+    // restore to here, and the only thing left to get right is not stranding
+    // the tab order on the dialog that just went away. First Tab lands where a
+    // fresh load's would.
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("link", { name: "Skip to main content" })).toBeFocused();
+  });
+});
+
 test.describe("Terminal accessibility", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");

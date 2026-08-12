@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
+import { resetTabOrder } from "@/lib/tab-order";
 
 /**
  * Puts the tab order back at the top of the document after a client-side
@@ -21,10 +22,9 @@ import { useLocation } from "react-router-dom";
  * reader who navigates within the site can no longer skip the navbar — which is
  * the entire job of the element they can no longer reach.
  *
- * `body.focus()` is the reset, and the two lines around it are what make it one.
- * `<body>` is not focusable by default, so the attribute has to be there for the
- * call to land; it comes straight back off so the body does not become a Tab
- * stop of its own. Measured against the three alternatives:
+ * `resetTabOrder` is the reset — see `@/lib/tab-order` for why focusing `<body>`
+ * is the thing that moves the starting point. Measured against the three
+ * alternatives:
  *
  * | attempt                        | first Tab after a client nav |
  * | ------------------------------ | ---------------------------- |
@@ -45,9 +45,9 @@ import { useLocation } from "react-router-dom";
  * gives up reaching the nav at all without a Shift+Tab. Matching the fresh load
  * is the smaller promise, so that is the one made here.
  *
- * `preventScroll` because this must not move the page. `ScrollToTop` owns the
- * offset on `PUSH` and `useScrollRestoration` owns it on `POP`, and both would
- * be fighting a focus call that scrolled.
+ * The reset does not scroll (`preventScroll`), which it must not: `ScrollToTop`
+ * owns the offset on `PUSH` and `useScrollRestoration` owns it on `POP`, and
+ * both would be fighting a focus call that moved the page.
  *
  * Not on mount. A cold load already starts at the top of the tab order, and the
  * one thing a reset could do there is take focus away from whatever the reader
@@ -67,9 +67,6 @@ export const useRouteFocusReset = () => {
       return;
     }
 
-    const { body } = document;
-    body.setAttribute("tabindex", "-1");
-    body.focus({ preventScroll: true });
-    body.removeAttribute("tabindex");
+    resetTabOrder();
   }, [key]);
 };
