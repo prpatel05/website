@@ -6,8 +6,19 @@ import {
   proveReactIsLive,
   type Page,
   expectOverlayOpen,
+  expectOverlayClosed,
   TERMINAL_DIALOG,
 } from "./fixtures";
+
+const TERMINAL_LOG = '[role="log"][aria-label="Terminal output"]';
+
+/** The command line, by its placeholder — the same handle every spec here uses. */
+const commandLine = (page: Page) => page.getByPlaceholder('type "help" to get started...');
+
+const runCommand = async (page: Page, cmd: string) => {
+  await commandLine(page).fill(cmd);
+  await page.keyboard.press("Enter");
+};
 
 test.describe("Interactive terminal", () => {
   test.beforeEach(async ({ page }) => {
@@ -52,10 +63,8 @@ test.describe("Interactive terminal", () => {
       await openTerminalByClick(page);
     });
 
-    const command = (page: Page) => page.getByPlaceholder('type "help" to get started...');
-
     test("help command lists available commands", async ({ page }) => {
-      await command(page).fill("help");
+      await commandLine(page).fill("help");
       await page.keyboard.press("Enter");
 
       await expect(page.getByText("┌─ Available Commands")).toBeVisible();
@@ -63,14 +72,14 @@ test.describe("Interactive terminal", () => {
     });
 
     test("whoami command shows profile info", async ({ page }) => {
-      await command(page).fill("whoami");
+      await commandLine(page).fill("whoami");
       await page.keyboard.press("Enter");
 
       await expect(page.getByText("CTO & Chief Architect · 3x Company Builder")).toBeVisible();
     });
 
     test("ls command shows site sections", async ({ page }) => {
-      await command(page).fill("ls");
+      await commandLine(page).fill("ls");
       await page.keyboard.press("Enter");
 
       await expect(page.getByText("about/")).toBeVisible();
@@ -80,21 +89,21 @@ test.describe("Interactive terminal", () => {
     });
 
     test("pwd command shows working directory", async ({ page }) => {
-      await command(page).fill("pwd");
+      await commandLine(page).fill("pwd");
       await page.keyboard.press("Enter");
 
       await expect(page.getByText("/home/pratik/portfolio")).toBeVisible();
     });
 
     test("echo command echoes message back", async ({ page }) => {
-      await command(page).fill("echo hello world");
+      await commandLine(page).fill("echo hello world");
       await page.keyboard.press("Enter");
 
       await expect(page.getByText("hello world", { exact: true })).toBeVisible();
     });
 
     test("unknown command shows error", async ({ page }) => {
-      await command(page).fill("fakecmd");
+      await commandLine(page).fill("fakecmd");
       await page.keyboard.press("Enter");
 
       await expect(page.getByText("command not found: fakecmd")).toBeVisible();
@@ -110,7 +119,7 @@ test.describe("Interactive terminal", () => {
      * path still reaches it.
      */
     test("blog command navigates to the slash-terminated archive", async ({ page }) => {
-      await command(page).fill("blog");
+      await commandLine(page).fill("blog");
       await page.keyboard.press("Enter");
 
       await page.waitForURL("**/blog/");
@@ -121,7 +130,7 @@ test.describe("Interactive terminal", () => {
     test("clear command clears terminal output", async ({ page }) => {
       await expect(page.getByText("Welcome to pratik.pa.tel v3.0.1")).toBeVisible();
 
-      await command(page).fill("clear");
+      await commandLine(page).fill("clear");
       await page.keyboard.press("Enter");
 
       await expect(page.getByText("Welcome to pratik.pa.tel v3.0.1")).not.toBeVisible();
@@ -276,5 +285,253 @@ test.describe("Ctrl+K before hydration", () => {
       await sawPrevented(),
       "Ctrl+K is still swallowed after the stand-in gave up on the bundle",
     ).toBe(false);
+  });
+});
+
+/**
+ * Four defects a reader hits by using the terminal the way it invites — parked
+ * unverified out of the PRA-920 sweep, then each one driven in a browser before
+ * it was fixed (PRA-921). The measurements from that pass are quoted in each
+ * test, because every one of these is a green-looking component: nothing throws,
+ * nothing is missing from the DOM, and the assertions that would have caught
+ * them are the ones nobody thought to write.
+ */
+test.describe("terminal defects a reader can reach", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/");
+  });
+
+  /**
+   * The autoscroll effect keyed on `[lines]` alone. Closing unmounts the
+   * scroller, so reopening mounts a fresh one at `scrollTop = 0` — and `lines`
+   * has not changed, so nothing scrolls it back down. Measured on `main`:
+   * `scrollTop` 149 before Escape, 0 after reopening, with 231px of overflow
+   * and the welcome banner sitting where the prompt should be.
+   */
+  test("reopening lands on the newest output, not the top of the scrollback", async ({ page }) => {
+    const scroller = () =>
+      page.evaluate((sel) => {
+        const el = document.querySelector(sel);
+        if (!el) return null;
+        return {
+          top: Math.round(el.scrollTop),
+          overflow: Math.round(el.scrollHeight - el.clientHeight),
+        };
+      }, TERMINAL_LOG);
+
+    await openTerminalByClick(page);
+    await runCommand(page, "help");
+    await runCommand(page, "whoami");
+
+    // The precondition, asserted rather than assumed: if the output ever stops
+    // overflowing, every scroll assertion below is trivially satisfiable and
+    // this test would keep passing while covering nothing.
+    await expect
+      .poll(async () => (await scroller())?.overflow ?? 0, {
+        message: "the scrollback never overflowed, so there is nothing to scroll",
+      })
+      .toBeGreaterThan(0);
+
+    await page.keyboard.press("Escape");
+    await expectOverlayClosed(page, TERMINAL_DIALOG);
+
+    await page.locator(TERMINAL_TOGGLE).click();
+    await expectOverlayOpen(page, TERMINAL_DIALOG);
+
+    // Pinned to the bottom, not merely "not at the top" — the reader left at
+    // the prompt and that is where they should come back to. 1px of slack for
+    // subpixel layout; the defect is off by the full 231.
+    await expect
+      .poll(
+        async () => {
+          const s = await scroller();
+          return s ? s.overflow - s.top : null;
+        },
+        { message: "the reopened terminal is not showing the newest output" },
+      )
+      .toBeLessThanOrEqual(1);
+  });
+
+  /**
+   * `e.key` carries the character the key produces, so Caps Lock turns the k of
+   * Ctrl+K into "K" and an `=== "k"` test stops matching — the shortcut the
+   * toggle's tooltip and the `help` table both advertise was simply dead for a
+   * reader typing in caps. Measured on `main`: 0 dialogs for the uppercase
+   * event, 1 for the lowercase control.
+   *
+   * Dispatched through CDP rather than `page.keyboard`, which has no Caps Lock
+   * state to emulate: pressing "CapsLock" through it leaves the next press
+   * reporting `key: "k"` with `getModifierState("CapsLock") === false`, so it
+   * cannot express this case at all. The recorded event is asserted first, so a
+   * green result means the handler accepted an uppercase K rather than that the
+   * dispatch never reached the page.
+   */
+  test("Ctrl+K opens the terminal with Caps Lock on", async ({ page }) => {
+    await proveReactIsLive(page);
+
+    await page.evaluate(() => {
+      (window as unknown as { __keys?: unknown[] }).__keys = [];
+      window.addEventListener(
+        "keydown",
+        (e) => (window as unknown as { __keys: unknown[] }).__keys.push({ key: e.key, ctrl: e.ctrlKey }),
+        true,
+      );
+    });
+
+    const cdp = await page.context().newCDPSession(page);
+    for (const type of ["rawKeyDown", "keyUp"] as const) {
+      await cdp.send("Input.dispatchKeyEvent", {
+        type,
+        modifiers: 2 /* Ctrl */,
+        key: "K",
+        code: "KeyK",
+        windowsVirtualKeyCode: 75,
+        nativeVirtualKeyCode: 75,
+      });
+    }
+
+    expect(
+      await page.evaluate(() => (window as unknown as { __keys: unknown[] }).__keys),
+      "the uppercase Ctrl+K never reached the page, so nothing below is being tested",
+    ).toEqual([{ key: "K", ctrl: true }]);
+
+    await expectOverlayOpen(page, TERMINAL_DIALOG);
+  });
+
+  /**
+   * `click` fires on the common ancestor of mousedown and mouseup, so a drag
+   * that selects terminal output ends on the dialog's click-to-focus handler,
+   * and focusing a text input collapses the document selection. Measured on
+   * `main`: the line was selected mid-drag and `getSelection()` was empty by the
+   * time the mouse came up, with focus on the command line — so the email
+   * address `whoami` prints could not be copied at all.
+   */
+  test("drag-selecting terminal output keeps the selection", async ({ page }) => {
+    await openTerminalByClick(page);
+    await runCommand(page, "whoami");
+
+    const line = page.getByText("CTO & Chief Architect · 3x Company Builder");
+    await expect(line).toBeVisible();
+    // The overlay animates in on a `y` offset; a box read mid-flight would put
+    // the drag somewhere the text no longer is.
+    await expectOverlayOpen(page, TERMINAL_DIALOG);
+    const box = (await line.boundingBox())!;
+
+    // `page.mouse` in viewport coordinates rather than a locator action:
+    // `locator.click()` and `.focus()` both scroll the document, which would
+    // move the target out from under the coordinates being dragged across.
+    await page.mouse.move(box.x + 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width - 2, box.y + box.height / 2, { steps: 12 });
+
+    // The precondition: the drag really did select something. Without this the
+    // assertion after mouseup passes just as well against a gesture that never
+    // selected anything in the first place.
+    expect(
+      await page.evaluate(() => window.getSelection()?.toString() ?? ""),
+      "the drag selected nothing, so surviving the mouseup proves nothing",
+    ).toContain("Chief Architect");
+
+    await page.mouse.up();
+
+    await expect
+      .poll(() => page.evaluate(() => window.getSelection()?.toString() ?? ""), {
+        message: "the mouseup cleared the reader's selection",
+      })
+      .toContain("Chief Architect");
+
+  });
+
+  /**
+   * The other side of the guard above: it must not cost the terminal its
+   * click-to-focus, which is how the caret gets back to the command line after
+   * a click lands anywhere else in the dialog. Without this, the drag test
+   * passes just as well against a build with the focus call deleted outright.
+   *
+   * The one case the guard does change is a click landing *inside* an existing
+   * selection: Chromium holds that selection through mousedown so the text can
+   * be dragged, and only collapses it after the click dispatches, so the guard
+   * sees a live selection and declines. The caret comes back on the next click.
+   * That is the deliberate trade — a second click, against output that could not
+   * be copied at all.
+   */
+  test("clicking the terminal puts the caret back on the command line", async ({ page }) => {
+    await openTerminalByClick(page);
+    await expect(commandLine(page)).toBeFocused();
+
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    await expect(commandLine(page)).not.toBeFocused();
+
+    // The blank right edge of the output, so the click carries no selection of
+    // its own — the terminal's lines are far shorter than the pane is wide.
+    const log = (await page.locator(TERMINAL_LOG).boundingBox())!;
+    await page.mouse.click(log.x + log.width - 4, log.y + 6);
+
+    await expect(commandLine(page)).toBeFocused();
+  });
+
+  /**
+   * A deferred navigate/scroll waits out the 300ms exit animation, so the
+   * terminal is on screen for the whole window and reopening inside it is
+   * something a reader does rather than a race. Measured on `main`: `contact`
+   * then a reopen scrolled the page 3062px underneath the reopened overlay, and
+   * `blog` routed away and took the terminal with it, since only the home route
+   * mounts one.
+   *
+   * Reopened with a keypress, not the toggle: React is provably live by this
+   * point (the terminal was opened by click), and a press is a single round
+   * trip where a click's actionability pipeline is several — the reopen has to
+   * land inside 300ms for the test to be exercising the cancel at all.
+   */
+  for (const { command, effect, settle } of [
+    {
+      command: "blog",
+      effect: "route away",
+      settle: async (page: Page) => {
+        await page.waitForTimeout(1000);
+        expect(new URL(page.url()).pathname).toBe("/");
+      },
+    },
+    {
+      command: "contact",
+      effect: "scroll the page",
+      settle: async (page: Page) => {
+        await page.waitForTimeout(1500);
+        expect(await page.evaluate(() => Math.round(window.scrollY))).toBe(0);
+      },
+    },
+  ]) {
+    test(`reopening cancels a pending ${command}, which would otherwise ${effect} under the reader`, async ({
+      page,
+    }) => {
+      await openTerminalByClick(page);
+      expect(await page.evaluate(() => Math.round(window.scrollY))).toBe(0);
+
+      await runCommand(page, command);
+      await page.keyboard.press("Control+k");
+
+      // The terminal is back before the deferred action was due. If this fails
+      // the reopen missed its window and the test below would be measuring the
+      // harness, so it is asserted separately and says so.
+      await expectOverlayOpen(page, TERMINAL_DIALOG);
+
+      await settle(page);
+      // Still open: whatever was pending neither fired nor took the overlay
+      // with it.
+      await expectOverlayOpen(page, TERMINAL_DIALOG);
+    });
+  }
+
+  /**
+   * The positive control for the pair above, and the only thing that keeps them
+   * honest: a build where `defer` never fired at all would pass both. The
+   * `blog` half is already covered by the navigation test further up, so this
+   * is the scroll half.
+   */
+  test("a command that scrolls still scrolls when the terminal is left closed", async ({ page }) => {
+    await openTerminalByClick(page);
+    await runCommand(page, "contact");
+
+    await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBeGreaterThan(0);
   });
 });

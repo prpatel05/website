@@ -24,6 +24,8 @@ const InteractiveTerminal = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
+  const lastScroller = useRef<HTMLDivElement | null>(null);
+  const pendingRef = useRef<number>();
   const navigate = useNavigate();
 
   // Opening lands on the command line rather than the close button — the input
@@ -43,9 +45,27 @@ const InteractiveTerminal = () => {
   });
   useScrollLock(open);
 
+  // Keep the newest line in view. `open` is a dependency, not just `lines`,
+  // because the scroller unmounts with the dialog: reopening mounts a fresh one
+  // at `scrollTop = 0` while `lines` is referentially unchanged, so on `[lines]`
+  // alone the effect never re-ran and the reader came back to the top of the
+  // scrollback instead of the prompt they left at. Measured on `main`: two
+  // commands, Escape, reopen — `scrollTop` 149 -> 0 with 231px of overflow and
+  // the welcome banner back at the top (PRA-921).
+  //
+  // A freshly mounted scroller jumps; only an append animates. Smooth-scrolling
+  // 231px on reopen would show the reader that stale top for the length of the
+  // scroll, which is the thing being fixed. Fresh is decided by node identity
+  // rather than by a "have we run yet" flag: `AnimatePresence` keeps the
+  // outgoing dialog mounted for its 300ms exit, so the ref still holds the old
+  // node when this runs on close and a flag would come back set.
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [lines]);
+    const el = scrollRef.current;
+    if (!el) return;
+    const fresh = lastScroller.current !== el;
+    lastScroller.current = el;
+    el.scrollTo({ top: el.scrollHeight, behavior: fresh ? "auto" : "smooth" });
+  }, [lines, open]);
 
   // A Ctrl+K that landed before this component could bind anything was caught
   // and held by the stand-in in index.html. Take it over: open if the visitor
@@ -59,9 +79,19 @@ const InteractiveTerminal = () => {
   // Keyboard shortcut to toggle. Bound whether or not the terminal is open —
   // opening it is the whole point — unlike Escape, which is the focus trap's
   // and only fires while this overlay is the one on top.
+  //
+  // `e.key` is the character the key produces, so with Caps Lock on the browser
+  // reports "K" and an `=== "k"` test simply stopped matching — the shortcut
+  // this component advertises in the toggle's `title` and in `help` output was
+  // dead for anyone typing in caps. Lowercased rather than switched to
+  // `e.code === "KeyK"`, which would pin the shortcut to the physical QWERTY
+  // position and move it under the reader's fingers on any other layout.
+  // `!shiftKey` keeps the pre-existing behaviour exactly: Ctrl+Shift+K did not
+  // open the terminal before and still does not, so the browser's own
+  // console shortcut is left alone (PRA-921).
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setOpen((v) => !v);
       }
@@ -70,13 +100,38 @@ const InteractiveTerminal = () => {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  const scrollToSection = useCallback((id: string) => {
-    setOpen(false);
-    setTimeout(() => {
-      const el = document.getElementById(id);
-      el?.scrollIntoView({ behavior: "smooth" });
-    }, 300);
+  // The 300ms a deferred navigate/scroll waits for is the exit animation's own
+  // duration, so the terminal is still on screen for every millisecond of it —
+  // which makes reopening inside that window a thing a reader does, not a race.
+  // Measured on `main`: `contact` then Ctrl+K scrolled the page 3062px
+  // underneath the reopened overlay, and `blog` routed away and took the
+  // terminal with it, since only the home route mounts one. Reopening cancels
+  // whatever is still pending (PRA-921).
+  const defer = useCallback((fn: () => void) => {
+    window.clearTimeout(pendingRef.current);
+    pendingRef.current = window.setTimeout(fn, 300);
   }, []);
+
+  useEffect(() => {
+    if (open) window.clearTimeout(pendingRef.current);
+  }, [open]);
+
+  // Separate from the cancel above, and mount-only on purpose: a cleanup on
+  // `[open]` would also run as the terminal closes, which is precisely when the
+  // timer has just been scheduled — it would cancel every navigation instead of
+  // only the superseded ones.
+  useEffect(() => () => window.clearTimeout(pendingRef.current), []);
+
+  const scrollToSection = useCallback(
+    (id: string) => {
+      setOpen(false);
+      defer(() => {
+        const el = document.getElementById(id);
+        el?.scrollIntoView({ behavior: "smooth" });
+      });
+    },
+    [defer]
+  );
 
   const processCommand = useCallback(
     (cmd: string) => {
@@ -92,7 +147,7 @@ const InteractiveTerminal = () => {
         case "navigate":
           setLines((prev) => [...prev, ...result.lines]);
           setOpen(false);
-          setTimeout(() => navigate(result.path), 300);
+          defer(() => navigate(result.path));
           break;
         case "scroll":
           setLines((prev) => [...prev, ...result.lines]);
@@ -107,7 +162,7 @@ const InteractiveTerminal = () => {
           break;
       }
     },
-    [navigate, scrollToSection]
+    [defer, navigate, scrollToSection]
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -189,7 +244,21 @@ const InteractiveTerminal = () => {
               aria-modal="true"
               aria-label="Interactive terminal"
               className="fixed inset-x-2 sm:inset-x-4 bottom-2 sm:bottom-4 top-auto z-[201] max-w-2xl mx-auto sm:inset-x-auto sm:bottom-8 sm:w-full"
-              onClick={() => inputRef.current?.focus()}
+              /*
+                Click anywhere in the terminal to get the caret back — except
+                when that click is the end of a drag over the output. `click`
+                fires on the common ancestor of mousedown and mouseup, so a
+                selection made anywhere inside the dialog lands here, and
+                focusing a text input collapses the document selection.
+                Measured on `main`: dragging across `whoami`'s output selected
+                the line and mouseup left `getSelection()` empty, so the email
+                address the command prints could not be copied at all
+                (PRA-921).
+              */
+              onClick={() => {
+                if (window.getSelection()?.isCollapsed === false) return;
+                inputRef.current?.focus();
+              }}
             >
               <div className="border border-border bg-card shadow-2xl overflow-hidden flex flex-col max-h-[60vh] sm:max-h-[70vh]">
                 {/* Title bar */}
