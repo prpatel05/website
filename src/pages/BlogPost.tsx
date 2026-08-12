@@ -23,6 +23,63 @@ import {
   recoverPostBody,
 } from "@/lib/post-body-recovery";
 
+/**
+ * The shape of the placeholder: a heading bar and a few line bars per section,
+ * as fractions of the column. Written as literal Tailwind classes rather than
+ * computed widths because a class that is only ever assembled at runtime is
+ * never compiled into the stylesheet.
+ */
+const SKELETON_BLOCKS = [
+  ["w-full", "w-11/12", "w-full", "w-8/12"],
+  ["w-full", "w-10/12", "w-full", "w-6/12"],
+  ["w-11/12", "w-full", "w-9/12"],
+  ["w-full", "w-full", "w-7/12"],
+];
+
+/**
+ * What the article region shows while the body chunk is in flight.
+ *
+ * Only a client-side navigation can see it: a document load reads the body out
+ * of its own prerendered markup, so `content` is never empty there. On that
+ * navigation the body is a dynamic import, and until it resolves the page used
+ * to paint the meta, title, subtitle, hero and the whole end-of-post footer
+ * against `content === ""` — a post that looks published with no words in it,
+ * with the newer/older cards sitting directly under the hero. Measured on a
+ * 1500ms-delayed chunk: 0 body characters and a 1203px document for the length
+ * of the round trip, then 14957 characters and 5764px. Unthrottled the window
+ * closes inside one 60ms sample, so this is a slow-connection defect and the
+ * `unrecovered` fallback below does not cover it — that one is about a chunk
+ * that never arrives at all.
+ *
+ * The bars are `aria-hidden`: they are a picture of text, and a screen reader
+ * announcing four blocks of nothing is worse than silence. The `// loading`
+ * line is the accessible half and is left in the reading order — the same
+ * device `// error:body` uses one case over. Not a live region: this markup
+ * mounts with the incoming route rather than mutating a node that was already
+ * there, and a region that mounts with its own content announces nothing (see
+ * `RouteAnnouncer` in App.tsx). The route announcer has already said which post
+ * this is.
+ */
+const PostBodySkeleton = () => (
+  <div className="font-mono text-sm">
+    <span className="text-primary/60 tracking-widest block mb-6">
+      {"// loading"}
+    </span>
+    <div aria-hidden="true" className="animate-pulse space-y-8">
+      {SKELETON_BLOCKS.map((lines, block) => (
+        <div key={block}>
+          <div className="h-5 w-5/12 bg-muted mb-5" />
+          <div className="space-y-3">
+            {lines.map((width, line) => (
+              <div key={line} className={`h-3 bg-muted/60 ${width}`} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 const BlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
   const post = slug ? getPostBySlug(slug) : undefined;
@@ -57,6 +114,18 @@ const BlogPost = () => {
   }, [post, prerendered]);
 
   if (!post) return <NotFound />;
+
+  /**
+   * The body has been asked for and has not arrived, and nothing has gone
+   * wrong yet.
+   *
+   * Gated on `!firstLoad` rather than on `content` alone so a document load
+   * renders exactly what it renders today: the prerenderer drives a real
+   * browser, where the first render is also a "first load" with an empty body,
+   * and a skeleton there would either be captured into the HTML or disagree
+   * with it at hydration — the failure `prerenderedBody` exists to prevent.
+   */
+  const pending = !firstLoad && !content && !unrecovered;
 
   const { newer, older } = getAdjacentPosts(posts, post.slug);
 
@@ -207,12 +276,23 @@ const BlogPost = () => {
               The preload in the head carries this same srcSet and sizes. If it
               named a single href instead, the scanner and the img would run
               different selections and the page would download the hero twice.
+
+              `alt=""` because the heroes are decorative abstract art that
+              illustrates nothing the text does not say. It used to carry
+              `post.title` — verbatim the `<h1>` thirty lines above, on 24 of 24
+              posts — so a screen reader read the title, then the identical
+              title again as the description of the picture. An empty alt is
+              what takes a decorative image out of the accessibility tree; a
+              missing one makes the reader fall back to announcing the filename.
+              og:image:alt keeps the title: a scraper shows the card with no
+              page around it, so there the title is the only description there
+              is.
             */}
             <img
               src={heroSrc}
               srcSet={hero?.srcSet}
               sizes={hero ? HERO_SIZES : undefined}
-              alt={post.title}
+              alt=""
               loading="eager"
               width={768}
               height={432}
@@ -238,6 +318,8 @@ const BlogPost = () => {
             */
             dangerouslySetInnerHTML={{ __html: content }}
           />
+
+          {pending && <PostBodySkeleton />}
 
           {/*
             Only reachable once the reload has already been spent on this post,
@@ -265,7 +347,15 @@ const BlogPost = () => {
             </div>
           )}
 
-          {/* Footer */}
+          {/*
+            Footer. Held back while the body is in flight: this block is the
+            end of the article — a rule, the newer/older cards, the archive
+            link — and drawing an end under a post that has not started yet is
+            the half of the defect a skeleton alone does not fix. It rendered
+            directly beneath the hero, 952px down a 1203px document, so the
+            reader was offered the next post before this one had any words.
+          */}
+          {!pending && (
           <m.div
             initial={entrance({ opacity: 0 })}
             animate={{ opacity: 1 }}
@@ -321,6 +411,7 @@ const BlogPost = () => {
               </span>
             </div>
           </m.div>
+          )}
           </div>
         </article>
       </main>
