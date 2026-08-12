@@ -117,15 +117,17 @@ const InteractiveTerminal = () => {
     setInput("");
   };
 
+  // Both navigators return `undefined` for "there is nothing that way, leave
+  // the line as it is". Assigning the return value unconditionally is what let
+  // ArrowDown erase a half-typed command: `preventDefault` has already taken
+  // away the caret-to-end the key would otherwise have done, so a wiped line
+  // was neither recoverable nor explicable. The current line goes *in* so the
+  // hook can stash it as the draft and hand it back on the way down.
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowUp") {
-      e.preventDefault();
-      const prev = navigateUp();
-      if (prev !== undefined) setInput(prev);
-    } else if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setInput(navigateDown());
-    }
+    if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+    e.preventDefault();
+    const recalled = e.key === "ArrowUp" ? navigateUp(input) : navigateDown();
+    if (recalled !== undefined) setInput(recalled);
   };
 
   return (

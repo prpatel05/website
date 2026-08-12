@@ -80,3 +80,62 @@ describe("InteractiveTerminal – UI interactions", () => {
     expect(screen.getByPlaceholderText(/type "help"/i)).toBeInTheDocument();
   });
 });
+
+/**
+ * `useTerminalHistory` owns the cursor and is unit-tested on its own; these
+ * cover the wiring, which is where the defect actually reached the visitor —
+ * the hook returned `""` at the bottom of the history and the keydown handler
+ * assigned it to the input without asking.
+ */
+describe("InteractiveTerminal – command history", () => {
+  const openTerminal = () => {
+    renderTerminal();
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+    return screen.getByPlaceholderText(/type "help"/i) as HTMLInputElement;
+  };
+
+  const submit = (input: HTMLInputElement, cmd: string) => {
+    fireEvent.change(input, { target: { value: cmd } });
+    fireEvent.submit(input.closest("form")!);
+  };
+
+  it("does not erase a half-typed line on ArrowDown", () => {
+    const input = openTerminal();
+    fireEvent.change(input, { target: { value: "neofetc" } });
+
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+
+    expect(input.value).toBe("neofetc");
+  });
+
+  it("recalls the previous command on ArrowUp", () => {
+    const input = openTerminal();
+    submit(input, "whoami");
+    expect(input.value).toBe("");
+
+    fireEvent.keyDown(input, { key: "ArrowUp" });
+
+    expect(input.value).toBe("whoami");
+  });
+
+  it("gives the half-typed line back when ArrowDown returns to the bottom", () => {
+    const input = openTerminal();
+    submit(input, "help");
+    fireEvent.change(input, { target: { value: "ech" } });
+
+    fireEvent.keyDown(input, { key: "ArrowUp" });
+    expect(input.value).toBe("help");
+
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    expect(input.value).toBe("ech");
+  });
+
+  it("leaves the line alone on ArrowUp with no history", () => {
+    const input = openTerminal();
+    fireEvent.change(input, { target: { value: "neofetc" } });
+
+    fireEvent.keyDown(input, { key: "ArrowUp" });
+
+    expect(input.value).toBe("neofetc");
+  });
+});
