@@ -1,4 +1,20 @@
 import { useEffect, type RefObject } from "react";
+import { resetTabOrder } from "@/lib/tab-order";
+
+/**
+ * Whether `.focus()` on this node will actually land.
+ *
+ * `isConnected` is not enough. The navbar's `[menu]` toggle is `md:hidden`, so
+ * crossing the breakpoint with the menu open leaves it in the document and
+ * `display:none`, where focusing it is a silent no-op — indistinguishable from
+ * success at the call site, and it leaves the keyboard nowhere. An element with
+ * no box has no client rects, which is close enough to what the browser asks:
+ * it catches detached and `display:none` both. (`visibility:hidden` still has
+ * rects and is still unfocusable; nothing on the site hides a control that way,
+ * and the caller's `fallbackFocus` covers it if one ever does.)
+ */
+const canTakeFocus = (el: HTMLElement | null | undefined): el is HTMLElement =>
+  !!el && el.isConnected && el.getClientRects().length > 0;
 
 /**
  * Everything the browser puts in the tab order, minus the two ways an element
@@ -75,18 +91,25 @@ export const useFocusTrap = (
     return () => {
       document.removeEventListener("keydown", onKeyDown, true);
       // `<body>` is what `document.activeElement` reports when nothing is
-      // focused at all — Ctrl+K on a page nobody has tabbed into yet.
-      // "Restoring" to it is a no-op that strands the keyboard back at the top
-      // of the document, so treat it like a node that has gone away.
-      const returnable =
-        openedFrom && openedFrom !== document.body && openedFrom.isConnected;
+      // focused at all — Ctrl+K on a page nobody has tabbed into yet, or any
+      // open in Safari or Firefox, neither of which focuses a `<button>` on
+      // click. "Restoring" to it is a no-op, so treat it like a node that has
+      // gone away and let `fallbackFocus` answer instead.
+      const returnable = openedFrom !== document.body && canTakeFocus(openedFrom);
       // Reading `.current` at cleanup time is the point, not the mistake the
       // rule assumes: React reattaches refs during commit, before passive
       // effects, so by now this holds the button that closing just remounted.
       // A copy taken when the effect ran would be the stale, detached one.
       // eslint-disable-next-line react-hooks/exhaustive-deps
       const restoreTo = returnable ? openedFrom : fallbackFocus?.current;
-      restoreTo?.focus();
+
+      // Landing nowhere is not neutral. The dialog node focus is sitting on is
+      // being removed, and an unfocused removal leaves the tab order pointing
+      // into the hole it left, so the reader's next Tab resumes from the middle
+      // of the document. If there is no control to hand back to, say so
+      // explicitly rather than by omission.
+      if (canTakeFocus(restoreTo)) restoreTo.focus();
+      else resetTabOrder();
     };
   }, [active, containerRef, initialFocus, fallbackFocus]);
 };

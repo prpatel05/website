@@ -15,11 +15,30 @@ const Navbar = () => {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
   const overlayEntrance = useOverlayEntrance();
 
-  // The toggle stays mounted behind the overlay, so the trap's own bookkeeping
-  // is enough to hand focus back to it on close — no fallback needed here.
-  useFocusTrap(dialogRef, open);
+  // Naming the toggle is not redundant with the trap remembering where focus
+  // came from. Safari and Firefox do not focus a `<button>` on click, so there
+  // the menu opens from `<body>` every single time and there is nothing to
+  // remember — without this, closing drops the keyboard on every tap-to-open.
+  useFocusTrap(dialogRef, open, { fallbackFocus: toggleRef });
+
+  // `[menu]` is `md:hidden`, so crossing the breakpoint with the menu open —
+  // rotating a tablet, unfolding a foldable, dragging a desktop window wider —
+  // leaves a full-screen modal covering a desktop nav that is perfectly usable
+  // behind it, with its own opener gone. Close on the crossing instead.
+  useEffect(() => {
+    if (!open) return;
+    const desktop = window.matchMedia("(min-width: 768px)");
+    if (desktop.matches) {
+      setOpen(false);
+      return;
+    }
+    const onChange = (e: MediaQueryListEvent) => e.matches && setOpen(false);
+    desktop.addEventListener("change", onChange);
+    return () => desktop.removeEventListener("change", onChange);
+  }, [open]);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -63,6 +82,7 @@ const Navbar = () => {
             ))}
           </div>
           <button
+            ref={toggleRef}
             onClick={() => setOpen(true)}
             aria-expanded={open}
             className="md:hidden font-mono text-xs text-primary border border-primary/30 px-3 py-1.5 hover:bg-primary/10 transition-colors"
@@ -94,7 +114,11 @@ const Navbar = () => {
             onClick={(e) => {
               if (e.target === e.currentTarget) setOpen(false);
             }}
-            className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-xl flex items-center justify-center scanline"
+            // `md:hidden` covers the 300ms the close above still has to fade
+            // through: the overlay is `z-[100]` over a `z-50` nav, so without it
+            // a resize past the breakpoint paints a modal over the desktop menu
+            // for a third of a second on the way out.
+            className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-xl flex md:hidden items-center justify-center scanline"
           >
             <button
               onClick={() => setOpen(false)}
