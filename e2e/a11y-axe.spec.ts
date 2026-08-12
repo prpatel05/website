@@ -3,6 +3,9 @@ import { fileURLToPath } from "node:url";
 import AxeBuilder from "@axe-core/playwright";
 import { test, expect,
   openMobileMenu,
+  openTerminalByClick,
+  expectOverlayOpen,
+  TERMINAL_DIALOG,
 } from "./fixtures";
 
 /**
@@ -89,6 +92,55 @@ test.describe("every route passes axe at WCAG 2.1 AA", () => {
     expect(
       violations.map((v) => v.id),
       `the open mobile menu has ${violations.length} violation(s):\n  ${violations
+        .map((v) => `[${v.impact}] ${v.id} — ${v.help}`)
+        .join("\n  ")}`
+    ).toEqual([]);
+  });
+
+  /**
+   * The terminal was the other overlay-shaped blind spot, and unlike the menu
+   * it had never been scanned at all — not its `role="log"` live region, not
+   * its unlabelled-by-default command input, not the `aria-hidden` traffic-light
+   * button sitting next to a real one. PRA-912 is what surfaced the gap.
+   */
+  test("the open terminal passes axe", async ({ page }) => {
+    await page.goto("/");
+    await openTerminalByClick(page);
+
+    const { violations } = await new AxeBuilder({ page }).withTags(WCAG_AA).analyze();
+
+    expect(
+      violations.map((v) => v.id),
+      `the open terminal has ${violations.length} violation(s):\n  ${violations
+        .map((v) => `[${v.impact}] ${v.id} — ${v.help}`)
+        .join("\n  ")}`
+    ).toEqual([]);
+  });
+
+  /**
+   * Both at once — reachable by Ctrl+K with the menu up, and a state no sweep
+   * saw before PRA-912. Two `aria-modal` dialogs is the shape axe cannot flag
+   * (there is no rule for it) but which everything downstream of it depends on,
+   * so `stacked-overlays.spec.ts` owns that assertion by hand and this scans
+   * for whatever else the pair produces — the covered overlay is `inert` here,
+   * which changes what is in the accessibility tree at all.
+   */
+  test("the terminal stacked over the mobile menu passes axe", async ({ page }) => {
+    test.skip(
+      (page.viewportSize()?.width ?? 0) >= 768,
+      "the [menu] button is md:hidden, so there is no menu to stack on"
+    );
+
+    await page.goto("/");
+    await openMobileMenu(page);
+    await page.keyboard.press("Control+k");
+    await expectOverlayOpen(page, TERMINAL_DIALOG);
+
+    const { violations } = await new AxeBuilder({ page }).withTags(WCAG_AA).analyze();
+
+    expect(
+      violations.map((v) => v.id),
+      `the stacked overlays have ${violations.length} violation(s):\n  ${violations
         .map((v) => `[${v.impact}] ${v.id} — ${v.help}`)
         .join("\n  ")}`
     ).toEqual([]);

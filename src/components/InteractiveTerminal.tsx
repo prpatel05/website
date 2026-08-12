@@ -31,7 +31,16 @@ const InteractiveTerminal = () => {
   // the trap has to hand focus back to wherever it came from, falling back to
   // the toggle button for the common case where that was the toggle itself
   // (which unmounts while the terminal is open, so the old node is long gone).
-  useFocusTrap(dialogRef, open, { initialFocus: inputRef, fallbackFocus: toggleRef });
+  //
+  // Escape goes through the trap rather than the shortcut handler below, so
+  // that only the overlay on top answers it: Ctrl+K opens this on top of the
+  // mobile menu, and two independent Escape handlers closed both at once and
+  // stranded the keyboard on a node that was already leaving (PRA-912).
+  useFocusTrap(dialogRef, open, {
+    initialFocus: inputRef,
+    fallbackFocus: toggleRef,
+    onEscape: () => setOpen(false),
+  });
   useScrollLock(open);
 
   useEffect(() => {
@@ -47,18 +56,19 @@ const InteractiveTerminal = () => {
     if (window.__terminalBoot?.claim()) setOpen(true);
   }, []);
 
-  // Keyboard shortcut to toggle
+  // Keyboard shortcut to toggle. Bound whether or not the terminal is open —
+  // opening it is the whole point — unlike Escape, which is the focus trap's
+  // and only fires while this overlay is the one on top.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         setOpen((v) => !v);
       }
-      if (e.key === "Escape" && open) setOpen(false);
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [open]);
+  }, []);
 
   const scrollToSection = useCallback((id: string) => {
     setOpen(false);
