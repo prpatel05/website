@@ -5,15 +5,18 @@ import { test, expect,
 } from "./fixtures";
 
 /**
- * Every (family, weight, style) the site paints is one the Google Fonts request
- * in `index.html` actually declares — and every face it declares is one the
- * site paints.
+ * Every (family, weight, style) the site paints is one `src/styles/fonts.css`
+ * actually declares — and every face it declares is one the site paints.
  *
  * Both directions are defects, and the site had shipped the second one: the
  * request asked for 12 faces and the site painted 5, costing 30KB per route
  * (11KB of it a render-blocking third-party stylesheet, the rest binary,
  * because asking for a weight *range* makes Google serve a variable font
  * spanning it instead of a static instance).
+ *
+ * The fonts are self-hosted now, so an unpainted face costs a .woff2 committed
+ * to the repo rather than third-party bytes — but the parity is the same, and
+ * `no route reaches a third-party font host` below is what keeps it that way.
  *
  * The other direction is the regression this mostly exists to catch: add a
  * `font-medium` somewhere and 500 is no longer served, so the browser snaps it
@@ -35,43 +38,43 @@ import { test, expect,
  */
 
 const SITEMAP = fileURLToPath(new URL("../dist/sitemap.xml", import.meta.url));
-const INDEX_HTML = fileURLToPath(new URL("../index.html", import.meta.url));
+const FONTS_CSS = fileURLToPath(new URL("../src/styles/fonts.css", import.meta.url));
 
 const routes = [...readFileSync(SITEMAP, "utf8").matchAll(/<loc>([^<]+)<\/loc>/g)].map(
   ([, loc]) => new URL(loc).pathname
 );
 
 /**
- * The faces `index.html` asks Google for, as a `family|weight|style` set.
+ * The faces `src/styles/fonts.css` declares, as a `family|weight|style` set.
  *
- * Read off the real `<link>` rather than restated here, so the test cannot
- * drift from the request it is guarding. Parses the `css2` grammar:
- * `family=Name:ital,wght@0,400;1,400` — axis names before `@`, tuples after,
- * and a bare `family=Name` with no axes meaning regular 400 only.
+ * Read off the real `@font-face` rules rather than restated here, so the test
+ * cannot drift from the declarations it is guarding. One entry per (family,
+ * weight, style) — a face split across `unicode-range` subsets is several rules
+ * but one face, and which subset a glyph comes from is not what this measures.
+ *
+ * This parsed a `fonts.googleapis.com/css2` URL until the fonts were
+ * self-hosted; the parity it asserts is unchanged.
  */
 function declaredFaces(): Set<string> {
-  const html = readFileSync(INDEX_HTML, "utf8");
-  const href = html.match(/href="(https:\/\/fonts\.googleapis\.com\/css2\?[^"]+)"/)?.[1];
-  expect(href, "index.html should link a fonts.googleapis.com/css2 stylesheet").toBeTruthy();
-
+  const css = readFileSync(FONTS_CSS, "utf8");
   const faces = new Set<string>();
-  for (const [, spec] of (href as string).replace(/&amp;/g, "&").matchAll(/family=([^&]+)/g)) {
-    const [rawName, axisPart] = decodeURIComponent(spec).split(":");
-    const family = rawName.replace(/\+/g, " ");
 
-    if (!axisPart) {
-      faces.add(`${family}|400|normal`);
-      continue;
-    }
-    const [axes, tuples] = axisPart.split("@");
-    const names = axes.split(",");
-    for (const tuple of tuples.split(";")) {
-      const values = tuple.split(",");
-      const wght = values[names.indexOf("wght")] ?? "400";
-      const ital = names.includes("ital") ? values[names.indexOf("ital")] : "0";
-      faces.add(`${family}|${wght}|${ital === "1" ? "italic" : "normal"}`);
-    }
+  for (const [, body] of css.matchAll(/@font-face\s*\{([^}]*)\}/g)) {
+    const value = (prop: string) =>
+      body.match(new RegExp(`${prop}\\s*:\\s*([^;]+);`))?.[1].trim().replace(/^['"]|['"]$/g, "");
+
+    const family = value("font-family");
+    const weight = value("font-weight");
+    const style = value("font-style");
+    expect(
+      family && weight && style,
+      `every @font-face in fonts.css should declare family, weight and style — got ${body}`
+    ).toBeTruthy();
+
+    faces.add(`${family}|${weight}|${style}`);
   }
+
+  expect(faces.size, "fonts.css should declare at least one face").toBeGreaterThan(0);
   return faces;
 }
 
@@ -113,7 +116,7 @@ const DECLARED = declaredFaces();
 const FAMILIES = new Set([...DECLARED].map((f) => f.split("|")[0]));
 
 test.describe("the site paints exactly the font faces it requests", () => {
-  test("index.html declares a plausible face set to begin with", () => {
+  test("fonts.css declares a plausible face set to begin with", () => {
     // Guards the parser itself: every assertion below is a subset check, and a
     // regex that silently matched nothing would make all of them vacuously
     // pass in the direction that matters.
@@ -124,6 +127,80 @@ test.describe("the site paints exactly the font faces it requests", () => {
         /^[\w ]+\|\d{3}\|(normal|italic)$/
       );
     }
+  });
+
+  /**
+   * The regression that made the fonts self-hosted in the first place.
+   *
+   * A render-blocking `<link>` to fonts.googleapis.com put first paint on every
+   * route behind a third party: holding that stylesheet 1s/3s/6s produced an FCP
+   * of 1048/3052/6048ms against a 32ms control, with fully prerendered HTML
+   * sitting there unpainted the whole time. Re-adding one — or an `@import`, or
+   * a `src: url(https://fonts.gstatic.com/...)` in fonts.css — brings it back.
+   *
+   * Asserted on requests the browser actually issues rather than by grepping
+   * built HTML, so an @font-face `src` buried in the CSS bundle counts too.
+   * Every route, because the regression would most likely arrive in index.html
+   * and apply to all of them at once.
+   */
+  test("no route reaches a third-party font host", async ({ page }) => {
+    const FONT_HOSTS = /fonts\.(googleapis|gstatic)\.com|use\.typekit|fonts\.bunny\.net/;
+    const offenders: string[] = [];
+    page.on("request", (req) => {
+      if (FONT_HOSTS.test(req.url())) offenders.push(`${page.url()} -> ${req.url()}`);
+    });
+
+    for (const route of routes) {
+      await page.goto(route);
+      await expect(page.getByRole("navigation", { name: "Main" })).toBeVisible();
+      await page.evaluate(() => document.fonts.ready);
+    }
+
+    expect(
+      offenders,
+      "first paint would again be a function of a third party's latency — see src/styles/fonts.css"
+    ).toEqual([]);
+
+    // Positive control: the listener does fire on a URL matching the pattern,
+    // so an empty `offenders` means "no such request", not "no listener".
+    await page.route("https://fonts.googleapis.com/**", (r) => r.abort());
+    await page.evaluate(() => {
+      const l = document.createElement("link");
+      l.rel = "stylesheet";
+      l.href = "https://fonts.googleapis.com/css2?family=Probe";
+      document.head.append(l);
+    });
+    await expect.poll(() => offenders.length).toBeGreaterThan(0);
+  });
+
+  /**
+   * Every file the declarations point at is actually served. A typo'd path is a
+   * silent fallback to the system stack — the page still paints, so nothing else
+   * here goes red, and `document.fonts.ready` resolves either way.
+   */
+  test("every declared font file resolves", async ({ page }) => {
+    const urls = [
+      ...new Set(
+        [...readFileSync(FONTS_CSS, "utf8").matchAll(/url\(['"]?([^'")]+)['"]?\)/g)].map(
+          ([, u]) => u
+        )
+      ),
+    ];
+    expect(urls.length, "fonts.css should point at some font files").toBeGreaterThan(0);
+
+    await page.goto("/");
+    const results = await Promise.all(
+      urls.map(async (u) => {
+        const res = await page.request.get(u);
+        return `${u} ${res.status()} ${res.headers()["content-type"] ?? "?"}`;
+      })
+    );
+
+    expect(results.filter((r) => !/ 200 /.test(r)).sort()).toEqual([]);
+    expect(
+      results.filter((r) => !/font\/woff2|application\/octet-stream/.test(r)).sort(),
+      "served with a content-type no browser will treat as woff2"
+    ).toEqual([]);
   });
 
   for (const route of routes) {
@@ -143,8 +220,8 @@ test.describe("the site paints exactly the font faces it requests", () => {
 
       expect(
         painted.filter((f) => !DECLARED.has(f)).sort(),
-        `${route} at ${page.viewportSize()?.width}px paints faces index.html never asks for. ` +
-          `They are being snapped to the nearest weight Google did send. ` +
+        `${route} at ${page.viewportSize()?.width}px paints faces fonts.css never declares. ` +
+          `They are being snapped to the nearest weight that is actually served. ` +
           `Declared: ${[...DECLARED].sort().join(", ")}`
       ).toEqual([]);
     });
@@ -169,7 +246,7 @@ test.describe("the site paints exactly the font faces it requests", () => {
     expect(painted.length).toBeGreaterThan(0);
     expect(
       painted.filter((f) => !DECLARED.has(f)).sort(),
-      `the open terminal paints faces index.html never asks for. Declared: ${[...DECLARED].sort().join(", ")}`
+      `the open terminal paints faces fonts.css never declares. Declared: ${[...DECLARED].sort().join(", ")}`
     ).toEqual([]);
   });
 
@@ -187,7 +264,7 @@ test.describe("the site paints exactly the font faces it requests", () => {
     expect(painted.length).toBeGreaterThan(0);
     expect(
       painted.filter((f) => !DECLARED.has(f)).sort(),
-      `the open mobile menu paints faces index.html never asks for. Declared: ${[...DECLARED].sort().join(", ")}`
+      `the open mobile menu paints faces fonts.css never declares. Declared: ${[...DECLARED].sort().join(", ")}`
     ).toEqual([]);
   });
 
@@ -219,9 +296,9 @@ test.describe("the site paints exactly the font faces it requests", () => {
 
     expect(
       [...DECLARED].filter((f) => !painted.has(f)).sort(),
-      `index.html requests faces nothing on the site paints. Each one costs bytes on every ` +
-        `route — a stylesheet that blocks render, plus a variable font spanning the extra ` +
-        `weights instead of a static instance. Painted: ${[...painted].sort().join(", ")}`
+      `fonts.css declares faces nothing on the site paints. Each one costs @font-face bytes in ` +
+        `the render-blocking CSS bundle, and ships a .woff2 in the repo that no reader ever ` +
+        `downloads. Painted: ${[...painted].sort().join(", ")}`
     ).toEqual([]);
   });
 });

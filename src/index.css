@@ -1,4 +1,7 @@
-/* Google Fonts are linked from index.html, not @import-ed here — see the comment there. */
+/* Fonts are self-hosted — see src/styles/fonts.css for why, and index.html for
+   the preload that starts the two above-the-fold files with the preload scanner. */
+@import "./styles/fonts.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
