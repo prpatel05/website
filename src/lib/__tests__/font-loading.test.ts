@@ -69,6 +69,146 @@ describe("font loading", () => {
     ]);
   });
 
+  /**
+   * The subset scope, pinned so narrowing it takes a deliberate edit.
+   *
+   * Self-hosting cut the served subsets from the six Google's css2 returned for
+   * these families (cyrillic, cyrillic-ext, greek, latin, latin-ext, vietnamese)
+   * to latin and latin-ext. That is 668 codepoints — Greek, Cyrillic, the
+   * Vietnamese precomposed block U+1EA0-1EF1, and the combining accents
+   * U+0300-0301/0303/0309/0323 — that now paint from the system stack instead of
+   * the brand font. It was an acceptable trade for the FCP win on an
+   * English-language site, and nothing in the repo uses any of them, so this is
+   * not a regression to revert.
+   *
+   * It is a decision, though, and until now nothing recorded it: the face-parity
+   * spec matches on (family, weight, style) and the resolve check only asks for
+   * a 200, so dropping latin-ext, or regressing a range to something narrower,
+   * stayed green in both directions.
+   *
+   * Restated here rather than read off fonts.css on purpose — the opposite of
+   * how `e2e/font-faces.spec.ts` derives its face set. That set has an oracle to
+   * measure against (what a browser actually paints), so restating it would only
+   * let the two drift. Subset scope has no such oracle: an under-covered range
+   * renders perfectly, just in the wrong font, for text nobody has written yet.
+   * A second independent copy is the whole mechanism — widening or narrowing
+   * means editing both, which is exactly the deliberate act being asked for.
+   *
+   * Values are Google's own, byte-for-byte, for
+   * `css2?family=JetBrains+Mono:ital,wght@0,400;0,600;0,700;1,400&family=Space+Grotesk:wght@700`.
+   */
+  const SUBSETS = {
+    latin:
+      "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, " +
+      "U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+    "latin-ext":
+      "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, " +
+      "U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, " +
+      "U+2C60-2C7F, U+A720-A7FF",
+  };
+
+  /**
+   * A `unicode-range` value as the set of codepoints it covers.
+   *
+   * Compared as sets, not as strings, so re-splitting or reordering a range is
+   * not a failure while covering one codepoint fewer is. `U+0-FF` and
+   * `U+0000-00FF` are the same declaration and should stay the same test result.
+   */
+  const codepoints = (range: string) => {
+    const covered = new Set<number>();
+    for (const part of range.split(",")) {
+      const [from, to] = part.trim().replace(/^U\+/i, "").split("-");
+      expect(from, `"${part}" should parse as a unicode-range item`).toMatch(/^[0-9a-f]+$/i);
+      for (let c = parseInt(from, 16); c <= parseInt(to ?? from, 16); c++) covered.add(c);
+    }
+    return covered;
+  };
+
+  const sameSet = (a: Set<number>, b: Set<number>) =>
+    a.size === b.size && [...a].every((c) => b.has(c));
+
+  /** Every @font-face in fonts.css as (family, weight, style, unicode-range, src). */
+  const declarations = [...fonts.matchAll(/@font-face\s*\{([^}]*)\}/g)].map(([, body]) => {
+    const value = (prop: string) =>
+      body.match(new RegExp(`${prop}\\s*:\\s*([^;]+);`))?.[1].trim().replace(/^['"]|['"]$/g, "") ??
+      "";
+    return {
+      face: `${value("font-family")}|${value("font-weight")}|${value("font-style")}`,
+      range: value("unicode-range"),
+      src: body.match(/url\(['"]?([^'")]+)['"]?\)/)?.[1] ?? "",
+    };
+  });
+
+  it("declares a unicode-range on every face at all", () => {
+    // Guards the parser and the assertions below, which are all per-declaration:
+    // a regex matching nothing, or an omitted `unicode-range` (which means "all
+    // codepoints" and would quietly hand every subset to one file), passes each
+    // of them vacuously.
+    expect(declarations.length).toBeGreaterThan(0);
+    expect(declarations.filter((d) => !d.range).map((d) => d.face)).toEqual([]);
+  });
+
+  it("serves latin and latin-ext, and no other subset", () => {
+    const expected = Object.entries(SUBSETS).map(([name, range]) => [name, codepoints(range)] as const);
+
+    const unexpected = declarations
+      .filter((d) => !expected.some(([, cps]) => sameSet(codepoints(d.range), cps)))
+      .map((d) => `${d.face} -> ${d.range}`);
+    expect(
+      unexpected,
+      "a face covers a codepoint set that is neither latin nor latin-ext. Widening the subset " +
+        "scope is fine — commit the .woff2 and add the subset to SUBSETS here — but it has to be " +
+        "deliberate, because an under-covered range still renders, in the system stack"
+    ).toEqual([]);
+
+    // The other direction: dropping latin-ext entirely would leave every
+    // remaining declaration matching `latin` and pass the check above.
+    for (const [name, cps] of expected) {
+      expect(
+        declarations.some((d) => sameSet(codepoints(d.range), cps)),
+        `no face declares the ${name} subset any more`
+      ).toBe(true);
+    }
+  });
+
+  it("cuts every face across both subsets, not just latin", () => {
+    // A face declared for latin alone is the narrowing this exists to catch, and
+    // it is the shape a new face would arrive in if someone copied one rule and
+    // forgot the second. The accented Latin in `latin-ext` is the subset a real
+    // post is most likely to reach for — a name with a diacritic.
+    const perFace = new Map<string, Set<string>>();
+    for (const d of declarations) {
+      const subset = Object.entries(SUBSETS).find(([, r]) =>
+        sameSet(codepoints(d.range), codepoints(r))
+      )?.[0];
+      if (subset) perFace.set(d.face, (perFace.get(d.face) ?? new Set()).add(subset));
+    }
+
+    const partial = [...perFace]
+      .filter(([, subsets]) => subsets.size !== Object.keys(SUBSETS).length)
+      .map(([face, subsets]) => `${face} (only ${[...subsets].join(", ")})`);
+    expect(partial.sort()).toEqual([]);
+  });
+
+  it("points each subset at the file cut for it", () => {
+    // The files are named by subset, and swapping two would be invisible: both
+    // resolve 200, both are real woff2, and the page paints — the latin-ext
+    // codepoints just come back with no glyph and fall through to the fallback.
+    const mismatched = declarations
+      .map((d) => {
+        const declared = Object.entries(SUBSETS).find(([, r]) =>
+          sameSet(codepoints(d.range), codepoints(r))
+        )?.[0];
+        // Longest suffix first, or `-latin-ext.woff2` reads as `-latin`.
+        const named = Object.keys(SUBSETS)
+          .sort((a, b) => b.length - a.length)
+          .find((s) => d.src.endsWith(`-${s}.woff2`));
+        return declared === named ? null : `${d.src} declares ${declared}, filename says ${named}`;
+      })
+      .filter(Boolean);
+    expect(mismatched.sort()).toEqual([]);
+  });
+
   it("keeps a font stylesheet out of index.css beyond the local @font-face file", () => {
     // A remote @import would hide the font request behind our own CSS: the
     // browser has to download and parse index.css before it learns fonts exist.
