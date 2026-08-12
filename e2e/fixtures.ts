@@ -73,12 +73,122 @@ export const test = base.extend<TelemetryFixtures>({
 export { expect };
 export type { Page } from "@playwright/test";
 
+/* ---------- Overlays: a gate that is not blind to opacity or position ---------- */
+
+export const SITE_MENU = "Site menu";
+export const TERMINAL_DIALOG = "Interactive terminal";
+
+/**
+ * A CSS locator, not `getByRole`. `getByRole` reads the accessibility tree,
+ * which empties for reasons that have nothing to do with the overlay being gone
+ * — `md:hidden` at a breakpoint, an ancestor's `aria-hidden`. Counting DOM nodes
+ * is the only way to say "unmounted" and mean it.
+ */
+export const dialogSelector = (name: string) =>
+  `[role="dialog"][aria-label="${name}"]`;
+
+/**
+ * Everything `toBeVisible()` does not ask, in one round trip.
+ *
+ * Playwright's `toBeVisible()` requires a non-empty box and not
+ * `visibility:hidden`. It says nothing about opacity and nothing about *where*
+ * the box is, and the site has now shipped a broken overlay through that hole
+ * twice with every overlay spec green:
+ *
+ * - PRA-884: both overlays opened at `opacity: 0` — framer's `initial` written
+ *   into the inline style with no feature chunk loaded to animate it away — and
+ *   the focus trap put the caret in a dialog the reader could not see.
+ * - PRA-902: `PageTransition` left `filter: blur(0px)` on the page wrapper,
+ *   making it a containing block for its `position: fixed` descendants. The menu
+ *   overlay measured 375x4779 with its links at y=2273..2465 in a 667px
+ *   viewport. All four were "visible", 2273px below the fold.
+ *
+ * So: effective opacity, multiplied down the ancestor chain (an opaque dialog
+ * inside a transparent wrapper is still an invisible dialog), and the box
+ * measured against the viewport the browser actually has. Both overlays are
+ * `fixed` and sized to fit — verified at 1280x720, 375x667 and 375x200, where
+ * the menu is exactly the viewport and the terminal sits inside it — so
+ * "contained in the viewport" is the invariant that holds for both without
+ * encoding either one's layout.
+ *
+ * Returned as a description rather than a boolean so the numbers survive into
+ * the failure message.
+ */
+const overlayState = (page: Page, name: string) =>
+  page.evaluate((sel) => {
+    const el = document.querySelector(sel);
+    if (!el) return "not in the document";
+
+    let opacity = 1;
+    for (
+      let node: Element | null = el;
+      node && node !== document.documentElement;
+      node = node.parentElement
+    ) {
+      opacity *= Number(getComputedStyle(node).opacity);
+    }
+
+    const r = el.getBoundingClientRect();
+    const [vw, vh] = [window.innerWidth, window.innerHeight];
+    const problems: string[] = [];
+
+    if (opacity < 1) problems.push(`effective opacity ${opacity.toFixed(3)}`);
+    // 1px of slack for subpixel layout, and nothing more: the failure this
+    // catches is off by thousands of pixels, never by one.
+    if (r.top < -1 || r.bottom > vh + 1 || r.left < -1 || r.right > vw + 1) {
+      problems.push(
+        `box ${Math.round(r.left)},${Math.round(r.top)} ${Math.round(r.width)}x${Math.round(
+          r.height
+        )} is outside the ${vw}x${vh} viewport`
+      );
+    }
+
+    return problems.length ? problems.join("; ") : "open";
+  }, dialogSelector(name));
+
+/**
+ * The gate every spec that opens an overlay should use.
+ *
+ * Polled because both overlays animate in on an opacity and `y` offset and the
+ * subject is where they come to rest. Polling costs no strength here: neither
+ * defect above ever converges — a held feature chunk pins opacity at 0 for as
+ * long as it is held, and a `fixed` element resolving against the document is
+ * thousands of pixels out and stays there. (`e2e/overlay-motion-late.spec.ts`
+ * still re-reads after a pause for the chunk-in-flight window specifically,
+ * where "settles" is the thing in question.)
+ *
+ * `toBeVisible()` is kept as well, and is not redundant: a `display:none`
+ * element has a zero-sized box at 0,0, which is opaque and inside the viewport.
+ */
+export async function expectOverlayOpen(page: Page, name: string) {
+  await expect(page.getByRole("dialog", { name })).toBeVisible();
+  await expect
+    .poll(() => overlayState(page, name), {
+      message: `the "${name}" overlay is open but the reader cannot see it`,
+    })
+    .toBe("open");
+}
+
+/**
+ * Unmounted, not merely dropped from the accessibility tree — see
+ * `dialogSelector`. Getting this wrong let a following action race the close:
+ * the `getByRole` version of the breakpoint gate in `overlay-a11y` was ~50%
+ * flaky under two-worker contention while passing 22/22 alone.
+ */
+export const expectOverlayClosed = (page: Page, name: string) =>
+  expect(page.locator(dialogSelector(name))).toHaveCount(0);
+
+/* ---------- Mobile menu ---------- */
+
+/** Opens the mobile menu and gates on it being genuinely on screen. */
+export async function openMobileMenu(page: Page) {
+  await page.getByText("[menu]").click();
+  await expectOverlayOpen(page, SITE_MENU);
+}
+
 /* ---------- Terminal overlay: opening it without racing hydration ---------- */
 
 export const TERMINAL_TOGGLE = 'button[title="Open terminal (Ctrl+K)"]';
-
-const terminalDialog = (page: Page) =>
-  page.getByRole("dialog", { name: "Interactive terminal" });
 
 /**
  * Opens the terminal through the toggle button, and waits for it.
@@ -105,7 +215,7 @@ const terminalDialog = (page: Page) =>
  */
 export async function openTerminalByClick(page: Page) {
   await page.locator(TERMINAL_TOGGLE).click();
-  await expect(terminalDialog(page)).toBeVisible();
+  await expectOverlayOpen(page, TERMINAL_DIALOG);
 }
 
 /**
@@ -118,5 +228,7 @@ export async function openTerminalByClick(page: Page) {
 export async function proveReactIsLive(page: Page) {
   await openTerminalByClick(page);
   await page.keyboard.press("Escape");
-  await expect(terminalDialog(page)).not.toBeVisible();
+  // Unmounted, not just invisible: callers go on to click things, and an
+  // exiting `fixed inset-0` layer that is still in the document eats the tap.
+  await expectOverlayClosed(page, TERMINAL_DIALOG);
 }

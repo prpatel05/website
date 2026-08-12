@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { test, expect, type Page } from "./fixtures";
+import { test, expect, type Page,
+  openMobileMenu,
+} from "./fixtures";
 
 /**
  * Every standalone control is big enough to hit with a thumb.
@@ -102,8 +104,7 @@ test.describe("standalone controls meet the WCAG target size minimum", () => {
     await page.goto("/");
     // A click rather than a bare toggle, because `setOpen` is React state and
     // Playwright's actionability checks are what wait out hydration.
-    await page.getByText("[menu]").click();
-    await expect(page.getByRole("dialog", { name: "Site menu" })).toBeVisible();
+    await openMobileMenu(page);
 
     const undersized = await undersizedTargets(page, MIN_TARGET_PX);
 

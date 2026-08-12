@@ -119,6 +119,11 @@ test.describe("Fixed chrome tracks the viewport", () => {
       page,
     }) => {
       await page.goto("/");
+      // Deliberately the weak `toBeVisible()` gate and not `openMobileMenu`.
+      // The shared gate in ./fixtures now measures this same geometry, so
+      // opening with it would fail *there* and leave the assertions below
+      // never reached — this file is where the failure should be reported,
+      // with the numbers.
       await page.getByText("[menu]").click();
       await expect(page.getByRole("dialog", { name: "Site menu" })).toBeVisible();
 

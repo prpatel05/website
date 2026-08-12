@@ -1,7 +1,9 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import AxeBuilder from "@axe-core/playwright";
-import { test, expect } from "./fixtures";
+import { test, expect,
+  openMobileMenu,
+} from "./fixtures";
 
 /**
  * Every route passes the WCAG 2.1 AA rule set, on both breakpoints.
@@ -80,8 +82,7 @@ test.describe("every route passes axe at WCAG 2.1 AA", () => {
     await page.goto("/");
     // A click rather than a bare toggle, because `setOpen` is React state and
     // Playwright's actionability checks are what wait out hydration.
-    await page.getByText("[menu]").click();
-    await expect(page.getByRole("dialog", { name: "Site menu" })).toBeVisible();
+    await openMobileMenu(page);
 
     const { violations } = await new AxeBuilder({ page }).withTags(WCAG_AA).analyze();
 
