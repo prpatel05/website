@@ -27,7 +27,15 @@ const Navbar = () => {
   // came from. Safari and Firefox do not focus a `<button>` on click, so there
   // the menu opens from `<body>` every single time and there is nothing to
   // remember — without this, closing drops the keyboard on every tap-to-open.
-  useFocusTrap(dialogRef, open, { fallbackFocus: toggleRef });
+  //
+  // Escape goes through the trap rather than a window listener of its own: the
+  // terminal opens on top of this one via Ctrl+K, and two independent handlers
+  // meant one press closed both overlays (PRA-912). The trap knows which is on
+  // top; a component cannot.
+  useFocusTrap(dialogRef, open, {
+    fallbackFocus: toggleRef,
+    onEscape: () => setOpen(false),
+  });
   useScrollLock(open);
 
   // `[menu]` is `md:hidden`, so crossing the breakpoint with the menu open —
@@ -51,16 +59,6 @@ const Navbar = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
-  // The overlay covers the whole viewport, so without this the icon-only close
-  // button is the only way out. Matches the terminal's Escape handling.
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && open) setOpen(false);
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [open]);
 
   return (
     <>
