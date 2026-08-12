@@ -33,16 +33,38 @@ import { test, expect } from "./fixtures";
 
 const DIST = fileURLToPath(new URL("../dist/blog", import.meta.url));
 
-/** Slugs whose built body contains `tag`, read off the artifact under test. */
-const postsContaining = (tag: RegExp) =>
+/** Slugs whose built body satisfies `matches`, read off the artifact under test. */
+const postsWhere = (matches: (html: string) => boolean) =>
   readdirSync(DIST, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
-    .filter((slug) => tag.test(readFileSync(`${DIST}/${slug}/index.html`, "utf8")));
+    .filter((slug) => matches(readFileSync(`${DIST}/${slug}/index.html`, "utf8")));
+
+/** Slugs whose built body contains `tag`, read off the artifact under test. */
+const postsContaining = (tag: RegExp) => postsWhere((html) => tag.test(html));
 
 const orderedListPosts = postsContaining(/<ol[\s>]/);
 const blockquotePosts = postsContaining(/<blockquote[\s>]/);
-const inlineCodePosts = postsContaining(/<code[\s>]/);
+
+/**
+ * Inline code only — a fenced block is not inline code.
+ *
+ * `pre` and `code` are deliberately different treatments in the renderer: the
+ * chip (background, padding) is what the test below measures, and a fenced
+ * block must not inherit it. But a fence renders as `<pre><code>`, which
+ * matches a bare `/<code/` exactly as well as an inline span does, while
+ * offering no `article p code` for that assertion to reach. So the first post
+ * to use a fence *without* also using an inline span selected itself into this
+ * test and then failed it with `Cannot read properties of null (reading
+ * 'closest')` — an error naming neither the post nor the construct, for a post
+ * that had done nothing wrong.
+ *
+ * No post uses a fence today, so this is guarding a construct the archive has
+ * not reached yet rather than fixing a red build.
+ */
+const inlineCodePosts = postsWhere((html) =>
+  /<code[\s>]/.test(html.replace(/<pre[\s\S]*?<\/pre>/gi, ""))
+);
 
 test.describe("post bodies render the markdown that was written", () => {
   test("numbered steps show numbers, not bullets", async ({ page }) => {
@@ -125,6 +147,13 @@ test.describe("post bodies render the markdown that was written", () => {
 
     for (const slug of inlineCodePosts) {
       await page.goto(`/blog/${slug}/`);
+
+      // Says which post and which construct, where dereferencing a null
+      // `querySelector` would only say `Cannot read properties of null`.
+      await expect(
+        page.locator("article p code").first(),
+        `${slug} was selected as an inline-code post but has no <code> in a paragraph`
+      ).toBeAttached();
 
       const measured = await page.evaluate(() => {
         const code = document.querySelector("article p code")!;
