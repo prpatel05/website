@@ -8,51 +8,12 @@ vi.mock("react-router-dom", async () => {
   return { ...actual, useNavigate: () => vi.fn() };
 });
 
+// The `ref` on the terminal's overlay is what `useFocusTrap` traps, so the mock
+// has to forward it — see `@/test/framer-motion-mock` for what a plain function
+// component costs here.
 vi.mock("framer-motion", async () => {
-  const { forwardRef } = await vi.importActual<typeof import("react")>("react");
-
-  // `forwardRef`, because the overlay's `ref` is not decoration here: it is what
-  // `useFocusTrap` traps, and on React 18 a plain function component silently
-  // drops it. Without this the mocked terminal has no focus trap at all, which
-  // is how "closes terminal on Escape" went on passing after Escape moved into
-  // the trap (PRA-912) — against a component that no longer had one.
-  //
-  // Cached per tag, because the proxy is read on every render and a fresh
-  // component identity each time remounts the subtree — which would re-run the
-  // trap's open/restore cycle on every state change.
-  const tags = new Map<string, ReturnType<typeof forwardRef>>();
-  const motionProxy = new Proxy(
-    {},
-    {
-      get: (_target, prop) => {
-        const name = typeof prop === "string" ? prop : "div";
-        if (!tags.has(name)) {
-          tags.set(
-            name,
-            forwardRef<HTMLElement, Record<string, unknown>>(({ children, ...props }, ref) => {
-              const htmlProps: Record<string, unknown> = {};
-              for (const [k, v] of Object.entries(props)) {
-                if (k.startsWith("on") || k === "className" || k === "style" || k === "title") {
-                  htmlProps[k] = v;
-                }
-              }
-              const Tag = name as "div";
-              return (
-                <Tag ref={ref as React.Ref<HTMLDivElement>} data-testid={`motion-${name}`} {...htmlProps}>
-                  {children}
-                </Tag>
-              );
-            })
-          );
-        }
-        return tags.get(name);
-      },
-    }
-  );
-  return {
-    m: motionProxy,
-    AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  };
+  const { createFramerMotionMock } = await import("@/test/framer-motion-mock");
+  return createFramerMotionMock();
 });
 
 function renderTerminal() {
