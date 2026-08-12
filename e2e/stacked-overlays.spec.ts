@@ -185,6 +185,25 @@ test.describe("Terminal stacked over the mobile menu", () => {
     );
   });
 
+  test("the menu closing underneath does not move the caret", async ({ page }) => {
+    await openBothOverlays(page);
+
+    // The menu closes itself on the `md` crossing (Navbar), so a resize with
+    // both open unmounts the *covered* overlay while the terminal keeps the
+    // keyboard. Nothing needs rescuing here: focus is not on the node going
+    // away, and a restore that fires anyway takes the caret out of the command
+    // line mid-sentence.
+    await page.keyboard.type("who");
+    await page.setViewportSize({ width: 1024, height: 667 });
+    await expectOverlayClosed(page, SITE_MENU);
+
+    await expect(page.getByRole("textbox", { name: "Terminal command" })).toBeFocused();
+    await expect(page.getByRole("textbox", { name: "Terminal command" })).toHaveValue("who");
+    // And the terminal, now alone, is back to being the overlay that answers.
+    await page.keyboard.press("Escape");
+    await expectOverlayClosed(page, TERMINAL_DIALOG);
+  });
+
   test("Escape on the terminal alone still closes it", async ({ page }) => {
     // Negative control for the stack: with nothing underneath, the terminal's
     // Escape has to behave exactly as it always did. A "close only the top"

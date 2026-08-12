@@ -151,6 +151,16 @@ export const useFocusTrap = (
       // where focus is about to go back to.
       unregister();
 
+      // Nothing to hand back if the keyboard was never here. An overlay can
+      // close from *underneath* the one on top of it — the mobile menu does
+      // exactly that when a resize crosses `md` with the terminal open — and
+      // then focus is in the live overlay, not in the node being removed.
+      // Restoring would drag the caret out of the terminal's command line to
+      // rescue a keyboard that was never in danger. `<body>` is not "somewhere
+      // else": it is the no-focus reading, and the case below is written for it.
+      const focused = document.activeElement;
+      if (focused && focused !== document.body && !container.contains(focused)) return;
+
       // In order of preference, and every one of them checked rather than
       // assumed:
       //
