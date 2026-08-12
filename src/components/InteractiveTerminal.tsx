@@ -6,6 +6,7 @@ import { processTerminalCommand, type TerminalLine } from "@/lib/terminal-comman
 import { useTerminalHistory } from "@/hooks/useTerminalHistory";
 import { useEntrance, useOverlayEntrance } from "@/hooks/useEntrance";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 const InteractiveTerminal = () => {
   const entrance = useEntrance();
@@ -31,6 +32,7 @@ const InteractiveTerminal = () => {
   // the toggle button for the common case where that was the toggle itself
   // (which unmounts while the terminal is open, so the old node is long gone).
   useFocusTrap(dialogRef, open, { initialFocus: inputRef, fallbackFocus: toggleRef });
+  useScrollLock(open);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
