@@ -10,11 +10,22 @@
  * request paints fine; only latency hurts, and there is no timeout on it.)
  *
  * Same bytes, same faces, same unicode-ranges -- these files and their ranges
- * are exactly what Google served for the URL this replaced, so the browser
+ * are byte-for-byte what Google served for the URL this replaced, so the browser
  * still fetches only the subsets a page actually paints. What goes away is the
  * 11KB stylesheet round trip, two extra DNS+TLS handshakes, and the dependency
  * itself (fonts.googleapis.com is blocked outright in some regions, where it
  * hangs rather than failing fast).
+ *
+ * Scope, deliberately narrower than Google's: latin and latin-ext only. Google
+ * served six subsets per JetBrains Mono face and three for Space Grotesk; the
+ * cyrillic, cyrillic-ext, greek and vietnamese files are not committed here, so
+ * 668 codepoints that used to arrive in the brand font now fall back to the
+ * system stack. No content in `src/` contains any of them today (measured, not
+ * assumed), and `unicode-range` means an unused subset costs nothing at runtime
+ * either way -- so if a post ever needs one, add the file and its rule back
+ * rather than working around the fallback. Note the face-parity test guards
+ * (family, weight, style) and not subsets: this is the one thing here that can
+ * regress without going red.
  *
  * Declared here rather than in index.css so `e2e/font-faces.spec.ts` can parse
  * one file to learn which faces exist -- it asserts the set the site actually
