@@ -1,4 +1,13 @@
-import { test, expect, proveReactIsLive, type Page } from "./fixtures";
+import {
+  test,
+  expect,
+  proveReactIsLive,
+  expectOverlayOpen,
+  expectOverlayClosed,
+  SITE_MENU,
+  TERMINAL_DIALOG,
+  type Page,
+} from "./fixtures";
 
 /**
  * Both overlays are `fixed inset-0` over a document that used to stay perfectly
@@ -25,7 +34,7 @@ async function openMenu(page: Page) {
     if (!toggle) throw new Error("[menu] button not found");
     toggle.click();
   });
-  await expect(page.getByRole("dialog", { name: "Site menu" })).toBeVisible();
+  await expectOverlayOpen(page, SITE_MENU);
 }
 
 /** Same, for any control already on screen. */
@@ -60,7 +69,7 @@ test.describe("Mobile menu holds the page still", () => {
     expect(await scrollY(page)).toBe(500);
 
     await page.keyboard.press("Escape");
-    await expect(page.locator('[role="dialog"][aria-label="Site menu"]')).toHaveCount(0);
+    await expectOverlayClosed(page, SITE_MENU);
     expect(await scrollY(page)).toBe(500);
 
     // Released, not merely overridden: the page has to be scrollable again, and
@@ -88,8 +97,8 @@ test.describe("Mobile menu holds the page still", () => {
     await expect(page.getByRole("textbox", { name: "Terminal command" })).toBeFocused();
 
     await clickInPage(page, '[aria-label="Close terminal"]');
-    await expect(page.locator('[role="dialog"][aria-label="Interactive terminal"]')).toHaveCount(0);
-    await expect(page.getByRole("dialog", { name: "Site menu" })).toBeVisible();
+    await expectOverlayClosed(page, TERMINAL_DIALOG);
+    await expectOverlayOpen(page, SITE_MENU);
 
     await page.mouse.wheel(0, 800);
     await page.waitForTimeout(200);
@@ -98,7 +107,7 @@ test.describe("Mobile menu holds the page still", () => {
     // And the count does come back down — otherwise this test would pass against
     // a lock that never releases at all.
     await page.keyboard.press("Escape");
-    await expect(page.locator('[role="dialog"][aria-label="Site menu"]')).toHaveCount(0);
+    await expectOverlayClosed(page, SITE_MENU);
     await page.mouse.wheel(0, 300);
     await expect.poll(() => scrollY(page)).toBeGreaterThan(500);
   });
@@ -181,7 +190,7 @@ test.describe("Mobile menu holds the page still", () => {
     // And end to end with a raw mouse click, because `locator.click()` would wait
     // the fade out and then pass regardless.
     await page.mouse.click(point.x, point.y);
-    await expect(page.getByRole("dialog", { name: "Site menu" })).toBeVisible();
+    await expectOverlayOpen(page, SITE_MENU);
   });
 });
 
@@ -203,7 +212,7 @@ test.describe("Terminal holds the page still", () => {
     expect(await scrollY(page)).toBe(400);
 
     await page.keyboard.press("Escape");
-    await expect(page.locator('[role="dialog"][aria-label="Interactive terminal"]')).toHaveCount(0);
+    await expectOverlayClosed(page, TERMINAL_DIALOG);
     expect(await scrollY(page)).toBe(400);
     await page.mouse.wheel(0, 300);
     await expect.poll(() => scrollY(page)).toBeGreaterThan(400);

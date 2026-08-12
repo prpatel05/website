@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { test, expect } from "./fixtures";
+import { test, expect,
+  openMobileMenu,
+} from "./fixtures";
 
 /**
  * Every (family, weight, style) the site paints is one the Google Fonts request
@@ -178,8 +180,7 @@ test.describe("the site paints exactly the font faces it requests", () => {
     );
 
     await page.goto("/");
-    await page.getByText("[menu]").click();
-    await expect(page.getByRole("dialog", { name: "Site menu" })).toBeVisible();
+    await openMobileMenu(page);
     await page.evaluate(() => document.fonts.ready);
 
     const painted = ours(await page.evaluate(collectFaces), FAMILIES);
@@ -208,8 +209,7 @@ test.describe("the site paints exactly the font faces it requests", () => {
     const mobile = (page.viewportSize()?.width ?? 0) < 768;
     await page.goto("/");
     if (mobile) {
-      await page.getByText("[menu]").click();
-      await expect(page.getByRole("dialog", { name: "Site menu" })).toBeVisible();
+      await openMobileMenu(page);
     } else {
       await page.locator('button[title="Open terminal (Ctrl+K)"]').click();
       await expect(page.getByRole("textbox", { name: "Terminal command" })).toBeFocused();

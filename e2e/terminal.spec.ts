@@ -5,6 +5,8 @@ import {
   openTerminalByClick,
   proveReactIsLive,
   type Page,
+  expectOverlayOpen,
+  TERMINAL_DIALOG,
 } from "./fixtures";
 
 test.describe("Interactive terminal", () => {
@@ -172,7 +174,10 @@ test.describe("Ctrl+K before hydration", () => {
     release();
 
     await expect(page.getByText("pratik.pa.tel — bash")).toBeVisible();
-    await expect(page.getByRole("dialog", { name: "Interactive terminal" })).toBeVisible();
+    // The strong gate, and this is the case that most needs it: the terminal
+    // that opens out of a pre-hydration Ctrl+K is the one PRA-884 shipped at
+    // `opacity: 0` with the focus trap putting the caret in it.
+    await expectOverlayOpen(page, TERMINAL_DIALOG);
   });
 
   /**
