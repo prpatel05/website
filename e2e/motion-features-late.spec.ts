@@ -112,6 +112,54 @@ test.describe("motion features arriving late", () => {
     released();
   });
 
+  /**
+   * The chunk that never lands at all — the deploy case rather than the slow
+   * network one. Pages replaces `dist/` wholesale, so a tab open across a
+   * deploy asks for a hash that is gone.
+   *
+   * `LazyMotion` calls the loader from a mount effect and attaches no rejection
+   * handler of its own, so the rejection escaped as an uncaught `pageerror`
+   * that stayed for the life of the page. It broke nothing the reader could
+   * see, which is exactly the problem: a permanent false positive lying in wait
+   * for any error reporting this site ever adds, on a page that is working.
+   */
+  test("a feature chunk that never arrives is not an uncaught error", async ({
+    page,
+  }) => {
+    const pageErrors: string[] = [];
+    page.on("pageerror", (error) => pageErrors.push(error.message));
+
+    let blocked = 0;
+    await page.route(FEATURES_CHUNK, (route) => {
+      blocked += 1;
+      // Gone, not slow: the hash this tab remembers is not in the live dist.
+      return route.abort("failed");
+    });
+
+    await page.goto("/");
+    await blogLink(page).click();
+    await expect(page).toHaveURL(/\/blog\/$/);
+
+    // The reader's half, unchanged: with the features never arriving the
+    // entrance stays suppressed and the page is readable. Asserted here too, so
+    // a clean error log cannot come from a page that rendered nothing.
+    await expect.poll(() => effectiveOpacity(page)).toBe(1);
+
+    expect(
+      blocked,
+      "no request matched the feature chunk — nothing was ever failed, so this test proved nothing"
+    ).toBeGreaterThan(0);
+    // A dwell rather than a poll: the assertion is that nothing arrives, and a
+    // poll for an empty array is satisfied by its first sample. The rejection
+    // this catches lands within a frame of the abort, which is already several
+    // seconds behind by here; the pause is slack, not the mechanism.
+    await page.waitForTimeout(500);
+    expect(
+      pageErrors,
+      "the failed feature chunk escaped as an uncaught error"
+    ).toEqual([]);
+  });
+
   test("the entrance still animates once the chunk has landed", async ({
     page,
   }) => {

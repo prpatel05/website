@@ -209,10 +209,32 @@ const AnimatedRoutes = () => {
  * holds the chunk and asserts it.
  */
 const loadMotionFeatures = () =>
-  import("@/lib/motion-features").then((mod) => {
-    markMotionFeaturesReady();
-    return mod.default;
-  });
+  import("@/lib/motion-features").then(
+    (mod) => {
+      markMotionFeaturesReady();
+      return mod.default;
+    },
+    () =>
+      /*
+       * A chunk that is never coming, said in the one way `LazyMotion` already
+       * knows how to hear.
+       *
+       * It calls this once from a mount effect and attaches no rejection
+       * handler of its own, so a hash invalidated by a deploy — or a connection
+       * that drops — became an uncaught `Failed to fetch dynamically imported
+       * module` that stayed on the page for its whole life. Nothing the reader
+       * sees depends on it: `markMotionFeaturesReady` is deliberately not called
+       * on this branch, so `useEntrance` goes on suppressing and every route
+       * mounts in its final state. But an uncaught error is a false report to
+       * whatever reads them next.
+       *
+       * A promise that never settles is exactly what LazyMotion already handles
+       * for a chunk still in flight, and it is the truthful description of one
+       * that will not arrive. Resolving an empty bundle instead would set
+       * framer's loaded flag and leave `strict` `m` elements with no renderer.
+       */
+      new Promise<never>(() => {})
+  );
 
 const App = () => (
   <HelmetProvider>
