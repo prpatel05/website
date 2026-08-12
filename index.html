@@ -77,11 +77,28 @@
       swallowing Ctrl+K for the life of the page — leaving the shortcut worse off
       than the gap it exists to close. The prerendered markup is already in the
       DOM above, so the toggle is a reliable tell at this point.
+
+      The same reasoning applies to a bundle that never arrives at all, which is
+      the other way nothing ever claims the stand-in: a chunk 404'd by a deploy,
+      a connection that drops mid-download. So it also gives up on its own after
+      DISARM_AFTER_MS and hands the shortcut back to the browser.
     -->
     <script>
       (function () {
         var armed = !!document.querySelector('button[title="Open terminal (Ctrl+K)"]');
         var pending = false;
+
+        /*
+          The stand-in exists to cover one bundle download. Ten seconds is well
+          past a slow one, and a bundle that has not landed by then is not
+          landing — nothing is left to call claim(), so without this the key is
+          swallowed for the life of the page with no terminal it could ever
+          open. Long rather than tight on purpose: cutting a real download short
+          would reopen the gap this script is here to close, and the cost of
+          waiting is that the browser's own Ctrl+K stays unavailable a few
+          seconds longer on a load that is already failing.
+        */
+        var DISARM_AFTER_MS = 10000;
 
         function onKeyDown(e) {
           if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -90,13 +107,30 @@
           }
         }
 
-        if (armed) window.addEventListener("keydown", onKeyDown);
+        function disarm() {
+          if (!armed) return;
+          armed = false;
+          // Dropped along with the handler: a press made before the bundle gave
+          // up should not open a terminal minutes later if one somehow arrives.
+          pending = false;
+          window.removeEventListener("keydown", onKeyDown);
+        }
+
+        if (armed) {
+          window.addEventListener("keydown", onKeyDown);
+          setTimeout(disarm, DISARM_AFTER_MS);
+        }
 
         // Published either way, so "this script has run" is observable on every
         // route — on the unarmed ones that is the only way to tell the guard
         // apart from a page that simply has not parsed this far yet.
         window.__terminalBoot = {
-          armed: armed,
+          // A getter, not a copy: `armed` is the live answer to "is Ctrl+K
+          // still being swallowed", and after a disarm a copy would say yes
+          // when the handler is gone.
+          get armed() {
+            return armed;
+          },
           claim: function () {
             if (armed) window.removeEventListener("keydown", onKeyDown);
             window.__terminalBoot = undefined;

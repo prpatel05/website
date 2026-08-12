@@ -227,4 +227,54 @@ test.describe("Ctrl+K before hydration", () => {
       ).toBe(armed);
     });
   }
+
+  /**
+   * The other way nothing ever claims the stand-in, and the one the route check
+   * above cannot cover: the right route, but a bundle that never arrives. A
+   * chunk 404'd by a deploy, a connection that drops mid-download — the toggle
+   * is prerendered so the stand-in arms, and then no React ever mounts to
+   * retire it. It swallowed Ctrl+K for the life of the page with nothing on the
+   * other side to open, which is worse than the gap it exists to close.
+   *
+   * So it gives up on its own. The test spends the real ten seconds rather than
+   * reaching in to shorten them: the timeout is the behaviour under test, and a
+   * build that had lost it would look identical to one whose deadline this
+   * test had quietly redefined.
+   */
+  test("hands Ctrl+K back to the browser when the bundle never arrives", async ({ page }) => {
+    await page.route("**/assets/**.js", () => {
+      /* never continued: nothing will ever mount to claim the stand-in */
+    });
+
+    await page.goto("/", { waitUntil: "commit" });
+
+    // Registered after the stand-in — see the sibling above — and re-read
+    // rather than replaced, so both presses are measured by the same probe.
+    await page.waitForFunction(() => window.__terminalBoot !== undefined);
+    await page.evaluate(() => {
+      window.addEventListener("keydown", (e) => {
+        (window as unknown as { __sawPrevented?: boolean }).__sawPrevented = e.defaultPrevented;
+      });
+    });
+    const sawPrevented = () =>
+      page.evaluate(() => (window as unknown as { __sawPrevented?: boolean }).__sawPrevented);
+
+    // Positive control. Without it the assertion after the wait passes just as
+    // well against a stand-in that never armed in the first place, which is the
+    // one thing this must not be confused with.
+    await page.keyboard.press("Control+k");
+    expect(await sawPrevented(), "the stand-in never armed, so it had nothing to give up").toBe(
+      true,
+    );
+
+    await page.waitForFunction(() => window.__terminalBoot?.armed === false, undefined, {
+      timeout: 20_000,
+    });
+
+    await page.keyboard.press("Control+k");
+    expect(
+      await sawPrevented(),
+      "Ctrl+K is still swallowed after the stand-in gave up on the bundle",
+    ).toBe(false);
+  });
 });
