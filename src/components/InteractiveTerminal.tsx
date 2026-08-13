@@ -7,6 +7,7 @@ import { useTerminalHistory } from "@/hooks/useTerminalHistory";
 import { useEntrance, useOverlayEntrance } from "@/hooks/useEntrance";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { scrollBehavior } from "@/lib/scroll-behavior";
 
 const InteractiveTerminal = () => {
   const entrance = useEntrance();
@@ -64,7 +65,7 @@ const InteractiveTerminal = () => {
     if (!el) return;
     const fresh = lastScroller.current !== el;
     lastScroller.current = el;
-    el.scrollTo({ top: el.scrollHeight, behavior: fresh ? "auto" : "smooth" });
+    el.scrollTo({ top: el.scrollHeight, behavior: fresh ? "auto" : scrollBehavior() });
   }, [lines, open]);
 
   // A Ctrl+K that landed before this component could bind anything was caught
@@ -127,7 +128,12 @@ const InteractiveTerminal = () => {
       setOpen(false);
       defer(() => {
         const el = document.getElementById(id);
-        el?.scrollIntoView({ behavior: "smooth" });
+        // Not a hardcoded "smooth": this animates the whole document — 3112px
+        // to `#contact` from the top — which is the large-area motion
+        // `prefers-reduced-motion` exists to prevent. The nav's own `#contact`
+        // link has always jumped, so before this the two paths to the same
+        // section disagreed for that reader (PRA-941).
+        el?.scrollIntoView({ behavior: scrollBehavior() });
       });
     },
     [defer]

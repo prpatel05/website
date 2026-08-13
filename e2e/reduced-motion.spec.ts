@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "./fixtures";
+import { test, expect, openTerminalByClick, type Page } from "./fixtures";
 
 /**
  * The parallax layer behind the hero. It is the load-bearing case: its offset
@@ -86,5 +86,84 @@ test.describe("prefers-reduced-motion", () => {
     await scrollPastTheFold(page);
 
     expect(parseFloat(await heroColumnOpacity(page))).toBeLessThan(1);
+  });
+
+  /**
+   * The imperative third of the contract. The two halves above are declarative
+   * — the `@media` block in `index.css` and `MotionConfig reducedMotion="user"`
+   * — and neither governs a `scrollIntoView`. The terminal's `contact` command
+   * hardcoded `behavior: "smooth"` and animated the document 3112px through 56
+   * intermediate positions for a reader who had asked for less, in a sample
+   * sequence identical to the one without the preference. The nav's own
+   * `#contact` link reached the same section in 2 samples the whole time, so
+   * the two paths to one place disagreed (PRA-941).
+   */
+  const RECORD_SCROLL = () => {
+    const w = window as unknown as { __scrollY: number[] };
+    w.__scrollY = [];
+    const tick = () => {
+      w.__scrollY.push(Math.round(window.scrollY));
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  };
+
+  /**
+   * Runs `contact` in the terminal and reports how many distinct scroll
+   * positions the document passed through on the way.
+   *
+   * Sampled every frame from document start rather than polled: an animated
+   * scroll and a jump differ only in their intermediate frames, and
+   * `expect.poll` passes on its first satisfying sample, so it would read the
+   * settled position of both and call them the same. The recorder has to be
+   * running before the scroll begins.
+   */
+  const scrollStopsForTerminalContact = async (
+    page: Page,
+    reducedMotion: "reduce" | "no-preference",
+  ) => {
+    await page.emulateMedia({ reducedMotion });
+    await page.addInitScript(RECORD_SCROLL);
+    await page.goto("/");
+    // The click path, not Ctrl+K: a bare keypress races hydration.
+    await openTerminalByClick(page);
+
+    await page.getByPlaceholder('type "help" to get started...').fill("contact");
+    // Cleared after opening, so the toggle click's own scrolling — Playwright
+    // scrolls the document to reach a target, even a `fixed` one — is not
+    // counted as motion the command caused.
+    await page.evaluate(() => {
+      (window as unknown as { __scrollY: number[] }).__scrollY.length = 0;
+    });
+    await page.keyboard.press("Enter");
+
+    // The command defers 300ms for the close animation before it scrolls at
+    // all, then a smooth scroll of this distance runs well under a second.
+    await page.waitForTimeout(2000);
+
+    const samples = await page.evaluate(
+      () => (window as unknown as { __scrollY: number[] }).__scrollY,
+    );
+    return { stops: new Set(samples).size, landedAt: samples[samples.length - 1] };
+  };
+
+  test("the terminal jumps to a section instead of animating the whole page there", async ({
+    page,
+  }) => {
+    const { stops, landedAt } = await scrollStopsForTerminalContact(page, "reduce");
+
+    // Two: where it started and where it ended. Anything above single digits is
+    // a rendered animation, not the tail of one instant scroll.
+    expect(stops).toBeLessThanOrEqual(3);
+    // Without this the test also passes if the command stopped navigating at
+    // all — one stop, no motion, and a reader who never reaches `#contact`.
+    expect(landedAt).toBeGreaterThan(1000);
+  });
+
+  test("the terminal still animates its way to a section by default", async ({ page }) => {
+    const { stops, landedAt } = await scrollStopsForTerminalContact(page, "no-preference");
+
+    expect(stops).toBeGreaterThan(10);
+    expect(landedAt).toBeGreaterThan(1000);
   });
 });
