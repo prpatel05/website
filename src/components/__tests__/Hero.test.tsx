@@ -205,3 +205,39 @@ describe("Hero – portrait", () => {
     expect(portrait.getAttribute("height")).toBe("288");
   });
 });
+
+describe("Hero – the role line as a screen reader gets it", () => {
+  /**
+   * The line read as "dollar sign, CTO & Chief Architect, left five eighths
+   * block": neither piece of shell decoration was hidden. The convention was
+   * already the repo's own — InteractiveTerminal hides the identical `$`
+   * prompt, and the archive, preview and post page all hide their `|`
+   * separators — the hero was just the one place it was missed.
+   *
+   * Asserted as "no bare glyph is exposed" rather than by naming the two spans,
+   * so a third decorative character added later is caught too.
+   */
+  it("keeps the prompt and cursor glyphs out of the accessibility tree", () => {
+    const { container } = renderHero();
+
+    const exposed = Array.from(container.querySelectorAll("span"))
+      .filter((el) => el.children.length === 0)
+      .filter((el) => /[▊$]/.test(el.textContent ?? ""))
+      .filter((el) => !el.closest("[aria-hidden='true']"))
+      .map((el) => el.textContent);
+
+    expect(exposed).toEqual([]);
+  });
+
+  // Positive control: the spans are actually there to be hidden. Without this,
+  // deleting the whole line would pass the assertion above.
+  it("still paints both glyphs", () => {
+    const { container } = renderHero();
+
+    const glyphs = Array.from(container.querySelectorAll("[aria-hidden='true']"))
+      .map((el) => el.textContent?.trim())
+      .filter((t) => t === "$" || t === "▊");
+
+    expect(glyphs).toHaveLength(2);
+  });
+});

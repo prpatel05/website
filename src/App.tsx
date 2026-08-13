@@ -239,9 +239,31 @@ const loadMotionFeatures = () =>
 const App = () => (
   <HelmetProvider>
     <ErrorBoundary>
+      {/*
+        `z-[300]`, not the `z-50` this used to carry — which tied with the
+        navbar. The nav renders later in the DOM, so an equal z-index meant the
+        nav won and the link, the first Tab stop on every page, was painted
+        underneath it. Sampled across the focused link's own rect it was the
+        topmost paint at 0 of 495 points, on every route and both viewports.
+
+        `/blog/` and all 24 post pages give the nav `bg-background/80
+        backdrop-blur-xl` unconditionally, so what the reader got was the link
+        smeared through a blurred 80%-opaque bar: focusing it moved the
+        strongest pixel on screen by 32/255, against 243/255 once it paints on
+        top. On `/` the nav is transparent until `scrollY > 50`, which is why
+        this survived — the one place it looked right was the top of the
+        homepage. `focus:outline-none` left no ring to fall back on either.
+        WCAG 2.2 SC 2.4.11 Focus Not Obscured (Minimum).
+
+        Above the overlays (menu `z-[100]`, terminal `z-[200]`) rather than
+        merely above the nav, because the invariant is "visible whenever
+        focused" and no ordering below them delivers that. It covers nothing:
+        the link is `sr-only` until it takes focus, and both overlays trap
+        focus, so it cannot be reached while either is open.
+      */}
       <a
         href={`#${MAIN_CONTENT_ID}`}
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:outline-none"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[300] focus:rounded focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:outline-none"
       >
         Skip to main content
       </a>

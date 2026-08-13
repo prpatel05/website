@@ -75,6 +75,24 @@ function renderBlog() {
   );
 }
 
+/**
+ * The thumbnail on the card whose heading is `heading`.
+ *
+ * These used to be found with `img[alt="<title>"]`, which only worked because
+ * the alt was the title — the duplicate-announcement defect itself. The alt is
+ * empty now, so the card has to be identified by the text a reader actually
+ * gets, and the image found relative to it.
+ */
+function thumbnailForHeading(container: HTMLElement, heading: string) {
+  const card = Array.from(container.querySelectorAll("article")).find(
+    (article) => article.querySelector("h2")?.textContent?.trim() === heading
+  );
+  if (!card) throw new Error(`no archive card headed "${heading}"`);
+  const img = card.querySelector("img");
+  if (!img) throw new Error(`card "${heading}" has no thumbnail`);
+  return img;
+}
+
 function blogJsonLd(container: HTMLElement) {
   const scripts = Array.from(container.querySelectorAll("script"));
   const parsed = scripts.flatMap((s) => {
@@ -185,9 +203,10 @@ describe("Blog archive", () => {
   // it has to ask for the thumbnail the build emits instead.
   it("paints the card from the generated thumbnail, not the full hero", () => {
     const { container } = renderBlog();
-    const thumb = container.querySelector<HTMLImageElement>(
-      'img[alt="Second Post"]'
-    );
+    // Selected by the card's heading rather than the image's alt: the alt is
+    // deliberately empty (the thumbnails are decorative), so there is nothing
+    // on the <img> itself that identifies which post it belongs to.
+    const thumb = thumbnailForHeading(container, "Second Post");
 
     expect(thumb.getAttribute("src")).toBe("/images/thumbs/second-320w.webp");
     expect(thumb.getAttribute("srcset")).toBe(
@@ -196,13 +215,41 @@ describe("Blog archive", () => {
     expect(thumb.getAttribute("sizes")).toBe(THUMBNAIL_SIZES);
   });
 
+  /**
+   * The thumbnails used to carry `alt={post.title}` — byte-identical to the
+   * `<h2>` eighteen lines below, on 24 of 24 cards — so a screen reader read
+   * the title, then the identical title again as the description of the
+   * picture. 48 announcements to get through 24 links.
+   *
+   * BlogPost.tsx had already fixed exactly this for the full-size hero cropped
+   * from the same master; the archive was missed. Asserted per card rather than
+   * on one sample, because the defect was that it held for every one of them.
+   */
+  it("does not repeat each card's title as its thumbnail's alt", () => {
+    const { container } = renderBlog();
+    const cards = Array.from(container.querySelectorAll("article"));
+
+    // Positive control: there are cards with both parts to compare.
+    expect(cards.length).toBe(testPosts.length);
+
+    for (const card of cards) {
+      const heading = card.querySelector("h2")?.textContent?.trim();
+      const img = card.querySelector("img");
+
+      expect(img, `card "${heading}" has no thumbnail`).not.toBeNull();
+      // Empty, not absent: an empty alt is what takes a decorative image out of
+      // the accessibility tree, while a missing one makes the reader fall back
+      // to announcing the filename.
+      expect(img!.getAttribute("alt")).toBe("");
+      expect(img!.getAttribute("alt")).not.toBe(heading);
+    }
+  });
+
   // A hero the build does not own has no thumbnail to point at, so the card
   // keeps the original rather than requesting a file that will never exist.
   it("falls back to the hero when there is no thumbnail for it", () => {
     const { container } = renderBlog();
-    const remote = container.querySelector<HTMLImageElement>(
-      'img[alt="First Post"]'
-    );
+    const remote = thumbnailForHeading(container, "First Post");
 
     expect(remote.getAttribute("src")).toBe("https://cdn.example.com/first.png");
     expect(remote.getAttribute("srcset")).toBeNull();
