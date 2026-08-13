@@ -104,10 +104,25 @@ describe("markdown rendered at build time", () => {
   it("renders a fenced block as a block, not as a row of inline chips", () => {
     const html = renderMarkdownToHtml("```js\nconst x = 1;\n```\n");
 
-    expect(html).toMatch(/<pre class="[^"]*overflow-x-auto[^"]*">/);
+    expect(html).toMatch(/<pre[^>]*class="[^"]*overflow-x-auto[^"]*"/);
     const [, codeClass] = html.match(/<pre[^>]*>\s*<code class="([^"]*)"/) ?? [];
     expect(codeClass).toBeDefined();
     expect(codeClass).not.toContain("bg-muted");
+  });
+
+  // `overflow-x-auto` above is also a scrollable region, and at 393px a real
+  // code line makes it one — unreachable and unpannable by keyboard, WCAG 2.1.1.
+  // `a11y-axe.spec.ts` proves the rendered behaviour at mobile width; this pins
+  // the three attributes it depends on, so dropping one fails in `npm test`
+  // rather than a browser run nobody does locally. The label needs the role:
+  // `aria-label` on a bare `pre` is dropped, since `generic` takes no name.
+  it("puts a fenced block in the tab order, named", () => {
+    const html = renderMarkdownToHtml("```sh\nnpm run build -- --mode staging\n```\n");
+
+    const [pre] = html.match(/<pre[^>]*>/) ?? [];
+    expect(pre).toContain('tabindex="0"');
+    expect(pre).toContain('role="group"');
+    expect(pre).toContain('aria-label="Code sample"');
   });
 
   it("transforms .md imports into an HTML string and leaves everything else alone", () => {

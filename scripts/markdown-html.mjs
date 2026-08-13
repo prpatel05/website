@@ -86,12 +86,29 @@ const components = {
   // buys nothing — family, size and colour all match the prose around it. The
   // chip below is what makes it read as code, which in turn is why `pre` needs
   // an entry: a fenced block must not inherit the inline treatment.
+  //
+  // `overflow-x-auto` is what makes the block safe to overflow, and also what
+  // makes it a scrollable region — one a keyboard user could neither reach nor
+  // pan, which is WCAG 2.1.1. Whether it bites depends on rendered width rather
+  // than on anything visible in the markdown: a shell command fits at 1280px
+  // and scrolls at 393px, so an author drafting a post has no way to see the
+  // constraint. `tabIndex` is the fix, unconditionally — the body is static
+  // HTML built ahead of any viewport, so there is nothing to measure at render
+  // time, and a tab stop on a block that happens not to scroll costs a keypress
+  // where the alternative costs a phone reader the content.
+  //
+  // The role is what makes the stop worth landing on. `aria-label` on a bare
+  // `pre` is dropped (implicit role `generic` takes no name), so without
+  // `group` a keyboard user tabs into an unannounced box.
   pre: ({ children }) =>
     h(
       "pre",
       {
         className:
           "my-6 overflow-x-auto rounded-lg border border-border bg-card p-4",
+        tabIndex: 0,
+        role: "group",
+        "aria-label": "Code sample",
       },
       withProps(children, () => ({ fenced: true }))
     ),
