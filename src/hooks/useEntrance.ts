@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useMotionFeaturesReady } from "@/lib/motion-ready";
 
@@ -61,14 +61,68 @@ export const useFirstLoad = () => useLocation().key === loadedOnKey;
  * one navigation its decoration; keeping it costs the reader the page.
  */
 export const useEntrance = () => {
-  const firstLoad = useFirstLoad();
-  const motionReady = useMotionFeaturesReady();
-  const suppressed = firstLoad || !motionReady;
+  const suppressed = useEntranceSuppressed();
 
   return useCallback(
     <T,>(initial: T): T | false => (suppressed ? false : initial),
     [suppressed]
   );
+};
+
+const useEntranceSuppressed = () => {
+  const firstLoad = useFirstLoad();
+  const motionReady = useMotionFeaturesReady();
+  return firstLoad || !motionReady;
+};
+
+/**
+ * Takes the taps off an element for as long as its entrance has it at an
+ * opacity the reader cannot see.
+ *
+ * Opacity is not a hit-testing property. `useParallaxFade` closed that for the
+ * hero's scroll-linked fade-*out* (PRA-943); a `whileInView` entrance is the
+ * same defect arriving from the other direction, and on the homepage it is not
+ * even transient. `BlogPreview` ran its cards on `viewport={{ margin:
+ * "-50px" }}`, so a card had to be 50px *inside* the viewport before the
+ * observer fired. Below that it was on screen and not animating: measured at
+ * 393x852 after a client-side navigation, all five preview cards sat at
+ * opacity 0 across a full-width strip up to 36px tall — the bottom edge of the
+ * screen, where a thumb rests — and were the topmost paint at every point of
+ * it. A tap on what read as empty page opened a post.
+ *
+ * The gate is `pointer-events` only, deliberately. `useParallaxFade` also
+ * hides its target from the accessibility tree, which is right for something
+ * the reader has scrolled irreversibly past; it would be wrong here. An
+ * entrance covers content the reader has not reached *yet*, and a screen
+ * reader walks the document without moving the viewport — hiding it would take
+ * the archive out of the page for exactly the reader who never triggers the
+ * animation. Focus is safe for the same reason it is not gated: `pointer-events`
+ * does not affect it, and focusing a card scrolls it into view, which is what
+ * starts the entrance.
+ *
+ * Every branch fails open. Suppressed entrance (first load, or the motion
+ * chunk not here yet) means no `initial` is written at all, so the gate starts
+ * released; if the element never enters the viewport the animation never runs,
+ * but neither does the reader ever reach it.
+ *
+ * A released gate leaves the property *off* the element rather than writing
+ * `auto`, which is not the same thing: `pointer-events: none` on an ancestor
+ * does not survive a descendant setting `auto`. The hero's CTAs sit inside the
+ * column `useParallaxFade` gates, so an `auto` here would hand back the taps
+ * PRA-943 took away once the column had faded out.
+ */
+const GATED = { pointerEvents: "none" } as const;
+
+export const useEntranceGate = () => {
+  const suppressed = useEntranceSuppressed();
+  // Read once, at mount, for the same reason `initial` is: that is when
+  // framer decides whether this element starts hidden.
+  const [released, setReleased] = useState(suppressed);
+
+  return {
+    onAnimationComplete: () => setReleased(true),
+    style: released ? undefined : GATED,
+  };
 };
 
 /**

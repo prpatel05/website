@@ -1,6 +1,6 @@
 import { m } from "framer-motion";
 import type { ReactNode } from "react";
-import { useEntrance } from "@/hooks/useEntrance";
+import { useEntrance, useEntranceGate } from "@/hooks/useEntrance";
 
 interface SectionHeaderProps {
   label: string;
@@ -18,9 +18,14 @@ const SectionHeader = ({
   children,
 }: SectionHeaderProps) => {
   const entrance = useEntrance();
+  // `children` is where a caller puts a link — `ls ./posts` lives in this
+  // header on the blog section — so the header fades interactive content in
+  // and needs the same gate the cards do.
+  const gate = useEntranceGate();
 
   return (
     <m.div
+      {...gate}
       initial={entrance({ opacity: 0 })}
       whileInView={{ opacity: 1 }}
       viewport={{ once: true }}

@@ -1,16 +1,54 @@
 import { m } from "framer-motion";
 import { Mail, Phone } from "lucide-react";
 import { socials } from "@/data/socials";
-import { useEntrance } from "@/hooks/useEntrance";
+import { useEntrance, useEntranceGate } from "@/hooks/useEntrance";
 import { useParallax } from "@/hooks/useParallax";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import SectionHeader from "./SectionHeader";
+
+/**
+ * One social tile. Its own component so it can own its own entrance gate — a
+ * hook cannot be called from inside the `map` below.
+ */
+const SocialLink = ({
+  social,
+  index,
+}: {
+  social: (typeof socials)[number];
+  index: number;
+}) => {
+  const entrance = useEntrance();
+  const gate = useEntranceGate();
+
+  return (
+    <m.a
+      href={social.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      {...gate}
+      initial={entrance({ opacity: 0, scale: 0.8, y: 20 })}
+      whileInView={{ opacity: 1, scale: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: 0.4 + index * 0.07, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+      className="group flex flex-col items-center gap-2 border border-border bg-card p-4 hover:border-primary/40 hover:box-glow transition-all duration-500"
+    >
+      <social.icon className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+      <span className="font-mono text-[10px] text-muted-foreground group-hover:text-primary transition-colors">
+        {social.name}
+      </span>
+    </m.a>
+  );
+};
 
 const Contact = () => {
   const { ref, scrollYProgress, sectionOpacity } = useScrollAnimation({
     opacityRange: [0, 0.2],
   });
   const entrance = useEntrance();
+  // The direct-contact column and the social grid each fade in a set of links.
+  const directGate = useEntranceGate();
+  const socialGridGate = useEntranceGate();
 
   const decorY = useParallax(scrollYProgress, [0, 1], ["100px", "-60px"]);
 
@@ -32,6 +70,7 @@ const Contact = () => {
         <div className="grid lg:grid-cols-2 gap-12">
           {/* Direct contact */}
           <m.div
+            {...directGate}
             initial={entrance({ opacity: 0, y: 30 })}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -66,6 +105,7 @@ const Contact = () => {
 
           {/* Social grid */}
           <m.div
+            {...socialGridGate}
             initial={entrance({ opacity: 0, y: 30 })}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -73,23 +113,7 @@ const Contact = () => {
             className="grid grid-cols-3 sm:grid-cols-5 gap-3"
           >
             {socials.map((s, i) => (
-              <m.a
-                key={s.name}
-                href={s.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                initial={entrance({ opacity: 0, scale: 0.8, y: 20 })}
-                whileInView={{ opacity: 1, scale: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.4 + i * 0.07, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                className="group flex flex-col items-center gap-2 border border-border bg-card p-4 hover:border-primary/40 hover:box-glow transition-all duration-500"
-              >
-                <s.icon className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                <span className="font-mono text-[10px] text-muted-foreground group-hover:text-primary transition-colors">
-                  {s.name}
-                </span>
-              </m.a>
+              <SocialLink key={s.name} social={s} index={i} />
             ))}
           </m.div>
         </div>
