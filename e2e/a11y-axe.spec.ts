@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import AxeBuilder from "@axe-core/playwright";
+import { renderMarkdownToHtml } from "../scripts/markdown-html.mjs";
 import { test, expect,
   openMobileMenu,
   openTerminalByClick,
@@ -141,6 +142,69 @@ test.describe("every route passes axe at WCAG 2.1 AA", () => {
     expect(
       violations.map((v) => v.id),
       `the stacked overlays have ${violations.length} violation(s):\n  ${violations
+        .map((v) => `[${v.impact}] ${v.id} — ${v.help}`)
+        .join("\n  ")}`
+    ).toEqual([]);
+  });
+
+  /**
+   * A fenced block wider than the phone.
+   *
+   * The route sweep above cannot catch this. `pre` is `overflow-x-auto`, so it
+   * only becomes a scroll container when a line does not fit — which depends on
+   * rendered pixel width, not on anything in the markdown. At 1280px a code
+   * sample fits and nothing scrolls; at 393px the same markup is a scrollable
+   * region, and one no keyboard can reach or pan fails WCAG 2.1.1. Worse, the
+   * sweep is vacuous either way: no merged post contains a fenced block at all,
+   * standalone ones having only become legal in #113. The first author to paste
+   * a shell command would have found out from CI, not from the page.
+   *
+   * So the block is rendered here rather than found on a route, by the same
+   * renderer the build uses — the assertion cannot drift from the markup that
+   * ships, and it does not wait on a post to exist. The scroll check in the
+   * middle is what keeps this from going quietly vacuous the way the sweep did.
+   */
+  test("a code sample wider than the phone stays reachable by keyboard", async ({ page }) => {
+    test.skip(
+      (page.viewportSize()?.width ?? 0) >= 768,
+      "at desktop width the sample fits, nothing scrolls, and there is no violation to catch"
+    );
+
+    await page.goto("/");
+
+    // The command from PRA-934's own verification section: ~95 monospace
+    // characters, and `pre` does not wrap, so it is far past 393px.
+    const html = renderMarkdownToHtml(
+      "```sh\nnpx playwright test e2e/a11y-axe.spec.ts --project=mobile-chrome --reporter=line\n```\n"
+    );
+    await page.evaluate((body) => {
+      const probe = document.createElement("div");
+      probe.id = "wide-code-probe";
+      probe.innerHTML = body;
+      document.body.appendChild(probe);
+    }, html);
+
+    const pre = page.locator("#wide-code-probe pre");
+    expect(
+      await pre.evaluate((el) => el.scrollWidth > el.clientWidth),
+      "the sample no longer overflows, so this test would pass without proving anything"
+    ).toBe(true);
+
+    // Tab order membership, not `focus()` — that is the assertion this test
+    // shipped with, and it passed against the unfixed renderer: Chrome grants
+    // programmatic focus to a scroll container whether or not any keyboard can
+    // get there. Being reachable by Tab is the thing the rule is about, and it
+    // holds whichever id the engine files the violation under.
+    expect(await pre.evaluate((el) => el.tabIndex)).toBeGreaterThanOrEqual(0);
+
+    const { violations } = await new AxeBuilder({ page })
+      .withTags(WCAG_AA)
+      .include("#wide-code-probe")
+      .analyze();
+
+    expect(
+      violations.map((v) => v.id),
+      `a wide code block has ${violations.length} violation(s):\n  ${violations
         .map((v) => `[${v.impact}] ${v.id} — ${v.help}`)
         .join("\n  ")}`
     ).toEqual([]);
