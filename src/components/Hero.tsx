@@ -1,7 +1,7 @@
 import { m, useReducedMotion, useScroll } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import { useEntrance } from "@/hooks/useEntrance";
-import { useParallax } from "@/hooks/useParallax";
+import { useParallax, useParallaxFade } from "@/hooks/useParallax";
 import {
   PORTRAIT_BLANK,
   PORTRAIT_BLANK_MEDIA,
@@ -38,7 +38,13 @@ const Hero = () => {
   // sibling here goes through `useParallax`. Left bare, the h1, the role line,
   // both CTAs and the portrait went on fading with the scrollbar for exactly
   // the people who asked them not to.
-  const opacity = useParallax(scrollYProgress, [0, 0.8], [1, 0]);
+  //
+  // It carries `pointer-events` and `visibility` alongside the opacity so the
+  // faded-out column stops taking taps it is far too transparent to be asking
+  // for; see `useParallaxFade`. Spread into all three of the styles below —
+  // the status rail and the scroll cue are absolutely positioned over the page
+  // and would go on covering it just as invisibly.
+  const fade = useParallaxFade(scrollYProgress, [0, 0.8], [1, 0]);
   const scale = useParallax(scrollYProgress, [0, 1], [1, 0.92]);
   const statusX = useParallax(scrollYProgress, [0, 1], ["0px", "-40px"]);
 
@@ -124,7 +130,7 @@ const Hero = () => {
         initial={entrance({ opacity: 0, x: -20 })}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 1.2, duration: 0.6 }}
-        style={{ x: statusX, opacity }}
+        style={{ x: statusX, ...fade }}
         className="absolute top-24 left-8 hidden lg:flex flex-col gap-4 font-mono text-[10px] text-muted-foreground"
       >
         <div className="flex items-center gap-2">
@@ -141,7 +147,7 @@ const Hero = () => {
         </div>
       </m.div>
 
-      <m.div className="container relative z-10" style={{ y: textY, opacity, scale }}>
+      <m.div className="container relative z-10" style={{ y: textY, scale, ...fade }}>
         <div className="max-w-4xl">
           <m.div
             initial={entrance({ opacity: 0 })}
@@ -278,7 +284,7 @@ const Hero = () => {
         initial={entrance({ opacity: 0 })}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.5, duration: 0.5 }}
-        style={{ opacity }}
+        style={{ ...fade }}
         className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
       >
         <span className="font-mono text-[10px] text-muted-foreground tracking-widest">SCROLL</span>

@@ -28,6 +28,18 @@ vi.mock("framer-motion", () => {
     useScroll: () => ({ scrollYProgress: { get: () => 0 } }),
     useTransform: (_: unknown, __: unknown, defaults: unknown[]) => defaults?.[0] ?? 0,
     useReducedMotion: () => false,
+    // `useParallaxFade` builds its pointer-events gate with the standalone
+    // `transform()` rather than the hook, so this mock has to carry it or Hero
+    // throws on render. A clamped linear interpolator — what the real one is
+    // for the numeric two-stop ranges this component passes it.
+    transform: (input: number[], output: number[]) => (value: number) => {
+      const inMin = input[0];
+      const inMax = input[input.length - 1];
+      const outMin = output[0];
+      const outMax = output[output.length - 1];
+      const t = Math.min(Math.max((value - inMin) / (inMax - inMin), 0), 1);
+      return outMin + t * (outMax - outMin);
+    },
   };
 });
 
