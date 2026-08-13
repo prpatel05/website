@@ -76,7 +76,20 @@ const About = () => {
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-6">
+              {/*
+                Four-up needs a tile wide enough for the longest label:
+                `companies_built` paints a 97.5px run at `text-[10px]` and
+                cannot break, so it wants ~114px of tile once the border and
+                padding are paid for. Below `lg` the stats own the full
+                container and get 132px at the narrowest. At `lg` the section
+                splits into two columns and the tile drops to 100px, which put
+                the label 14.5px past the card's right border — the tile does
+                not clip, so it painted straight over it. The column only grows
+                back past ~1150px, so hold two-up across that band and restore
+                four-up at `xl`, where the container has hit its 1200px cap and
+                the tile is at its widest 122px.
+              */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mt-6">
                 {stats.map((stat, i) => (
                   <m.div
                     key={stat.label}
