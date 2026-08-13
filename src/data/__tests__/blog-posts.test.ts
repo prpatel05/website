@@ -194,6 +194,38 @@ describe("blog-posts data", () => {
     expect(offenders).toEqual([]);
   });
 
+  // CommonMark folds adjacent lines into one paragraph. Two lines that each
+  // open with a bold run are two things the author wrote as separate lines —
+  // a definition pair, a term list — and the fold silently joins them into a
+  // run-on sentence. Nothing else catches it: the body is present, so the
+  // prerenderer's paragraph-count gate passes, the markup is valid, and
+  // contrast and axe have nothing to say about a paragraph that reads wrong.
+  //
+  // Found 2026-08-13 in the section titled "The Multiplier Framework", whose
+  // whole point is contrasting two named quantities. Measured in chromium at
+  // 1280px: both <strong> labels reported an identical getBoundingClientRect()
+  // top of 2743 — the same visual line. At 393px they separated only by
+  // accidental wrap, not by structure.
+  //
+  // The fix is a blank line. `br` is not in the renderer's tag map, so a
+  // two-trailing-space hard break renders as nothing and is not a workaround.
+  it("does not fold a post's stacked bold lines into one paragraph", () => {
+    const offenders = posts.flatMap((post) => {
+      const lines = stripCode(markdownSource(post.slug)).split("\n");
+      return lines.flatMap((line, i) =>
+        line.startsWith("**") && lines[i + 1]?.startsWith("**")
+          ? [
+              `${post.slug}: two bold lines with no blank line between them ` +
+                `render as one paragraph — "${line.slice(0, 40)}" then ` +
+                `"${lines[i + 1].slice(0, 40)}"`,
+            ]
+          : []
+      );
+    });
+
+    expect(offenders).toEqual([]);
+  });
+
   // `subtitle` renders directly under the title, so it is allowed to be a
   // fragment ("And How It Can Save Your Sanity"). The same string used to be
   // the only description the meta tags, the JSON-LD and the RSS feed had — and
