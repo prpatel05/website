@@ -138,6 +138,39 @@ async function cardTitles(page: Page): Promise<string[]> {
   );
 }
 
+/**
+ * Document-space top of every link on the page, so a case can go straight to
+ * the scroll positions that matter instead of walking the whole document.
+ *
+ * A 40px walk of a 4900px page is 123 stops, and a settle long enough to mean
+ * anything put the first version of this file over Playwright's 30s budget on
+ * CI. The stops that carry the defect are not spread evenly: they are the few
+ * frames where a link is crossing the bottom edge.
+ */
+async function linkTops(
+  page: Page,
+): Promise<{ key: string; top: number; height: number; chrome: boolean }[]> {
+  return page.evaluate(() =>
+    Array.from(document.querySelectorAll<HTMLElement>("a[href]"))
+      .map((el) => {
+        const r = el.getBoundingClientRect();
+        return {
+          key: (el.textContent || "").trim().replace(/\s+/g, " "),
+          top: Math.round(r.top + window.scrollY),
+          height: Math.round(r.height),
+          // The fixed navbar rides the viewport rather than arriving with the
+          // scroll, and `sampleLinks` skips it for the same reason: it is
+          // chrome, and nothing in it is behind an entrance.
+          chrome: el.closest("nav, header") !== null,
+        };
+      })
+      // Bigger than the 1x1 `sr-only` clip the skip link sits in until it is
+      // focused: that one is not on the page in any sense a tap can reach.
+      .filter((l) => l.height > 4 && !l.chrome)
+      .sort((a, b) => a.top - b.top),
+  );
+}
+
 /** Arrives at "/" the way a reader does: from the archive, not by loading it. */
 async function navigateHome(page: Page) {
   await page.goto("/blog/");
@@ -157,27 +190,43 @@ const SETTLED_MS = 1600;
 test.describe("Entrance animations do not leave invisible links taking taps", () => {
   test.use({ viewport: PHONE });
 
-  test("a link the reader has stopped in front of is painted", async ({ page }) => {
+  test("a link crossing the bottom edge is not invisible and taking taps", async ({
+    page,
+  }) => {
     await navigateHome(page);
-    const titles = await cardTitles(page);
-    expect(titles.length).toBeGreaterThan(0);
+    const links = await linkTops(page);
+    expect(links.length).toBeGreaterThan(0);
 
-    const height = await page.evaluate(
-      () => document.documentElement.scrollHeight,
-    );
+    // The strip a card peeked through on `main` was 14-36px tall, so the stops
+    // are placed on the link rather than on a grid: each one puts a link that
+    // many pixels above the bottom edge, which is the state a coarse walk steps
+    // straight over.
+    const PEEK = [6, 18, 34, 50, 70];
+    const stops = Array.from(
+      new Set([
+        // The hero's CTAs never cross the bottom edge — they are on screen
+        // from the first frame, and their entrance is a 1s delay the reader
+        // spends looking at a blank hero. The landing scroll position is the
+        // stop that carries them.
+        0,
+        ...links.flatMap((l) =>
+          PEEK.map((d) => l.top - PHONE.height + d).filter((y) => y > 0),
+        ),
+      ]),
+    ).sort((a, b) => a - b);
+
     const ghosts: string[] = [];
-    const seenReadable = new Set<string>();
+    const seen = new Set<string>();
 
-    // 40px steps: the strip a card peeked through on `main` was 14-36px tall,
-    // so a coarser walk can step straight over the state this test exists for.
-    for (let y = 0; y <= height - PHONE.height; y += 40) {
+    for (const y of stops) {
       await scrollTo(page, y);
-      await page.waitForTimeout(SETTLED_MS / 4);
-      // The settle is per-stop but the walk is monotonic, so an entrance
-      // started at an earlier stop has had far longer than its own duration.
-      const readings = await sampleLinks(page);
-      for (const r of readings) {
-        if (r.opacity >= READABLE_OPACITY && r.onTop > 0) seenReadable.add(r.key);
+      // Two frames plus the observer callback. Deliberately short: this case
+      // asserts that nothing invisible is tappable, which holds whether or not
+      // an entrance is still running, and the stops below the first one give
+      // every earlier entrance far longer than its own duration anyway.
+      await page.waitForTimeout(150);
+      for (const r of await sampleLinks(page)) {
+        seen.add(r.key);
         if (r.opacity <= GHOST_OPACITY && r.onTop > 0) {
           ghosts.push(
             `y=${y} "${r.key}" opacity=${r.opacity} topmost at ${r.onTop}/${r.samples} points over ${r.visibleHeight}px`,
@@ -188,18 +237,55 @@ test.describe("Entrance animations do not leave invisible links taking taps", ()
 
     expect(ghosts, "links the reader cannot see that are still the topmost paint").toEqual([]);
 
-    // Positive control, per element: a walk that never brought a card into
-    // view, or never let it finish, proves nothing about that card.
+    // Control: a stop list that never brought a link on screen says nothing
+    // about that link.
+    for (const l of links) {
+      expect(
+        Array.from(seen).some((k) => k === l.key),
+        `"${l.key}" was never on screen at any stop`,
+      ).toBe(true);
+    }
+  });
+
+  test("every link the entrance hid ends up painted and tappable", async ({ page }) => {
+    await navigateHome(page);
+    const titles = await cardTitles(page);
+    const links = await linkTops(page);
+
+    // One stop per screenful rather than one per link: the contact section's
+    // seven links share a screen, and a settle this long is the expensive part.
+    const stops: number[] = [];
+    let covered = -1;
+    for (const l of links) {
+      if (l.top <= covered) continue;
+      const y = Math.max(0, l.top - PHONE.height / 3);
+      stops.push(y);
+      covered = y + PHONE.height - 40;
+    }
+
+    const readable = new Set<string>();
+    for (const y of stops) {
+      await scrollTo(page, y);
+      await page.waitForTimeout(SETTLED_MS);
+      for (const r of await sampleLinks(page)) {
+        if (r.opacity >= READABLE_OPACITY && r.onTop > 0) readable.add(r.key);
+      }
+    }
+
+    // The gate's opposite failure: one that never releases leaves a fully
+    // painted page that cannot be tapped. Asserted per element, because a
+    // page-wide "something was tappable" flag is satisfied by whichever link
+    // still works.
     for (const title of titles) {
       expect(
-        Array.from(seenReadable).some((k) => k.includes(title)),
-        `preview card "${title}" was never seen readable and on top`,
+        Array.from(readable).some((k) => k.includes(title)),
+        `preview card "${title}" never became readable and tappable`,
       ).toBe(true);
     }
     for (const label of GATED_LINKS) {
       expect(
-        Array.from(seenReadable).some((k) => k.includes(label)),
-        `"${label}" was never seen readable and on top`,
+        Array.from(readable).some((k) => k.includes(label)),
+        `"${label}" never became readable and tappable`,
       ).toBe(true);
     }
   });
