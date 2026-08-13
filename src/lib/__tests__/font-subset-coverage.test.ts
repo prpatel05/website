@@ -14,9 +14,10 @@ import { describe, expect, it } from "vitest";
  * page renders, the prerender writes it, the suite is green. The only symptom
  * is that one glyph arrives from the system stack instead of the brand font,
  * which nothing in the pipeline can see and a reader only registers as the page
- * looking slightly off. The sharpest instance in the repo today is
+ * looking slightly off. The sharpest instance the repo has had was
  * `0.75 × 0.75 × 0.75 ≈ 0.42` — `×` is in the subset and `≈` is not, so a
- * single arithmetic expression renders in two typefaces.
+ * single arithmetic expression rendered in two typefaces. That prose has since
+ * been rewritten, which is why PUBLISHED below is empty.
  *
  * Scoped to blog posts on purpose. They are the surface that grows every week,
  * often unattended, written against a constraint that is invisible from the
@@ -87,26 +88,23 @@ const uncovered = () => {
 };
 
 /**
- * The two that were already published when this check was written.
+ * Characters allowed to stay outside the served subsets, per post.
  *
- * Both are cosmetic — a fallback arrow and a fallback approximation sign look
- * broadly like the real ones — and editing live prose to satisfy a new lint is
- * the Content Writer's call, not this file's. So they are recorded rather than
- * fixed, and recorded per character and per post so that removing one is a
- * one-line deletion here and adding one anywhere is a failure.
+ * Empty, and worth the effort to keep that way.
+ *
+ * It held two entries when this check was written — `≈` in
+ * teach-your-agent-to-ask-for-help and `→` used 3x in the-zero-dollar-startup —
+ * recorded rather than fixed because editing live prose to satisfy a new lint
+ * is the Content Writer's call, not this file's. That call has since been made:
+ * both posts were rewritten in covered characters, so both entries are gone.
+ * The arithmetic now reads "0.75 × 0.75 × 0.75, which is just over 0.42", which
+ * renders in one face and is still checkable by the reader.
+ *
+ * An entry here is not a note, it is a permanent exemption for that character
+ * in that post. Prefer rewriting: an arrow becomes prose or `-&gt;` in backticks,
+ * `≈` becomes "about" or "just over", and U+2212 is already covered for minus.
  */
-const PUBLISHED = [
-  {
-    char: "≈",
-    slug: "teach-your-agent-to-ask-for-help",
-    note: "`0.75 × 0.75 × 0.75 ≈ 0.42` — × is covered and ≈ is not, so the two halves of one expression render in different faces.",
-  },
-  {
-    char: "→",
-    slug: "the-zero-dollar-startup",
-    note: "Used 3x as a sequence arrow. Google's latin subset includes U+2191 and U+2193 but not U+2192; nobody did anything wrong.",
-  },
-];
+const PUBLISHED: { char: string; slug: string; note: string }[] = [];
 
 /**
  * Whether an entry in PUBLISHED excuses this character in this file.
