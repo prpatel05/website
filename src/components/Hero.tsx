@@ -169,7 +169,16 @@ const Hero = () => {
             transition={{ delay: 0.5, duration: 0.5 }}
             className="mt-6 sm:mt-8 font-mono text-base sm:text-xl text-muted-foreground"
           >
-            <span className="text-primary/60">$ </span>
+            {/*
+              Both glyphs on this line are `aria-hidden`: they are shell
+              decoration, and a screen reader announced the site's most
+              prominent line as "dollar sign, CTO & Chief Architect, left five
+              eighths block". The convention is already the repo's own —
+              InteractiveTerminal.tsx hides the identical `$` prompt, and the
+              `|` separators on the archive, the preview and the post page are
+              all hidden the same way. The hero was the one place it was missed.
+            */}
+            <span aria-hidden="true" className="text-primary/60">$ </span>
             {/*
               A frame of a running animation, so the prerender captured this
               line part-typed and the client's first render starts it empty
@@ -182,7 +191,9 @@ const Hero = () => {
             <span className="text-foreground/80" suppressHydrationWarning>
               {displayText}
             </span>
-            <span className="text-primary cursor-blink ml-0.5">▊</span>
+            <span aria-hidden="true" className="text-primary cursor-blink ml-0.5">
+              ▊
+            </span>
           </m.div>
 
           <m.p

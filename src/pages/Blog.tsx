@@ -151,11 +151,27 @@ const Blog = () => {
                   >
                     <div className="flex flex-col md:flex-row md:items-center gap-6">
                       <div className="w-full md:w-32 h-32 md:h-24 border border-border overflow-hidden shrink-0">
+                        {/*
+                          `alt=""` for the same reason BlogPost.tsx gives for
+                          the full-size hero: these are decorative abstract art
+                          cropped from the very same `post.image` master, and
+                          they illustrate nothing the card does not already say.
+                          It used to carry `post.title` — byte-identical to the
+                          `<h2>` eighteen lines below, on 24 of 24 cards — so a
+                          screen reader read the title, then the identical title
+                          again as the description of the picture.
+
+                          Worse here than on a post page, because the archive
+                          stacks them: 48 title announcements to get through 24
+                          links. An empty alt is what takes a decorative image
+                          out of the accessibility tree; a missing one makes the
+                          reader fall back to announcing the filename.
+                        */}
                         <img
                           src={thumb?.src ?? post.image}
                           srcSet={thumb?.srcSet}
                           sizes={thumb ? THUMBNAIL_SIZES : undefined}
-                          alt={post.title}
+                          alt=""
                           loading="lazy"
                           width={128}
                           height={96}
