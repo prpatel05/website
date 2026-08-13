@@ -1,6 +1,6 @@
 import { m, useReducedMotion, useScroll } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
-import { useEntrance } from "@/hooks/useEntrance";
+import { useEntrance, useEntranceGate } from "@/hooks/useEntrance";
 import { useParallax, useParallaxFade } from "@/hooks/useParallax";
 import {
   PORTRAIT_BLANK,
@@ -23,6 +23,7 @@ const Hero = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   const entrance = useEntrance();
+  const ctaGate = useEntranceGate();
   const reduceMotion = useReducedMotion();
 
   const { scrollYProgress } = useScroll({
@@ -213,7 +214,17 @@ const Hero = () => {
             with a successful acquisition under the belt.
           </m.p>
 
+          {/*
+            The CTAs come in last, on a 1s delay, so on a client-side arrival
+            they spend 1.6s painted at opacity 0 — and measured on `main` they
+            were the topmost paint over all 44px and 46px of themselves for
+            every frame of it. A tap on the blank space a reader lands on
+            jumped the page to #contact or opened the resume in a new tab.
+            Same defect as the faded-out column below, one animation earlier;
+            `useEntranceGate` is the `useParallaxFade` of an entrance.
+          */}
           <m.div
+            {...ctaGate}
             initial={entrance({ opacity: 0, y: 20 })}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1, duration: 0.6 }}

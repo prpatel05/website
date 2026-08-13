@@ -10,11 +10,11 @@ import { MemoryRouter, Link, Route, Routes } from "react-router-dom";
  */
 const freshEntrance = async () => {
   vi.resetModules();
-  const [{ useEntrance }, { markMotionFeaturesReady }] = await Promise.all([
+  const [{ useEntrance, useEntranceGate }, { markMotionFeaturesReady }] = await Promise.all([
     import("../useEntrance"),
     import("@/lib/motion-ready"),
   ]);
-  return { useEntrance, markMotionFeaturesReady };
+  return { useEntrance, useEntranceGate, markMotionFeaturesReady };
 };
 
 const renderProbe = (useEntrance: typeof import("../useEntrance").useEntrance) => {
@@ -94,5 +94,97 @@ describe("useEntrance", () => {
     await navigate();
 
     expect(initialValue()).toHaveTextContent('{"opacity":0}');
+  });
+});
+
+/**
+ * The gate is what keeps an element that the entrance is holding at opacity 0
+ * from taking the tap. Its two failure directions are opposite and both bad:
+ * never gating (PRA-951's ghost strips), and never releasing.
+ */
+const renderGateProbe = (
+  useEntranceGate: typeof import("../useEntrance").useEntranceGate
+) => {
+  const Probe = () => {
+    const gate = useEntranceGate();
+
+    return (
+      <div>
+        <span data-testid="style">{JSON.stringify(gate.style ?? null)}</span>
+        <button onClick={gate.onAnimationComplete}>complete</button>
+        <Link to="/next">next</Link>
+      </div>
+    );
+  };
+
+  render(
+    <MemoryRouter>
+      <Routes>
+        <Route path="/" element={<Probe />} />
+        {/*
+          A distinct key, because the gate reads its starting value once — at
+          mount, the same moment framer decides whether to write `initial`.
+          Without one React reuses this instance across the route change and
+          the probe never sees the mount the real navigation performs.
+        */}
+        <Route path="/next" element={<Probe key="next" />} />
+      </Routes>
+    </MemoryRouter>
+  );
+};
+
+const gateStyle = () => screen.getByTestId("style");
+
+describe("useEntranceGate", () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  it("does not gate an entrance that was never going to run", async () => {
+    const { useEntranceGate, markMotionFeaturesReady } = await freshEntrance();
+    markMotionFeaturesReady();
+
+    renderGateProbe(useEntranceGate);
+
+    // First load: `useEntrance` returns `false`, nothing is ever hidden, and
+    // an element that starts visible must start tappable.
+    expect(gateStyle()).toHaveTextContent("null");
+  });
+
+  it("gates an element the entrance is about to hide", async () => {
+    const { useEntranceGate, markMotionFeaturesReady } = await freshEntrance();
+    markMotionFeaturesReady();
+
+    renderGateProbe(useEntranceGate);
+    await navigate();
+
+    expect(gateStyle()).toHaveTextContent('{"pointerEvents":"none"}');
+  });
+
+  it("releases when the entrance finishes", async () => {
+    const { useEntranceGate, markMotionFeaturesReady } = await freshEntrance();
+    markMotionFeaturesReady();
+
+    renderGateProbe(useEntranceGate);
+    await navigate();
+    await userEvent.click(screen.getByRole("button", { name: "complete" }));
+
+    // `null`, not `pointer-events: auto`. An ancestor that has switched its own
+    // taps off — the hero column, once `useParallaxFade` has faded it out —
+    // does not survive a descendant setting `auto`, so writing one here would
+    // hand back the taps PRA-943 took away.
+    expect(gateStyle()).toHaveTextContent("null");
+  });
+
+  it("does not gate while the animation features are still loading", async () => {
+    const { useEntranceGate } = await freshEntrance();
+
+    renderGateProbe(useEntranceGate);
+    await navigate();
+
+    // No features means no `initial` was written, so there is nothing hidden
+    // to gate — and nothing that would ever fire `onAnimationComplete` to
+    // release it again.
+    expect(gateStyle()).toHaveTextContent("null");
   });
 });

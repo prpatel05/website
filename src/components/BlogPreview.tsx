@@ -1,17 +1,47 @@
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { m } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { posts } from "@/data/blog-posts/registry";
-import { useEntrance } from "@/hooks/useEntrance";
+import { useEntrance, useEntranceGate } from "@/hooks/useEntrance";
 import { useParallax } from "@/hooks/useParallax";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import SectionHeader from "./SectionHeader";
 
 const HOME_BLOG_POST_LIMIT = 5;
 
+/**
+ * One card's entrance, in its own component so it can own its own gate — a
+ * hook cannot be called from inside the `map` below.
+ */
+const PreviewCard = ({ index, children }: { index: number; children: ReactNode }) => {
+  const entrance = useEntrance();
+  const gate = useEntranceGate();
+
+  return (
+    <m.article
+      {...gate}
+      initial={entrance({ opacity: 0, y: 40, scale: 0.97 })}
+      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+      /*
+        Positive, not the `-50px` this used to carry. A negative root margin
+        makes the observer wait until the card is 50px *inside* the viewport,
+        so a card peeking above the bottom edge was on screen and not
+        animating — opacity 0 for as long as the reader held still, over a
+        strip the whole width of the phone. Firing 50px early is the shape
+        that was meant: the entrance is under way by the time the card
+        arrives.
+      */
+      viewport={{ once: true, margin: "50px" }}
+      transition={{ duration: 0.6, delay: index * 0.15, ease: [0.22, 1, 0.36, 1] }}
+    >
+      {children}
+    </m.article>
+  );
+};
+
 const BlogPreview = () => {
   const { ref, scrollYProgress, sectionOpacity } = useScrollAnimation();
-  const entrance = useEntrance();
   const previewPosts = posts.slice(0, HOME_BLOG_POST_LIMIT);
 
   const gridY = useParallax(scrollYProgress, [0, 1], ["0%", "-15%"]);
@@ -37,13 +67,7 @@ const BlogPreview = () => {
 
         <div className="space-y-4">
           {previewPosts.map((post, i) => (
-            <m.article
-              key={post.slug}
-              initial={entrance({ opacity: 0, y: 40, scale: 0.97 })}
-              whileInView={{ opacity: 1, y: 0, scale: 1 }}
-              viewport={{ once: true, margin: "-50px" }}
-              transition={{ duration: 0.6, delay: i * 0.15, ease: [0.22, 1, 0.36, 1] }}
-            >
+            <PreviewCard key={post.slug} index={i}>
               <Link
                 to={`/blog/${post.slug}/`}
                 className="group block border border-border bg-card hover:border-primary/40 transition-all duration-500 p-6 lg:p-8"
@@ -79,7 +103,7 @@ const BlogPreview = () => {
                   </div>
                 </div>
               </Link>
-            </m.article>
+            </PreviewCard>
           ))}
         </div>
       </m.div>
