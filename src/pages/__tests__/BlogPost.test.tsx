@@ -261,30 +261,43 @@ describe("BlogPost", () => {
         container.querySelectorAll('nav[aria-label="More posts"] a')
       ).map((a) => [a.getAttribute("href"), a.textContent]);
 
-    it("links to the newer and older post from a middle post", () => {
-      const { container } = renderBlogPost("test-post");
+    /**
+     * The footer is held back until the body arrives — on every path now, not
+     * only on a click-through (see the `pending` note in BlogPost). So these
+     * wait for it. Waiting on the body rather than on the links themselves, so
+     * a build that stopped rendering the footer fails on the assertion that
+     * names it rather than timing out in a helper.
+     */
+    const renderLoadedPost = async (slug: string) => {
+      const view = renderBlogPost(slug);
+      await screen.findByText("Introduction");
+      return view;
+    };
+
+    it("links to the newer and older post from a middle post", async () => {
+      const { container } = await renderLoadedPost("test-post");
       expect(navLinks(container)).toEqual([
         ["/blog/newer-post/", "newerNewer Post Title"],
         ["/blog/older-post/", "olderOlder Post Title"],
       ]);
     });
 
-    it("offers only an older post on the newest post", () => {
-      const { container } = renderBlogPost("newer-post");
+    it("offers only an older post on the newest post", async () => {
+      const { container } = await renderLoadedPost("newer-post");
       expect(navLinks(container)).toEqual([
         ["/blog/test-post/", "olderTest Post Title"],
       ]);
     });
 
-    it("offers only a newer post on the oldest post", () => {
-      const { container } = renderBlogPost("older-post");
+    it("offers only a newer post on the oldest post", async () => {
+      const { container } = await renderLoadedPost("older-post");
       expect(navLinks(container)).toEqual([
         ["/blog/test-post/", "newerTest Post Title"],
       ]);
     });
 
-    it("sends the archive link to the full list, not the homepage preview", () => {
-      renderBlogPost("test-post");
+    it("sends the archive link to the full list, not the homepage preview", async () => {
+      await renderLoadedPost("test-post");
       expect(screen.getByText("ls ../posts").closest("a")).toHaveAttribute(
         "href",
         "/blog/"
@@ -296,8 +309,11 @@ describe("BlogPost", () => {
   // A post page is the densest internal linking on the site — two adjacent-post
   // links plus the archive link — so a slashless href here sends a crawler
   // through a 301 on nearly every edge of the site graph.
-  it("points every internal link at its non-redirecting trailing-slash form", () => {
+  it("points every internal link at its non-redirecting trailing-slash form", async () => {
     const { container } = renderBlogPost("test-post");
+    // The closing links are part of the footer, which does not exist until the
+    // body does. Without this the list below is just the nav's `cd ~`.
+    await screen.findByText("Introduction");
     const hrefs = Array.from(container.querySelectorAll("a[href^='/']")).map(
       (a) => a.getAttribute("href")
     );
@@ -337,12 +353,20 @@ describe("BlogPost", () => {
    * published with no words in it, with the newer/older cards directly under
    * the hero — and then grew ~4.8x in height when the body arrived.
    *
-   * The navigation is a real click on a `<Link>` rather than an initial entry,
-   * because that is what makes `useFirstLoad` false: the initial memory entry
-   * carries react-router's `"default"` key, the same one a loaded document
-   * reports, and on that path the body comes out of the prerendered markup and
-   * this state cannot happen. The e2e half (`e2e/post-body-pending.spec.ts`)
-   * holds a real chunk over a real navigation; this half is the state machine.
+   * Most of these navigate by a real click on a `<Link>`, which is the forward
+   * case. It used to be the *only* case that could reach this state, because
+   * `pending` also required `!firstLoad` — and the initial memory entry carries
+   * react-router's `"default"` key, the same one a loaded document reports.
+   *
+   * That gate was wrong, and the last test here is why (PRA-930): a first-load
+   * key does not imply a body in the markup. react-router restores the loaded
+   * key on a POP back to the entry the document came up on, and by then
+   * `AnimatePresence` has unmounted the prerendered article. `pending` is now
+   * `!content`, which is the condition that was actually meant, so an initial
+   * entry with nothing to read shows the placeholder like any other.
+   *
+   * The e2e half (`e2e/post-body-pending.spec.ts`) drives the real Back over a
+   * real held chunk; this half is the state machine.
    */
   describe("while the body chunk is in flight", () => {
     // Unconditional, and not a `finally` inside each test: a test that fails
@@ -414,6 +438,34 @@ describe("BlogPost", () => {
       await clickThroughToPost();
       expect(await screen.findByText("Introduction")).toBeInTheDocument();
       expect(screen.queryByText("// loading")).toBeNull();
+    });
+
+    /**
+     * The `firstLoad` half. This mounts on the initial memory entry — key
+     * `"default"`, the same one `useFirstLoad` sees on a document load and on a
+     * Back onto the entry the document loaded on — with no prerendered markup
+     * to read, which is exactly the state that Back leaves behind. Under the
+     * old `!firstLoad` gate the placeholder was suppressed here and the footer
+     * rendered under an empty article; a jsdom render has no server HTML, so
+     * this case has always been reachable in this file and was never asserted.
+     */
+    it("says it is loading on a first-load key with no markup to read", async () => {
+      bodyChunk.held = true;
+      const { container } = renderBlogPost("test-post");
+
+      expect(screen.queryByText("Introduction")).toBeNull();
+      expect(screen.getByText("// loading")).toBeInTheDocument();
+      expect(container.querySelector('nav[aria-label="More posts"]')).toBeNull();
+      expect(screen.queryByText("ls ../posts")).toBeNull();
+
+      // ...and it still resolves into the post, so this is a wait and not a
+      // build that suppressed the article on every first load.
+      bodyChunk.held = false;
+      bodyChunk.arrive();
+      expect(await screen.findByText("Introduction")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(container.querySelector('nav[aria-label="More posts"]')).toBeTruthy();
+      });
     });
   });
 
