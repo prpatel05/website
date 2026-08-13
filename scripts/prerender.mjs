@@ -5,6 +5,11 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { isTelemetryRequest } from "./telemetry-blocklist.mjs";
 import { discoverPostSlugs } from "./blog-posts.mjs";
+import {
+  stripMotionPreload,
+  waitForHydration,
+  waitForPostBody,
+} from "./prerender-readiness.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DIST = join(__dirname, "..", "dist");
@@ -126,14 +131,9 @@ async function prerender() {
     console.log(`  Rendering ${route}...`);
     await page.goto(url, { waitUntil: "networkidle" });
 
-    // Wait for React to render meaningful content
-    await page.waitForFunction(
-      () => document.querySelector('#main-content')?.children.length > 0,
-      { timeout: 10000 }
-    ).catch(() => {
-      // Fallback if the selector isn't found
-      console.warn(`  Warning: hydration check timed out for ${route}, using fallback wait`);
-    });
+    // Wait for React to render meaningful content. See prerender-readiness.mjs
+    // for why these are waits that fail loudly rather than one-shot checks.
+    await waitForHydration(page, route);
 
     // The post body and the post page itself are both async chunks now, so the
     // first paint can beat them. Settle the network again, then refuse to write
@@ -142,12 +142,7 @@ async function prerender() {
     await page.waitForLoadState("networkidle");
 
     if (route.startsWith("/blog/")) {
-      const paragraphs = await page.locator("article p").count();
-      if (paragraphs < 3) {
-        throw new Error(
-          `${route} rendered ${paragraphs} paragraph(s) — post body did not load`
-        );
-      }
+      await waitForPostBody(page, route);
     }
 
     // React gives every text child its own DOM node, but the HTML serializer
@@ -210,26 +205,12 @@ async function prerender() {
     // The route's own lazily imported chunk gets the same injected link and is
     // deliberately left alone — BlogPost is needed to hydrate the page it is
     // preloaded on, so there the artifact is doing useful work.
-    const droppedPreloads = await page.evaluate(() => {
-      const links = [
-        ...document.querySelectorAll('link[rel="modulepreload"]'),
-      ].filter((link) =>
-        /\/assets\/motion-features-[^/]*\.js$/.test(new URL(link.href).pathname)
-      );
-      links.forEach((link) => link.remove());
-      return links.length;
-    });
-
+    //
     // Same reasoning as the visibility probes below: a strip that quietly stops
-    // matching leaves the preload on every page and nothing goes red.
-    if (droppedPreloads !== 1) {
-      throw new Error(
-        `${route}: expected exactly 1 injected modulepreload for the motion ` +
-          `feature chunk, found ${droppedPreloads}. Either the chunk is no ` +
-          `longer emitted as motion-features-*.js or LazyMotion stopped ` +
-          `loading it lazily — either way this strip is doing nothing.`
-      );
-    }
+    // matching leaves the preload on every page and nothing goes red. The link
+    // is injected during hydration, though, so this waits for it rather than
+    // sampling — see prerender-readiness.mjs.
+    await stripMotionPreload(page, route);
 
     const html = await page.content();
 

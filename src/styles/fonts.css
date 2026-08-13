@@ -23,9 +23,20 @@
  * system stack. No content in `src/` contains any of them today (measured, not
  * assumed), and `unicode-range` means an unused subset costs nothing at runtime
  * either way -- so if a post ever needs one, add the file and its rule back
- * rather than working around the fallback. Note the face-parity test guards
- * (family, weight, style) and not subsets: this is the one thing here that can
- * regress without going red.
+ * rather than working around the fallback.
+ *
+ * Widening or narrowing that scope is a two-file edit on purpose: the ranges
+ * below, and the independent copy of them in font-loading.test.ts. Note the
+ * face-parity spec guards (family, weight, style) and not subsets, so that pin
+ * is what keeps a narrowed range from passing silently.
+ *
+ * These ranges are also narrower than "Latin" sounds, which is the part worth
+ * knowing when writing rather than editing: they cover U+2000-206F but neither
+ * the Mathematical Operators nor the Arrows block, so an approximation sign
+ * (U+2248) or a rightwards arrow (U+2192) paints from the system stack while
+ * the words around it do not. Nothing at runtime can see that -- the character
+ * is present and the page renders -- so font-subset-coverage.test.ts reads
+ * these declarations and checks post content against them.
  *
  * Declared here rather than in index.css so `e2e/font-faces.spec.ts` can parse
  * one file to learn which faces exist -- it asserts the set the site actually
