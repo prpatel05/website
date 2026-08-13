@@ -122,6 +122,72 @@ test.describe("a post body that fails to load", () => {
   });
 
   /**
+   * The mark is a one-shot, and it has to be re-armed once it has done its job
+   * — otherwise a tab that outlives two deploys gets the recovery once and the
+   * dead end forever after (PRA-930).
+   *
+   * The clear used to hang off the `.then` of the body import, which is the one
+   * path a successful recovery never takes: the reload delivers the body in the
+   * HTML, so the effect returns before it fetches anything. Measured on the
+   * unfixed build: `post-body-reload:<slug>` still "1" after the body was back
+   * on screen, and on the next client-side visit to the same post the reader
+   * got `// error:body` and an archive link instead of the reload that would
+   * have worked — the post unreachable in that tab.
+   */
+  test("re-arms the reload, so a second deploy gets a second recovery", async ({ page }) => {
+    // Gone on every load, standing in for a chunk hash that no longer exists.
+    // The reload is unaffected: it is a document load, and the body rides in
+    // the HTML.
+    await page.route(bodyChunk, (route) => route.abort("failed"));
+
+    // Counting the recoveries rather than trusting them. Every assertion below
+    // is about the state a recovery leaves behind, and on a build where the
+    // route pattern stopped matching there would be no recovery at all — the
+    // body would simply arrive and a "the mark is clear" assertion would pass
+    // having never seen a mark.
+    const reloads: string[] = [];
+    page.on("request", (req) => {
+      if (req.resourceType() === "document" && req.url().endsWith(`/blog/${slug}/`))
+        reloads.push(req.url());
+    });
+
+    const mark = () =>
+      page.evaluate((k) => window.sessionStorage.getItem(k), `post-body-reload:${slug}`);
+
+    // Deploy 1. The reader clicks the post, the chunk is gone, and the reload
+    // brings the body back out of the served HTML.
+    await navigateToPost(page);
+    await expect
+      .poll(async () => (await bodyTextOf(page)).trim().length, { timeout: 15_000 })
+      .toBeGreaterThan(500);
+    expect(reloads, "no recovery reload happened, so there is no mark to release").toHaveLength(1);
+
+    expect(
+      await mark(),
+      "the mark survived a recovery that worked, so the next one is refused"
+    ).toBeNull();
+
+    // Deploy 2, same tab. The reader goes back to the archive and opens the
+    // same post again, client-side, and the chunk is missing again.
+    await page.getByText("ls ../posts").first().click();
+    await page.waitForURL("**/blog/");
+    await page.locator(`a[href="/blog/${slug}/"]`).first().click();
+    await page.waitForURL(`**/blog/${slug}/`);
+
+    // What the reader is owed: the post, via a second reload — not the dead
+    // end. Asserted on the body rather than on the absence of the message, so
+    // this cannot pass on a build that simply stopped rendering the error.
+    await expect
+      .poll(async () => (await bodyTextOf(page)).trim().length, {
+        message: "the second failure was not recovered",
+        timeout: 15_000,
+      })
+      .toBeGreaterThan(500);
+    await expect(page.getByText("This post's text didn't load")).toHaveCount(0);
+    expect(reloads, "the second failure did not spend a reload").toHaveLength(2);
+  });
+
+  /**
    * The reload is spent once per slug per tab. A second failure has to say so
    * rather than reload again, which on a post whose HTML had no body would be a
    * loop.

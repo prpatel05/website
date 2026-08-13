@@ -44,6 +44,14 @@ const neighbourCards = (page: Page) => page.locator('nav[aria-label="More posts"
 const archiveLink = (page: Page) => page.getByText("ls ../posts");
 
 /**
+ * react-router's key for the history entry currently on screen. `useFirstLoad`
+ * compares this against the one the document loaded on, so it is what says
+ * whether a navigation looks like a first load to the app.
+ */
+const entryKey = (page: Page) =>
+  page.evaluate(() => (window.history.state as { key?: string } | null)?.key ?? "default");
+
+/**
  * Reaches the post the way a reader does — from the index, client-side. Going
  * straight to the URL serves the body in the HTML and never fetches, which is
  * the path this spec is not about. The click (rather than a pushState) is what
@@ -111,6 +119,97 @@ test.describe("a post body that is slow to arrive", () => {
     // the route pattern stopped matching the emitted chunk name, having tested
     // an ordinary navigation.
     expect(requested, `no request matched ${bodyChunk}`).toBeGreaterThan(0);
+  });
+
+  /**
+   * The same defect, reached from the other side — and the path the fix above
+   * originally missed (PRA-930).
+   *
+   * `pending` used to require `!firstLoad`, on the reasoning that a first load
+   * always has its body in the markup. But `firstLoad` is `key === loadedOnKey`
+   * and react-router restores the *same* key on a POP back to the entry the
+   * document loaded on. So a reader who arrives from a search result, clicks
+   * away and presses Back is on `firstLoad` again with no markup left to read:
+   * `AnimatePresence mode="wait"` unmounted it on the way out. Measured on the
+   * unfixed build at that moment: the body chunk requested for the first time,
+   * 0 body characters, no placeholder, and the newer/older cards directly under
+   * the hero in an 1111px document that grew to 4196px when the chunk landed.
+   */
+  test("says it is loading when the reader comes Back to the post the tab was loaded on", async ({
+    page,
+  }) => {
+    let requested = 0;
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await page.route(bodyChunk, async (route) => {
+      requested += 1;
+      await held;
+      return route.continue();
+    });
+
+    // A document load, the way an external link arrives. The body is in the
+    // HTML, so nothing is fetched — which is what makes the import on the way
+    // back a cold one.
+    await page.goto(`/blog/${slug}/`);
+    expect((await bodyTextOf(page)).trim().length).toBeGreaterThan(500);
+    expect(requested, "a document load should fetch no body chunk").toBe(0);
+    const loadedKey = await entryKey(page);
+
+    await archiveLink(page).first().click();
+    await page.waitForURL("**/blog/");
+
+    // Load-bearing, and the reason the first version of this test was vacuous.
+    // The exit animation outlives the URL change by several hundred ms, and for
+    // that window the outgoing post's `[data-post-body]` is still in the
+    // document — so a Back pressed immediately finds it, adopts the body and
+    // never fetches. Waiting for the unmount is the reader who spent a moment
+    // looking at the archive, and it is the only version of this journey that
+    // reaches the state below. A CSS locator rather than a role, because what
+    // is being waited on is the node leaving the DOM.
+    await expect(
+      page.locator("[data-post-body]"),
+      "the outgoing post never unmounted, so Back would adopt its markup"
+    ).toHaveCount(0);
+
+    await page.goBack();
+    await page.waitForURL(`**/blog/${slug}/`);
+    await expect(page.locator("[data-post-body]")).toHaveCount(1);
+
+    // The precondition this whole test rests on: Back landed on the entry the
+    // document was loaded onto, so `firstLoad` is true here. Without this the
+    // test would silently become another forward-navigation case the moment
+    // react-router changed how it keys a restored entry.
+    expect(
+      await entryKey(page),
+      "Back did not land on the key this document loaded on"
+    ).toBe(loadedKey);
+
+    // ...and the body really is being fetched over the network, cold.
+    await expect
+      .poll(() => requested, { message: `no request matched ${bodyChunk}` })
+      .toBeGreaterThan(0);
+
+    expect((await bodyTextOf(page)).trim()).toBe("");
+    await expect(page.getByText("// loading")).toBeVisible();
+    await expect(
+      neighbourCards(page),
+      "the next post was offered before this one had any words"
+    ).toHaveCount(0);
+    await expect(archiveLink(page)).toHaveCount(0);
+
+    // And it is a waiting state, not a wall: the chunk lands and the reader
+    // gets the post they pressed Back for.
+    release();
+    await expect
+      .poll(async () => (await bodyTextOf(page)).trim().length, {
+        message: "the held chunk was released but the body never filled",
+        timeout: 15_000,
+      })
+      .toBeGreaterThan(500);
+    await expect(page.getByText("// loading")).toHaveCount(0);
+    await expect(neighbourCards(page)).toHaveCount(1);
   });
 
   /**

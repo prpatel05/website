@@ -40,5 +40,11 @@ export const recoverPostBody = (slug: string): boolean => reloadOnce(key(slug), 
  * Clears the mark once a body has been read successfully, so a reader who hits
  * this twice in one long-lived tab — two deploys, two stale chunks — gets the
  * recovery both times rather than only the first.
+ *
+ * The caller has to call this on the *prerendered* path and not only after a
+ * successful fetch. A recovery reload delivers the body in the HTML, which is
+ * the path described above and the one where no fetch happens at all — so a
+ * clear hung off the import's `.then` is unreachable on precisely the journey
+ * that spends the mark.
  */
 export const clearPostBodyRecovery = (slug: string): void => clearReloadMark(key(slug));

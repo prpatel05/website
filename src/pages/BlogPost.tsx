@@ -40,7 +40,10 @@ const SKELETON_BLOCKS = [
  * What the article region shows while the body chunk is in flight.
  *
  * Only a client-side navigation can see it: a document load reads the body out
- * of its own prerendered markup, so `content` is never empty there. On that
+ * of its own prerendered markup, so `content` is never empty there. A POP
+ * counts as one — pressing Back onto the post the tab was loaded on returns to
+ * a route whose markup `AnimatePresence` unmounted on the way out, so the body
+ * is fetched as coldly there as on any forward click. On such a
  * navigation the body is a dynamic import, and until it resolves the page used
  * to paint the meta, title, subtitle, hero and the whole end-of-post footer
  * against `content === ""` — a post that looks published with no words in it,
@@ -92,8 +95,21 @@ const BlogPost = () => {
   const entrance = useEntrance();
 
   useEffect(() => {
-    // Nothing to fetch when the body arrived with the document.
-    if (!post || prerendered) return;
+    if (!post) return;
+    // Nothing to fetch when the body arrived with the document — but this is
+    // also the only path a successful recovery takes, so it is where the mark
+    // has to be released. `recoverPostBody` answers a missing body with a full
+    // load of the same URL, whose HTML carries the body, so the reload lands
+    // here and the `clearPostBodyRecovery` in the `.then` below is unreachable
+    // on exactly the journey that earns it. Left to the `.then`, the mark
+    // stayed set for the life of the tab: a reader who sits through a second
+    // deploy and clicks the same post again gets `recoverPostBody` declining a
+    // reload that would have worked, and the `// error:body` dead end instead
+    // of the post.
+    if (prerendered) {
+      clearPostBodyRecovery(post.slug);
+      return;
+    }
     let live = true;
     loadPostContent(post.slug)
       .then((md) => {
@@ -119,13 +135,35 @@ const BlogPost = () => {
    * The body has been asked for and has not arrived, and nothing has gone
    * wrong yet.
    *
-   * Gated on `!firstLoad` rather than on `content` alone so a document load
-   * renders exactly what it renders today: the prerenderer drives a real
-   * browser, where the first render is also a "first load" with an empty body,
-   * and a skeleton there would either be captured into the HTML or disagree
-   * with it at hydration — the failure `prerenderedBody` exists to prevent.
+   * This used to also require `!firstLoad`, to keep the skeleton away from a
+   * document load: the prerenderer drives a real browser, where the first
+   * render is a "first load" with an empty body, and a skeleton captured into
+   * the HTML — or disagreeing with it at hydration — is the failure
+   * `prerenderedBody` exists to prevent.
+   *
+   * But `firstLoad` is `key === loadedOnKey`, and the prerender pass is not the
+   * only way that goes true. react-router restores the *same* key on a POP back
+   * to the entry the document loaded on, so a reader who opens a post from a
+   * search result, clicks `ls ../posts` and presses Back is on `firstLoad`
+   * again — with the prerendered markup long gone, unmounted by
+   * `AnimatePresence mode="wait"` on the way out. `prerenderedBody` returns ""
+   * and the effect above fires a cold import of a chunk the first load never
+   * had reason to fetch. Measured on that Back: the body chunk requested, 0
+   * body characters, no placeholder, and the newer/older cards sitting directly
+   * under the hero in an 1111px document that became 4196px when the chunk
+   * landed — PRA-914's defect, reached by the one path its fix did not cover.
+   *
+   * `!content` alone is the honest condition, and it says the same thing about
+   * a document load without going through the router: `content` is seeded from
+   * `prerenderedBody`, so on a load that has a body it is non-empty at the
+   * first render and `pending` is false before hydration can compare anything.
+   * The prerender pass is the case where it is legitimately true for a moment,
+   * and that moment is over long before the snapshot — `prerender.mjs` settles
+   * the network and then refuses to write a post page with fewer than 3
+   * paragraphs in it, so a skeleton that ever did reach the HTML would fail the
+   * build rather than ship.
    */
-  const pending = !firstLoad && !content && !unrecovered;
+  const pending = !content && !unrecovered;
 
   const { newer, older } = getAdjacentPosts(posts, post.slug);
 
