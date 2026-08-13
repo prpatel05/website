@@ -104,7 +104,7 @@ test.describe("scroll fade after a client-side navigation", () => {
 
     const dimWhileRead: string[] = [];
     const seenReading = new Set<string>();
-    let sawPartialOpacity = false;
+    const seenFading = new Set<string>();
 
     for (let y = 0; y <= scrollMax; y += 150) {
       await scrollTo(page, y);
@@ -112,7 +112,7 @@ test.describe("scroll fade after a client-side navigation", () => {
       for (const sel of SECTIONS) {
         const d = reading[sel];
         if (!d) continue;
-        if (d.opacity < 0.99) sawPartialOpacity = true;
+        if (d.opacity < 0.99) seenFading.add(sel);
         if (d.coverage < READING_COVERAGE) continue;
         seenReading.add(sel);
         if (d.opacity < 0.99) {
@@ -123,14 +123,19 @@ test.describe("scroll fade after a client-side navigation", () => {
       }
     }
 
-    // Positive control. If the fade were not bound at all every section would
-    // sit at opacity 1 for the whole walk and the check above would be inert —
-    // which is exactly how this test first passed against a build it could not
-    // have failed.
+    // Positive control, per section. An unfaded section sits at opacity 1 for
+    // the whole walk, which satisfies the check above without exercising it —
+    // which is how this test first passed against a build it could not fail.
+    //
+    // This has to be asserted per section, not once for the page. Each section
+    // binds its own `useScrollAnimation` call, so they drop out one at a time;
+    // a single page-wide flag is satisfied by whichever section still fades and
+    // goes on passing while another is silently unbound. Deleting `#contact`'s
+    // fade — the one this file exists to pin — is invisible to a page-wide flag.
     expect(
-      sawPartialOpacity,
-      "expected to observe the fade partway through at least once; if nothing was ever partial the fade is not bound and this test proves nothing",
-    ).toBe(true);
+      [...seenFading].sort(),
+      "every section should be caught partway through its fade; a section that is never partial is not bound to the scrollbar at all, and its assertions below are vacuous",
+    ).toEqual([...SECTIONS].sort());
 
     expect(
       [...seenReading].sort(),
@@ -148,12 +153,6 @@ test.describe("scroll fade after a client-side navigation", () => {
     // #contact is last, so its scroll range ("end start") can never complete:
     // the document bottom arrives first. If the fade is spread over too much of
     // that range the section is stranded permanently dim.
-    await page.evaluate(() =>
-      window.scrollTo(
-        0,
-        document.documentElement.scrollHeight - window.innerHeight,
-      ),
-    );
     await scrollTo(
       page,
       await page.evaluate(
