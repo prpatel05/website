@@ -94,8 +94,13 @@ None of this argues for short prompts. It argues for deliberate ones.
 1. **Decide the allocation before the request, not after the incident.** Estimate with the token counting API rather than discovering the shape of your prompt from a production failure.
 2. **Have an eviction policy.** Server-side compaction summarizes earlier turns so a conversation can continue past the limit; context editing can clear stale tool results and thinking blocks. Choosing what leaves is engineering. Hoping it fits is not.
 3. **Retrieve just in time instead of pre-loading.** The goal named in the engineering post is "the smallest set of high-signal tokens that maximize the likelihood of some desired outcome," which is the opposite instinct to filling the window because it is there.
-4. **Know your behavior at the ceiling.** If input alone exceeds the window you get a 400 and "prompt is too long"; on 4.5 and newer, a generation that runs into the limit stops with `model_context_window_exceeded`. A budget with undefined behavior at the limit is not a budget.
+4. **Know your behavior at the ceiling.** The two ways you reach it arrive on different channels. If input alone exceeds the window, you get a 400 and "prompt is too long" — an error you catch. If a generation runs into the limit mid-response, you get a perfectly successful response whose stop reason you have to read. A budget with undefined behavior at the limit is not a budget.
 5. **Measure the thing that actually degrades.** Cost and latency will not show you context rot, because the request that spent its budget badly is priced identically to the one that spent it well. This is the same trap as [an eval suite that measures the wrong thing](/blog/your-eval-suite-measures-the-wrong-thing/): the instrument reports green while the outcome gets worse.
+
+That fourth one is worth a name. On 4.5 and newer, the stop reason to look for is
+`model_context_window_exceeded` — distinct from `max_tokens`, which only means the
+response hit the cap you asked for. One says you ran out of room; the other says you
+ran out of allowance. Code that treats them the same will retry the wrong one forever.
 
 And the one that saves the most money: **when quality drops in a long conversation, resist answering with a bigger window.** That is the move the measurements say has the least chance of working. The fix is almost always to put less in, better ordered.
 
