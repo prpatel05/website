@@ -112,12 +112,34 @@ const components = {
       },
       withProps(children, () => ({ fenced: true }))
     ),
+  // A fenced block can overflow into its own scroller. An inline span cannot:
+  // it has nowhere to put the excess, so a single long token — an error code, a
+  // config key, a fully-qualified name — pushes the page wider than the
+  // viewport. `model_context_window_exceeded` is ~256px at 14px JetBrains Mono
+  // with the chip's padding, which clears a 320px paragraph (~288px usable) and
+  // overflows an ordered-list item (~232px after the marker and indent). Like
+  // `pre`'s tab stop above, whether it bites is a question of rendered width,
+  // so an author writing the markdown has no way to see it coming.
+  //
+  // `anywhere` rather than `break-words`, and the difference is the whole fix.
+  // `li` below is a flex row — marker span, content span — so the content is a
+  // flex item at `min-width: auto`, whose floor is its min-content width.
+  // `overflow-wrap: break-word` adds a break opportunity for line breaking but
+  // pointedly does not feed min-content, so that floor stays the full width of
+  // the token and the page still overflows: 12px either way, measured. Only
+  // `anywhere`'s breaks count toward min-content, which is what lets the flex
+  // item shrink. Neither breaks a token that would fit on a line of its own, so
+  // the readability cost is paid only where the alternative is a sideways
+  // scroll. Arbitrary property because Tailwind 3 has no `anywhere` utility.
   code: ({ children, fenced }) =>
     fenced
       ? h("code", { className: "text-muted-foreground" }, children)
       : h(
           "code",
-          { className: "rounded bg-muted px-1.5 py-0.5 text-foreground" },
+          {
+            className:
+              "rounded bg-muted px-1.5 py-0.5 text-foreground [overflow-wrap:anywhere]",
+          },
           children
         ),
   strong: ({ children }) =>
