@@ -294,7 +294,34 @@ const InteractiveTerminal = () => {
                   role="log"
                   aria-live="polite"
                   aria-label="Terminal output"
-                  className="flex-1 overflow-y-auto p-4 font-mono text-xs leading-relaxed min-h-[200px]"
+                  /*
+                    The `min-h` floor gives the log a body when the scrollback is
+                    short, and it is the only item here that may shrink — but a
+                    `min-height` is a floor flexbox may not shrink past, and the
+                    panel above is capped at `60vh`. A reader at 400% browser zoom
+                    has a ~200px-tall viewport, so that cap was 120px around a
+                    277px stack: 159px had nowhere to go, and `overflow-hidden`
+                    meant no gesture could reach it. Opening the terminal focuses
+                    this input, which scrolled the panel down to reveal it and put
+                    the title bar — and the labelled close button in it — out of
+                    view for good. Keyboard readers were fine, because focus
+                    scrolls a clipped node back in; touch readers had no way.
+                    Measured on `main` at 320x200: 159px clipped, the close button
+                    at `top: -75`, and a wheel over the panel left `scrollTop`
+                    unmoved (PRA-960).
+
+                    So the floor only applies where the cap can afford it: the
+                    stack needs `60vh >= 277px`, i.e. a viewport taller than
+                    ~462px. Below that the floor drops and the log yields instead,
+                    keeping the chrome on screen with the scrollback still
+                    reachable through this scroller. Gated on height rather than
+                    swapped for a shrinkable `flex-basis`, which would have pinned
+                    the log to exactly 200px at every size — `flex-1`'s `0%` basis
+                    is indefinite against this panel, so today the log grows to its
+                    content up to the cap, and a definite basis would have started
+                    scrolling output that used to simply fit.
+                  */
+                  className="flex-1 overflow-y-auto p-4 font-mono text-xs leading-relaxed min-h-[200px] [@media(max-height:30rem)]:min-h-0"
                 >
                   {lines.map((line, i) => (
                     <div
