@@ -55,24 +55,38 @@ const overflowOf = (page: Page) =>
     };
   });
 
-test.describe("no page scrolls sideways on a phone", () => {
-  // Pixel 5's 393px is the narrow end of what the analytics actually see, and
-  // it is the width the blog index broke at.
-  test.use({ viewport: { width: 393, height: 851 } });
+/**
+ * 393 is Pixel 5 — the narrow end of what the analytics actually see, and the
+ * width the blog index broke at.
+ *
+ * 320 is not a phone we see; it is the reflow floor. WCAG 2.1 SC 1.4.10 asks for
+ * no two-axis scrolling at a 320 CSS px equivalent, which is what a desktop
+ * reader at 400% browser zoom on a 1280px screen gets — zoom shrinks the CSS
+ * viewport, so it fires the same media queries as a 320px phone. That reader is
+ * why this width is here even though no device in the analytics is this narrow,
+ * and it is why the analytics argument for 393 does not bound the list. `axe`
+ * cannot see reflow, so nothing else in the suite covers it.
+ */
+const WIDTHS = [320, 393];
 
-  for (const route of routes) {
-    test(`${route} fits its viewport`, async ({ page }) => {
-      await page.goto(route);
+for (const width of WIDTHS) {
+  test.describe(`no page scrolls sideways at ${width}px`, () => {
+    test.use({ viewport: { width, height: 851 } });
 
-      // The row that broke is above the fold and laid out from prerendered
-      // markup, so this reads a real layout without waiting on hydration.
-      const { viewport, overflow, offenders } = await overflowOf(page);
+    for (const route of routes) {
+      test(`${route} fits its viewport`, async ({ page }) => {
+        await page.goto(route);
 
-      expect(viewport).toBe(393);
-      expect(
-        overflow,
-        `${route} overflows by ${overflow}px:\n  ${offenders.join("\n  ")}`
-      ).toBeLessThanOrEqual(0);
-    });
-  }
-});
+        // The row that broke is above the fold and laid out from prerendered
+        // markup, so this reads a real layout without waiting on hydration.
+        const { viewport, overflow, offenders } = await overflowOf(page);
+
+        expect(viewport).toBe(width);
+        expect(
+          overflow,
+          `${route} overflows by ${overflow}px at ${width}px:\n  ${offenders.join("\n  ")}`
+        ).toBeLessThanOrEqual(0);
+      });
+    }
+  });
+}
