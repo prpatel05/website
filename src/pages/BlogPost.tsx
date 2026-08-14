@@ -264,6 +264,23 @@ const BlogPost = () => {
           <div className="container max-w-3xl">
           {/* Meta */}
           <m.div
+            /*
+              Title, subtitle and tags are all post-derived text, and a post is
+              free to contain a word wider than a 320px viewport: the title
+              "Non-Deterministic Is Not the Same as Unmeasurable" renders
+              `Unmeasurable` at 299px once a reader applies SC 1.4.12 spacing,
+              against a 288px budget, which put 11px of sideways scroll on the
+              page (PRA-977).
+
+              `overflow-wrap` is inherited, so this one declaration covers all
+              three elements below. It sits on the header rather than on the
+              `<h1>` alone on purpose: the body wrapper's identical rule
+              (PRA-963) failed to reach the title precisely because the title is
+              outside that wrapper, and a rule scoped to one element would have
+              left the subtitle and the chips to be found the same way, one
+              queued post at a time.
+            */
+            className="[overflow-wrap:anywhere]"
             initial={entrance({ opacity: 0, y: 20 })}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
