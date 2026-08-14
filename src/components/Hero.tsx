@@ -1,7 +1,7 @@
 import { m, useReducedMotion, useScroll } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import { useEntrance, useEntranceGate } from "@/hooks/useEntrance";
-import { useParallax, useParallaxFade } from "@/hooks/useParallax";
+import { useFitsViewport, useParallax, useParallaxFade } from "@/hooks/useParallax";
 import {
   PORTRAIT_BLANK,
   PORTRAIT_BLANK_MEDIA,
@@ -22,6 +22,7 @@ const Hero = () => {
   const [displayText, setDisplayText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
+  const columnRef = useRef<HTMLDivElement>(null);
   const entrance = useEntrance();
   const ctaGate = useEntranceGate();
   const reduceMotion = useReducedMotion();
@@ -31,9 +32,40 @@ const Hero = () => {
     offset: ["start start", "end start"],
   });
 
-  const bgY = useParallax(scrollYProgress, [0, 1], ["0%", "30%"]);
-  const textY = useParallax(scrollYProgress, [0, 1], ["0%", "50%"]);
-  const photoY = useParallax(scrollYProgress, [0, 1], ["0%", "-20%"]);
+  /*
+    The whole scroll-linked treatment below presupposes a hero that fits: the
+    section is `min-h-screen`, so for as long as its content is shorter than the
+    viewport the section is exactly one viewport tall, everything in it is on
+    screen at scroll 0, and the fade only ever spends itself on what the reader
+    has already been shown.
+
+    Once the content is taller than the viewport that stops being true, and the
+    two effects turn on each other. `textY` translates this column down by half
+    the scroll it has travelled, so a CTA below the fold closes on it at about
+    half a pixel per pixel scrolled, while `fade` still spends its whole range
+    over the hero's own height. Measured on `main` at 320 wide, where the column
+    is 485px and `./contact --init` sits 407px into it: the CTA's viewport top
+    runs `407 - 0.5y` and the fade is done at `y = 388`, leaving it at `top:
+    213`. So it needs a viewport of at least 213 + its own 46px to be on screen
+    while it is still readable, and below that threshold there is no scroll
+    position where a reader can both see it and reach it. At 320x200 and at
+    320x256 — the WCAG reflow floor, and a 1280x800 desktop at 400% zoom — it
+    scored 2 of 3 (contained, `checkVisibility`, `pointer-events`) at every
+    stop from 0 to 700; 320x320 and up scored 3 (PRA-961).
+
+    So a hero that does not fit holds still, which is the regime reduced-motion
+    readers are already given: no parallax, no fade, the column simply scrolls
+    away with the page. Measured under that regime the same CTA scores 3 of 3
+    across a ~140px band of scroll at both heights, and answers
+    `elementFromPoint` for itself. Holding the parallax is not incidental to
+    holding the fade — the lag is what leaves this column painted over the
+    section below it, which is the only reason the fade had to hide it there.
+  */
+  const holdStill = !useFitsViewport(columnRef);
+
+  const bgY = useParallax(scrollYProgress, [0, 1], ["0%", "30%"], holdStill);
+  const textY = useParallax(scrollYProgress, [0, 1], ["0%", "50%"], holdStill);
+  const photoY = useParallax(scrollYProgress, [0, 1], ["0%", "-20%"], holdStill);
   // Bound into `style` on the whole hero column, so it is not an animation that
   // `MotionConfig reducedMotion="user"` can switch off — the same reason every
   // sibling here goes through `useParallax`. Left bare, the h1, the role line,
@@ -45,9 +77,9 @@ const Hero = () => {
   // for; see `useParallaxFade`. Spread into all three of the styles below —
   // the status rail and the scroll cue are absolutely positioned over the page
   // and would go on covering it just as invisibly.
-  const fade = useParallaxFade(scrollYProgress, [0, 0.8], [1, 0]);
-  const scale = useParallax(scrollYProgress, [0, 1], [1, 0.92]);
-  const statusX = useParallax(scrollYProgress, [0, 1], ["0px", "-40px"]);
+  const fade = useParallaxFade(scrollYProgress, [0, 0.8], [1, 0], holdStill);
+  const scale = useParallax(scrollYProgress, [0, 1], [1, 0.92], holdStill);
+  const statusX = useParallax(scrollYProgress, [0, 1], ["0px", "-40px"], holdStill);
 
   useEffect(() => {
     // A role line that types and retypes itself forever is the longest-running
@@ -148,7 +180,12 @@ const Hero = () => {
         </div>
       </m.div>
 
-      <m.div className="container relative z-10" style={{ y: textY, scale, ...fade }}>
+      {/*
+        `columnRef` measures this box, not the section: `min-h-screen` clamps
+        the section up to the viewport, so its height cannot answer whether the
+        content inside it fits. This box is the content.
+      */}
+      <m.div ref={columnRef} className="container relative z-10" style={{ y: textY, scale, ...fade }}>
         <div className="max-w-4xl">
           <m.div
             initial={entrance({ opacity: 0 })}
