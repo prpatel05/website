@@ -73,7 +73,20 @@ const BlogPreview = () => {
                 className="group block border border-border bg-card hover:border-primary/40 transition-all duration-500 p-6 lg:p-8"
               >
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div className="flex-1">
+                  {/*
+                    Same rule, same reason as the blog index card (PRA-977):
+                    title, subtitle and tags are post-derived, and `anywhere`
+                    rather than `break-word` because a flex item only shrinks
+                    below its longest word for `anywhere`.
+
+                    This surface hid the defect rather than showing it, which is
+                    why it is worth fixing even though nothing looked wrong: the
+                    section here is `overflow-hidden`, so an unwrapped title was
+                    silently cropped — 741px of text in a 206px box — instead of
+                    scrolling the page. No sideways scrollbar ever appeared to
+                    report it.
+                  */}
+                  <div className="flex-1 [overflow-wrap:anywhere]">
                     <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3">
                       <span className="font-mono text-[10px] text-muted-foreground">
                         {post.date}

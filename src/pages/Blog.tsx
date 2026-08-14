@@ -178,7 +178,22 @@ const Blog = () => {
                           className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
                         />
                       </div>
-                      <div className="flex-1">
+                      {/*
+                        Card title, subtitle and tags are post-derived text, so
+                        they carry the same wrapping rule as the post page's
+                        header (PRA-977). `overflow-wrap` is inherited, so this
+                        covers all three.
+
+                        It also has to be `anywhere` rather than `break-word`
+                        here specifically because this is a flex item: only
+                        `anywhere` counts toward min-content, so only `anywhere`
+                        lets the item shrink below the width of its longest
+                        word. Otherwise the box itself stretches to fit the word
+                        instead of the word wrapping to fit the box — an
+                        unwrapped tag chip was measured rendering a 432px line
+                        against a 320px viewport.
+                      */}
+                      <div className="flex-1 [overflow-wrap:anywhere]">
                         <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
                           <span className="font-mono text-[10px] text-muted-foreground">{post.date}</span>
                           <span aria-hidden="true" className="text-border">|</span>
