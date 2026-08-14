@@ -59,6 +59,19 @@ const components = {
       withProps(children, () => ({ ordinal: ordinal++ }))
     );
   },
+  // `min-w-0` on the content span is the structural half of the 320px reflow
+  // fix whose other half is the `overflow-wrap: anywhere` BlogPost sets on the
+  // body. The span is a flex item, so it defaults to `min-width: auto` and
+  // cannot shrink below its min-content width. For text that inherited
+  // `anywhere` is enough — its break opportunities feed min-content. For a
+  // child that has no break opportunities at all it is not: a fenced block
+  // nested in a list item is `white-space: pre`, so its min-content is its
+  // longest line however the body wraps, and the item drags the page out with
+  // it. Measured at 320px: 471px of page overflow, unchanged by `anywhere`, and
+  // 0 with this — at which point the block finally uses the `overflow-x-auto`
+  // scroller `pre` below already gives it. No post nests a fence in a list
+  // today, which is exactly why it is worth pinning: the failure would arrive
+  // with the markdown, not with a code change.
   li: ({ children, ordinal }) =>
     h(
       "li",
@@ -70,7 +83,7 @@ const components = {
             { className: "text-primary shrink-0 tabular-nums" },
             `${ordinal}.`
           ),
-      h("span", null, children)
+      h("span", { className: "min-w-0" }, children)
     ),
   // Preflight zeroes a blockquote's margin, and the `p` inside it is the same
   // component as any body paragraph — so without this a quotation is identical
@@ -114,32 +127,21 @@ const components = {
     ),
   // A fenced block can overflow into its own scroller. An inline span cannot:
   // it has nowhere to put the excess, so a single long token — an error code, a
-  // config key, a fully-qualified name — pushes the page wider than the
-  // viewport. `model_context_window_exceeded` is ~256px at 14px JetBrains Mono
-  // with the chip's padding, which clears a 320px paragraph (~288px usable) and
-  // overflows an ordered-list item (~232px after the marker and indent). Like
-  // `pre`'s tab stop above, whether it bites is a question of rendered width,
-  // so an author writing the markdown has no way to see it coming.
-  //
-  // `anywhere` rather than `break-words`, and the difference is the whole fix.
-  // `li` below is a flex row — marker span, content span — so the content is a
-  // flex item at `min-width: auto`, whose floor is its min-content width.
-  // `overflow-wrap: break-word` adds a break opportunity for line breaking but
-  // pointedly does not feed min-content, so that floor stays the full width of
-  // the token and the page still overflows: 12px either way, measured. Only
-  // `anywhere`'s breaks count toward min-content, which is what lets the flex
-  // item shrink. Neither breaks a token that would fit on a line of its own, so
-  // the readability cost is paid only where the alternative is a sideways
-  // scroll. Arbitrary property because Tailwind 3 has no `anywhere` utility.
+  // config key, a fully-qualified name — would push the page wider than the
+  // viewport. That is no longer this mapping's problem: `overflow-wrap:
+  // anywhere` on the body wrapper in BlogPost is inherited, and covers a token
+  // in a code chip exactly as it covers one in the prose around it. This entry
+  // carried its own copy of the rule for one commit (PRA-962, which scoped the
+  // failure to inline code); PRA-963 found the same overflow in plain
+  // paragraphs, links, list items and headings, so the rule moved up to the one
+  // place that reaches all of them rather than being pasted into five. What is
+  // left here is the chip described above.
   code: ({ children, fenced }) =>
     fenced
       ? h("code", { className: "text-muted-foreground" }, children)
       : h(
           "code",
-          {
-            className:
-              "rounded bg-muted px-1.5 py-0.5 text-foreground [overflow-wrap:anywhere]",
-          },
+          { className: "rounded bg-muted px-1.5 py-0.5 text-foreground" },
           children
         ),
   strong: ({ children }) =>
