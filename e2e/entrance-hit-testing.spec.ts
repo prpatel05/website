@@ -184,8 +184,27 @@ async function scrollTo(page: Page, y: number) {
   await page.evaluate((v) => window.scrollTo(0, v), y);
 }
 
-/** Long enough for the slowest entrance (0.6s delay + 0.6s) to have finished. */
-const SETTLED_MS = 1600;
+/**
+ * Long enough for the slowest entrance over a link to have finished, with room
+ * left over for the wait and the animation not being timed off the same clock.
+ *
+ * The slowest is the hero's CTA row — `delay: 1` and a 0.6s duration, 1.6s. The
+ * preview cards this used to name (0.6s delay + 0.6s) are the slowest of the
+ * `whileInView` entrances, not of all of them, and the value was 1600: exactly
+ * the CTA row's own duration, so the one entrance that outlasts every other was
+ * the one the wait had no margin over.
+ *
+ * Exactly is not enough. `waitForTimeout` starts when Playwright observes the
+ * incoming DOM; framer starts the entrance on a frame after the commit that put
+ * it there, and `useEntranceGate` holds `pointer-events: none` until
+ * `onAnimationComplete`. `elementsFromPoint` skips a gated element, so a link a
+ * frame short of its release reads as fully painted and completely untappable —
+ * which is this file's failure signature, reported against an opacity the
+ * reader can plainly see. Measured at 393x852 on a client-side arrival, at the
+ * one stop that carries the CTAs: at 1550ms `./contact --init` was at opacity
+ * 0.909 with 0 of 180 points topmost, at 1600ms it was 180 of 180 (PRA-978).
+ */
+const SETTLED_MS = 2400;
 
 test.describe("Entrance animations do not leave invisible links taking taps", () => {
   test.use({ viewport: PHONE });
@@ -264,13 +283,38 @@ test.describe("Entrance animations do not leave invisible links taking taps", ()
     }
 
     const readable = new Set<string>();
+    /**
+     * The best each link managed, so a failure names which half of "painted and
+     * tappable" was missing. The assertion is a set membership and on its own
+     * reports `false` and nothing else — which is all the first report of
+     * PRA-978 had to go on. "opacity 0.909, 0/180 topmost" is a gate that had
+     * not released; "opacity 0.04" is a fade that had not finished; and the two
+     * want opposite fixes.
+     */
+    const best = new Map<string, Reading & { y: number }>();
     for (const y of stops) {
       await scrollTo(page, y);
       await page.waitForTimeout(SETTLED_MS);
       for (const r of await sampleLinks(page)) {
         if (r.opacity >= READABLE_OPACITY && r.onTop > 0) readable.add(r.key);
+        const seen = best.get(r.key);
+        if (!seen || r.opacity > seen.opacity || (r.opacity === seen.opacity && r.onTop > seen.onTop)) {
+          best.set(r.key, { ...r, y });
+        }
       }
     }
+
+    /** What `label` was measured at, for an assertion that is about to fail. */
+    const evidence = (label: string) => {
+      const hits = Array.from(best.values()).filter((r) => r.key.includes(label));
+      if (hits.length === 0) return "it was never on screen at any stop";
+      return hits
+        .map(
+          (r) =>
+            `"${r.key}" got to opacity ${r.opacity} at y=${r.y}, topmost at ${r.onTop}/${r.samples} points`,
+        )
+        .join("; ");
+    };
 
     // The gate's opposite failure: one that never releases leaves a fully
     // painted page that cannot be tapped. Asserted per element, because a
@@ -279,13 +323,13 @@ test.describe("Entrance animations do not leave invisible links taking taps", ()
     for (const title of titles) {
       expect(
         Array.from(readable).some((k) => k.includes(title)),
-        `preview card "${title}" never became readable and tappable`,
+        `preview card "${title}" never became readable and tappable: ${evidence(title)}`,
       ).toBe(true);
     }
     for (const label of GATED_LINKS) {
       expect(
         Array.from(readable).some((k) => k.includes(label)),
-        `"${label}" never became readable and tappable`,
+        `"${label}" never became readable and tappable: ${evidence(label)}`,
       ).toBe(true);
     }
   });
