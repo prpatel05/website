@@ -57,6 +57,20 @@
     @apply border-border;
   }
 
+  /*
+    The navbar is `fixed` and 64px tall, so it covers the top of the scrollport
+    at every scroll position. Without this, the browser's own "is it already in
+    view?" test counts that covered band as visible: a Shift+Tab onto a focus
+    target sitting there scrolls nothing, and the focus ring ends up *entirely*
+    behind the nav — WCAG 2.2 SC 2.4.11 Focus Not Obscured (Minimum), level AA.
+    scroll-padding-top takes the nav out of the viewing region, so the browser
+    scrolls the target clear of it instead of deciding it has nothing to do.
+    5rem is the 64px nav plus breathing room. See PRA-975.
+  */
+  html {
+    scroll-padding-top: 5rem;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-mono);
