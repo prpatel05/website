@@ -58,12 +58,26 @@ const SITEMAP = fileURLToPath(new URL("../dist/sitemap.xml", import.meta.url));
 
 /**
  * Routes come from the built sitemap, so a new post is covered the day it lands.
- * Per-post coverage earns its cost here: an unusually long word or a wide code
- * line interacts with the override differently on every post.
+ * Per-post coverage earns its cost at the narrow width: an unusually long word or
+ * a wide code line interacts with the override differently on every post.
  */
 const routes = [...readFileSync(SITEMAP, "utf8").matchAll(/<loc>([^<]+)<\/loc>/g)].map(
   ([, loc]) => new URL(loc).pathname
 );
+
+/**
+ * At the wide width the posts stop being distinct from one another — they are one
+ * component rendering one column, and the content variation that justifies the
+ * full sweep at 320 has room to fit. So the wide pass covers one of each *layout*
+ * instead: the homepage's multi-column sections, the blog index's card grid, and
+ * a single post body.
+ *
+ * This is a deliberate coverage cap, taken on measurement rather than instinct:
+ * the full 26x2x2 matrix ran green in CI but took it from ~10.4 to 18 minutes,
+ * and a criterion that currently passes everywhere does not earn +73% on every
+ * push. The narrow width, where the failures would actually be, keeps every post.
+ */
+const WIDE_ROUTES = ["/", "/blog/", routes.find((r) => r.startsWith("/blog/") && r !== "/blog/")!];
 
 /** The exact values named in SC 1.4.12. */
 const SPACING_CSS = `
@@ -73,6 +87,20 @@ p { margin-bottom: 2em !important; }
 
 /** Entrance staggers run to ~3s on the longest list (PRA-951). */
 const SETTLE_MS = 3500;
+
+/**
+ * Every test here sets its own viewport, and both configured projects drive the
+ * same chromium build — so under `mobile-chrome` this file would re-measure the
+ * identical layout at the identical widths and double a slow suite for nothing.
+ * The one thing the device profile does change, touch input, this file never
+ * uses: it reads geometry and never taps.
+ */
+test.beforeEach(() => {
+  test.skip(
+    test.info().project.name !== "chromium",
+    "viewports are set explicitly, so the device profile would re-run identical work"
+  );
+});
 
 type Reading = {
   pageOverflow: number;
@@ -198,13 +226,13 @@ async function expectNoLossUnderTextSpacing(page: Page, label: string) {
  * multi-column layouts live, which fail differently.
  */
 for (const vp of [
-  { width: 320, height: 851, name: "reflow floor" },
-  { width: 1280, height: 800, name: "desktop" },
+  { width: 320, height: 851, name: "reflow floor", paths: routes },
+  { width: 1280, height: 800, name: "desktop", paths: WIDE_ROUTES },
 ]) {
   test.describe(`text spacing at ${vp.name} (${vp.width}px)`, () => {
     test.use({ viewport: { width: vp.width, height: vp.height } });
 
-    for (const route of routes) {
+    for (const route of vp.paths) {
       test(`${route} survives a reader's spacing`, async ({ page }) => {
         await page.goto(route);
         await page.waitForTimeout(SETTLE_MS);
