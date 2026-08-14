@@ -343,7 +343,42 @@ const BlogPost = () => {
             initial={entrance({ opacity: 0 })}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4, duration: 0.6 }}
-            className="font-mono text-sm"
+            /*
+              `overflow-wrap` is inherited, so one declaration here is the whole
+              body's wrapping policy: a long unbreakable token — a bare URL, a
+              fully-qualified name, an error code — breaks rather than pushing
+              the page wider than the viewport. Measured at 320px (a 1280px
+              screen at 400% zoom, WCAG 2.1 SC 1.4.10), the pre-fix body
+              overflowed by 504px on a URL in a list item, 343px on a token in
+              an `h2`, and 73px on one in a plain paragraph.
+
+              Here rather than per element in `scripts/markdown-html.mjs`, for
+              two reasons. The headings were the tell: fixing `p`, `li` and `a`
+              — the elements the failure was reported against — still left `h2`
+              at 343px and `h3` at 223px, and that list would have to be
+              re-audited every time the element map grows. The map is also a
+              whitelist, so a tag with no entry (`h4`, `hr`, a table) renders
+              unstyled and would arrive unprotected. Inheritance covers all of
+              them, including elements nobody has written yet.
+
+              `anywhere` and not `break-word`, and the difference is the fix.
+              `li` renders as a flex row, so its content span is a flex item at
+              `min-width: auto` whose floor is its min-content width.
+              `break-word` adds a break opportunity for line breaking but
+              pointedly does not feed min-content, so that floor stays the full
+              token width: measured, the three list cases were unchanged at 504,
+              110 and 110px with `break-word` applied. Only `anywhere`'s breaks
+              count toward min-content. Neither breaks a token that would fit on
+              a line of its own, so the readability cost is paid only where the
+              alternative is a sideways scroll.
+
+              A fenced block is unaffected despite inheriting this: `white-space:
+              pre` disables soft wrapping outright, so `pre` keeps its own
+              horizontal scroller. Measured — 299px of internal scroll, before
+              and after. Arbitrary property because Tailwind 3 ships no
+              `anywhere` utility.
+            */
+            className="font-mono text-sm [overflow-wrap:anywhere]"
             // Read back by `prerenderedBody` on first load, so hydration finds
             // the body already in state instead of replacing this subtree.
             {...{ [POST_BODY_ATTR]: post.slug }}
