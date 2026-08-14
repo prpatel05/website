@@ -535,3 +535,110 @@ test.describe("terminal defects a reader can reach", () => {
     await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBeGreaterThan(0);
   });
 });
+
+/**
+ * The terminal on the short viewport a 400%-zoom reader gets.
+ *
+ * Zoom shrinks both axes, so 1280x800 at 400% is 320x200 CSS px — the width
+ * `mobile-overflow.spec.ts` now covers, but a height no phone reports. The
+ * dialog's panel is capped at `max-h-[60vh]`, which is 120px there, and the log
+ * inside it carried a hard `min-h-[200px]`. A `min-height` is a floor flexbox
+ * may not shrink past, so the stack stayed 277px tall inside a 120px box with
+ * `overflow-hidden` above it, and opening the terminal focuses the command line
+ * — which scrolled the panel to the bottom to reveal it.
+ *
+ * Measured on the pre-fix build at 320x200: 159px clipped, the title bar's
+ * labelled "Close terminal" button sitting at `top: -75` — outside the panel and
+ * outside the viewport — and a wheel over the panel left `scrollTop` at 159,
+ * because `overflow-hidden` takes no gesture. Focus recovered it, so a keyboard
+ * reader was fine and a touch reader was not. At 320x256 the same measurement is
+ * 125px clipped with the button at `top: -19`. The 393x851 control clipped 0.
+ *
+ * `axe` cannot see this and neither can an overflow sweep: the loss is vertical,
+ * inside a clipping ancestor, so `documentElement.scrollWidth` never moves.
+ */
+test.describe("terminal chrome on a 400%-zoom viewport", () => {
+  // 1280x800 at 400%. The height is the subject; 320 only sets the breakpoint.
+  test.use({ viewport: { width: 320, height: 200 } });
+
+  /** The panel is the flex column the log and the command line share. */
+  const panel = (page: Page) =>
+    page.evaluate((sel) => {
+      const el = document.querySelector(sel)?.closest<HTMLElement>(".flex-col");
+      if (!el) return null;
+      const close = document.querySelector<HTMLElement>('[aria-label="Close terminal"]');
+      const box = close?.getBoundingClientRect();
+      const hit =
+        box && document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+      return {
+        height: Math.round(el.clientHeight),
+        clipped: Math.round(el.scrollHeight - el.clientHeight),
+        close: box
+          ? {
+              top: Math.round(box.top),
+              onScreen: box.top >= 0 && box.bottom <= window.innerHeight,
+              // Clipped-out chrome is still hit-testable at its own coordinates,
+              // so the paint at that point is what says it is really there.
+              topmost: !!hit && (hit === close || close!.contains(hit)),
+            }
+          : null,
+      };
+    }, TERMINAL_LOG);
+
+  test("keeps the close button on screen instead of clipping it away", async ({ page }) => {
+    await page.goto("/");
+    await openTerminalByClick(page);
+    await expectOverlayOpen(page, TERMINAL_DIALOG);
+
+    const measured = await panel(page);
+
+    // The precondition. Without the `60vh` cap actually biting, "nothing is
+    // clipped" is free and this test would pass on the broken build too.
+    expect(
+      measured?.height,
+      "the panel is not under height pressure, so the assertions below are vacuous",
+    ).toBeLessThan(200);
+
+    expect(measured?.clipped, "the panel is clipping its own chrome out of reach").toBe(0);
+    expect(measured?.close).toMatchObject({ onScreen: true, topmost: true });
+  });
+
+  /**
+   * The other half: the log yields its height, so this checks the output it gave
+   * up room for is still reachable through the log's own scroller rather than
+   * quietly gone.
+   */
+  test("keeps a full scrollback reachable through the log", async ({ page }) => {
+    await page.goto("/");
+    await openTerminalByClick(page);
+    await runCommand(page, "help");
+
+    const log = page.locator(TERMINAL_LOG);
+    await expect(log).toBeVisible();
+
+    const scroller = () =>
+      page.evaluate((sel) => {
+        const el = document.querySelector(sel);
+        if (!el) return null;
+        return {
+          overflow: Math.round(el.scrollHeight - el.clientHeight),
+          top: Math.round(el.scrollTop),
+        };
+      }, TERMINAL_LOG);
+
+    // A shrunken log means more overflow, not less — so it has to scroll, and it
+    // has to be sitting at the newest line the way it does at full height.
+    await expect
+      .poll(async () => (await scroller())?.overflow ?? 0, {
+        message: "the log does not overflow, so this proves nothing about reaching its scrollback",
+      })
+      .toBeGreaterThan(0);
+
+    await expect
+      .poll(async () => {
+        const s = await scroller();
+        return s ? s.overflow - s.top : null;
+      })
+      .toBeLessThanOrEqual(1);
+  });
+});
