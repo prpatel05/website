@@ -22,26 +22,48 @@ const withProps = (children, propsFor) =>
 // This is deliberately the same renderer the page used to run, not a second
 // markdown implementation, so the emitted HTML is identical to what shipped
 // before rather than merely similar.
+
+// `inHeading` tells the emphasis mappings below that they are painting on
+// Space Grotesk 700 — the only display face declared — so a `strong` here must
+// match that weight rather than hard-set its own. See the `strong` comment for
+// why this is a prop and not a descendant selector.
+//
+// Every level is mapped, including the four no post uses today. Leaving one out
+// does not mean "unstyled", it means styled by accident: `src/index.css` puts
+// every `h1..h6` in `font-display`, and Tailwind's preflight sets `font-size:
+// inherit; font-weight: inherit`. So a bare `#` or `####` took Space Grotesk at
+// weight 400 — a face `fonts.css` does not declare, so the browser snapped to
+// 700 or synthesized one — at body size, which is not a heading at all. No
+// emphasis was needed to trigger it; the heading's own text was enough
+// (PRA-1005). `e2e/post-emphasis-faces.spec.ts` covers all six levels.
+const heading = (tag, className) =>
+  ({ children }) =>
+    h(tag, { className }, withProps(children, () => ({ inHeading: true })));
+
+// `h1` takes the `h2` treatment rather than a bigger one of its own. The page
+// already has an `h1` — the post title, at `text-4xl lg:text-6xl` — so a `#` in
+// the body is either an authoring slip or a second top level, and either way
+// the body's own top level is what it should read as. Anything larger would
+// out-shout the title it sits under.
+const TOP_LEVEL =
+  "font-display text-2xl lg:text-3xl font-bold text-foreground mt-12 mb-6 border-l-2 border-primary pl-4";
+
+// The scale bottoms out here, and `h4`/`h5`/`h6` share it. `h4` is the last
+// level with room to sit below `h3` and still above the body; below that, size
+// is the only axis left — family, weight and colour are already at the maximum
+// the declared faces allow — and a heading smaller than the prose stops reading
+// as one. Three levels rendering alike is the honest outcome for a body that
+// should not be six deep, and it is a stated decision rather than the bare tag
+// chance was producing before.
+const SUB_LEVEL = "font-display text-lg font-bold text-foreground mt-8 mb-3";
+
 const components = {
-  // `inHeading` tells the emphasis mappings below that they are painting on
-  // Space Grotesk 700 — the only display face declared — so a `strong` here
-  // must match that weight rather than hard-set its own. See the `strong`
-  // comment for why this is a prop and not a descendant selector.
-  h2: ({ children }) =>
-    h(
-      "h2",
-      {
-        className:
-          "font-display text-2xl lg:text-3xl font-bold text-foreground mt-12 mb-6 border-l-2 border-primary pl-4",
-      },
-      withProps(children, () => ({ inHeading: true }))
-    ),
-  h3: ({ children }) =>
-    h(
-      "h3",
-      { className: "font-display text-xl font-bold text-foreground mt-10 mb-4" },
-      withProps(children, () => ({ inHeading: true }))
-    ),
+  h1: heading("h1", TOP_LEVEL),
+  h2: heading("h2", TOP_LEVEL),
+  h3: heading("h3", "font-display text-xl font-bold text-foreground mt-10 mb-4"),
+  h4: heading("h4", SUB_LEVEL),
+  h5: heading("h5", SUB_LEVEL),
+  h6: heading("h6", SUB_LEVEL),
   p: ({ children }) =>
     h(
       "p",

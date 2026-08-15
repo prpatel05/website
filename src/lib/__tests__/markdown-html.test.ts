@@ -22,6 +22,34 @@ describe("markdown rendered at build time", () => {
     expect(html).toContain('<em class="font-mono font-normal text-primary/80">');
   });
 
+  // An unmapped level is not "unstyled". `src/index.css` puts every `h1..h6` in
+  // `font-display` and preflight sets `font-size: inherit; font-weight:
+  // inherit`, so a bare `<h4>` painted Space Grotesk at weight 400 — a face
+  // fonts.css does not declare — at body size, i.e. not reading as a heading
+  // either. No emphasis required (PRA-1005). Asserted on the tag rather than on
+  // a class, because emitting the bare tag is the actual regression.
+  it("maps every heading level, not just the two the posts happen to use", () => {
+    for (let level = 1; level <= 6; level++) {
+      const html = renderMarkdownToHtml(`${"#".repeat(level)} Heading\n`);
+      expect(html).toContain(`<h${level} class="font-display `);
+      expect(html).toContain("font-bold text-foreground");
+      // A size of its own, so preflight's `font-size: inherit` never applies.
+      expect(html).toMatch(/class="font-display text-(lg|xl|2xl) /);
+    }
+
+    // `h1` takes the `h2` treatment: the page's own `h1` is the post title, so
+    // a `#` in the body is the body's top level and must not out-shout it.
+    expect(renderMarkdownToHtml("# Heading\n")).toContain(
+      '<h1 class="font-display text-2xl lg:text-3xl font-bold text-foreground mt-12 mb-6 border-l-2 border-primary pl-4">'
+    );
+
+    // Emphasis inside the newly mapped levels gets the same `inHeading` context
+    // `h2`/`h3` thread, or it falls straight back off the declared set.
+    expect(renderMarkdownToHtml("#### Heading with **bold**\n")).toContain(
+      '<strong class="text-primary font-bold">bold</strong>'
+    );
+  });
+
   // Which face these classes resolve to is a browser question, and
   // `e2e/post-emphasis-faces.spec.ts` is what answers it — it renders these
   // same forms and reads back the computed (family, weight, style). This is the

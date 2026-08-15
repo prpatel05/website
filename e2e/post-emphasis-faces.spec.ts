@@ -37,6 +37,19 @@ import { collectFaces, declaredFaces, ours } from "./font-face-probe";
  * `strong` set 600 against the heading's 700, so asking for bold made the text
  * lighter.
  *
+ * Then PRA-1005, found by this file's own gate: the renderer mapped `h2` and
+ * `h3` only, so `h1` and `h4`-`h6` emitted bare tags. `src/index.css` puts
+ * *every* `h1..h6` in `font-display` while preflight sets `font-weight:
+ * inherit`, so those levels painted `Space Grotesk|400|normal` — undeclared,
+ * and with **no emphasis in them at all**:
+ *
+ *   `# Heading`    -> Space Grotesk|400|normal
+ *   `#### Heading` -> Space Grotesk|400|normal
+ *
+ * Preflight's `font-size: inherit` made it two failures in one: an `h4`
+ * rendered at body size, so it did not read as a heading either. That half is
+ * not a face question, which is why the second test below exists.
+ *
  * ## Why "just declare the missing faces" is not the fix
  *
  * `font-faces.spec.ts` asserts the other direction too — *every declared face
@@ -75,6 +88,19 @@ const FORMS = [
   { name: "bold in an h3", md: "### Heading with **bold** in it" },
   { name: "italic in an h3", md: "### Heading with *italic* in it" },
   { name: "nested emphasis in an h3", md: "### Heading with ***both*** in it" },
+  // The levels the renderer did not map until PRA-1005. The two bare rows are
+  // the point of that issue: with no mapping these took `font-display` from the
+  // global `h1..h6` rule in `src/index.css` and weight 400 by inheritance from
+  // the body, so the heading's *own* text painted `Space Grotesk|400|normal`
+  // with no emphasis anywhere in it.
+  { name: "a bare h1", md: "# Heading with nothing in it" },
+  { name: "a bare h4", md: "#### Heading with nothing in it" },
+  { name: "bold in an h1", md: "# Heading with **bold** in it" },
+  { name: "nested emphasis in an h1", md: "# Heading with ***both*** in it" },
+  { name: "bold in an h4", md: "#### Heading with **bold** in it" },
+  { name: "nested emphasis in an h4", md: "#### Heading with ***both*** in it" },
+  { name: "nested emphasis in an h5", md: "##### Heading with ***both*** in it" },
+  { name: "nested emphasis in an h6", md: "###### Heading with ***both*** in it" },
   { name: "bold inside a link in an h2", md: "## Heading with [**a link**](https://example.com)" },
   { name: "italic inside a link in an h2", md: "## Heading with [*a link*](https://example.com)" },
   { name: "code in an h2", md: "## Heading with `code` in it" },
@@ -91,22 +117,18 @@ const FORMS = [
 ] as const;
 
 /**
- * Known gap, deliberately not covered here: `h1` and `h4`-`h6` (PRA-1005).
+ * Every heading level, in one body, so the levels can be compared to each other
+ * and to the prose they sit in.
  *
- * The renderer maps `h2` and `h3` only, so the others emit bare tags — and
- * `src/index.css` puts *every* `h1..h6` in `font-display` while preflight sets
- * `font-weight: inherit`, so they paint `Space Grotesk|400|normal`, which is
- * not declared either. Adding
- *
- *   { name: "emphasis in an unmapped h1", md: "# Heading with **bold**" },
- *
- * to `FORMS` reproduces it, and it was measured that way before being pulled
- * back out. It is filed rather than fixed here because it is not an emphasis
- * bug — `# Heading` alone is enough — and closing it means choosing a type
- * scale for `h4`-`h6`, which is a design call and not this file's business.
- * No post on any branch uses those levels (531 content files scanned).
+ * The face rows above say each level lands on a declared face. They cannot say
+ * it reads as a heading: preflight's `font-size: inherit` was the other half of
+ * PRA-1005, and an `h4` rendering at body size passes a face check while being
+ * indistinguishable from the paragraph under it.
  */
-
+const LEVELS = ["h1", "h2", "h3", "h4", "h5", "h6"] as const;
+const ALL_LEVELS_MD =
+  LEVELS.map((_, i) => `${"#".repeat(i + 1)} Level ${i + 1}`).join("\n\n") +
+  "\n\nProse under the headings.";
 
 const DECLARED = declaredFaces();
 const FAMILIES = new Set([...DECLARED].map((f) => f.split("|")[0]));
@@ -180,5 +202,76 @@ test("no emphasis a post can contain paints an undeclared font face", async ({ p
       `snaps to a neighbouring weight or synthesizes an oblique with nothing going red. ` +
       `Declared: ${[...DECLARED].sort().join(", ")}. ` +
       `Adding the missing faces is not the fix — see the header of this file.`
+  ).toEqual([]);
+});
+
+/**
+ * The other half of PRA-1005: a heading has to be sized like one.
+ *
+ * Tailwind's preflight sets `h1..h6 { font-size: inherit }`, so an unmapped
+ * level rendered at exactly the size of the prose around it (14px, measured).
+ * That is invisible to the face check above — `Space Grotesk|700|normal` at
+ * body size is still a declared face — and invisible to
+ * `post-body-typography.spec.ts`, which selects the
+ * posts that contain a construct and no post contains these levels.
+ *
+ * Two properties, not six pinned sizes: a level must be larger than the body,
+ * and must not be larger than the level above it. Pinning `text-lg` here would
+ * make the test a copy of the renderer, and the type scale is a design call
+ * that should be free to move without a spec edit. What must not move is that
+ * every level reads as a heading and the levels stay in order — which is what
+ * the bare tags broke. `h4`-`h6` deliberately share a size, so the comparison
+ * is non-increasing rather than strictly decreasing.
+ */
+test("every heading level renders as a heading, in order", async ({ page }) => {
+  const html = renderMarkdownToHtml(ALL_LEVELS_MD);
+
+  // Guard the premise: react-markdown has to have emitted all six tags, or the
+  // measurement below is over an empty list and passes vacuously.
+  for (const tag of LEVELS) {
+    expect(html, `\`${"#".repeat(LEVELS.indexOf(tag) + 1)}\` should render as <${tag}>`).toContain(
+      `<${tag} class=`
+    );
+  }
+
+  await page.goto(POST);
+  await page.waitForSelector("[data-post-body]");
+  await page.evaluate(() => document.fonts.ready);
+
+  const measured = await page.evaluate(
+    ({ body, levels }) => {
+      const host = document.querySelector("[data-post-body]") as HTMLElement;
+      host.innerHTML = body;
+      void host.offsetWidth;
+
+      const size = (selector: string) => {
+        const el = host.querySelector(selector);
+        return el ? parseFloat(getComputedStyle(el).fontSize) : null;
+      };
+      return {
+        prose: size("p"),
+        headings: levels.map((tag) => ({ tag, size: size(tag) })),
+      };
+    },
+    { body: html, levels: [...LEVELS] }
+  );
+
+  expect(measured.prose, "the injected body should contain a paragraph to compare against").toBeGreaterThan(0);
+
+  const tooSmall = measured.headings.filter((row) => !(row.size! > measured.prose!));
+  expect(
+    tooSmall.map((row) => `${row.tag}: ${row.size}px`),
+    `these levels render at or below the body's ${measured.prose}px, so they do not read as ` +
+      `headings — preflight's \`font-size: inherit\` is what an unmapped level falls back to`
+  ).toEqual([]);
+
+  const outOfOrder = measured.headings
+    .slice(1)
+    .map((row, i) => ({ above: measured.headings[i], row }))
+    .filter(({ above, row }) => row.size! > above.size!)
+    .map(({ above, row }) => `${above.tag} (${above.size}px) < ${row.tag} (${row.size}px)`);
+  expect(
+    outOfOrder,
+    "a deeper heading level is painted larger than the one above it, so the type scale inverts"
   ).toEqual([]);
 });
