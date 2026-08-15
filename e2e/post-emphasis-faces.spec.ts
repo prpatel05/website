@@ -90,6 +90,24 @@ const FORMS = [
   { name: "nested emphasis in a blockquote", md: "> A quotation with ***both*** in it." },
 ] as const;
 
+/**
+ * Known gap, deliberately not covered here: `h1` and `h4`-`h6` (PRA-1005).
+ *
+ * The renderer maps `h2` and `h3` only, so the others emit bare tags — and
+ * `src/index.css` puts *every* `h1..h6` in `font-display` while preflight sets
+ * `font-weight: inherit`, so they paint `Space Grotesk|400|normal`, which is
+ * not declared either. Adding
+ *
+ *   { name: "emphasis in an unmapped h1", md: "# Heading with **bold**" },
+ *
+ * to `FORMS` reproduces it, and it was measured that way before being pulled
+ * back out. It is filed rather than fixed here because it is not an emphasis
+ * bug — `# Heading` alone is enough — and closing it means choosing a type
+ * scale for `h4`-`h6`, which is a design call and not this file's business.
+ * No post on any branch uses those levels (531 content files scanned).
+ */
+
+
 const DECLARED = declaredFaces();
 const FAMILIES = new Set([...DECLARED].map((f) => f.split("|")[0]));
 
