@@ -170,10 +170,24 @@ const Hero = () => {
         browser composites them, which is the intended reading anyway: the
         entrance plays, and the scroll fade takes the result away. See
         `useParallaxFade` (PRA-979).
+
+        Revealed at `2xl`, not `lg`. This is a gutter ornament: it is pinned to
+        the section at `left-8`, so it only has somewhere to live once the
+        centred column has left a gutter wide enough to hold it. The column
+        starts at `(100vw - 1200px) / 2 + 2rem` and this block ends at 130px,
+        so the gutter clears it only past ~1396px — but `lg` revealed it at
+        1024px, where there is no gutter at all and the block sits directly on
+        top of the hero copy. It read as a collision rather than as clipping
+        because `top-24` pins it to the top of the section while the column is
+        centred in `min-h-screen`: a shorter viewport raises the column into
+        it, so 1280x720 and 1366x768 painted "WASHINGTON, DC" straight through
+        "initializing portfolio..." and the name. Height is why the obvious
+        width-only check missed this. At `2xl` the gutter is 168px against a
+        98px block, so the two are separated horizontally at every height.
       */}
       <m.div
         style={{ x: statusX, ...fade }}
-        className="absolute top-24 left-8 hidden lg:block font-mono text-[10px] text-muted-foreground"
+        className="absolute top-24 left-8 hidden 2xl:block font-mono text-[10px] text-muted-foreground"
       >
         <m.div
           initial={entrance({ opacity: 0, x: -20 })}
