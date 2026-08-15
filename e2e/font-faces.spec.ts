@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { test, expect,
   openMobileMenu,
 } from "./fixtures";
+import { collectFaces, declaredFaces, FONTS_CSS, ours } from "./font-face-probe";
 
 /**
  * Every (family, weight, style) the site paints is one `src/styles/fonts.css`
@@ -38,71 +39,16 @@ import { test, expect,
  */
 
 const SITEMAP = fileURLToPath(new URL("../dist/sitemap.xml", import.meta.url));
-const FONTS_CSS = fileURLToPath(new URL("../src/styles/fonts.css", import.meta.url));
 
 const routes = [...readFileSync(SITEMAP, "utf8").matchAll(/<loc>([^<]+)<\/loc>/g)].map(
   ([, loc]) => new URL(loc).pathname
 );
 
-/**
- * The faces `src/styles/fonts.css` declares, as a `family|weight|style` set.
- *
- * Read off the real `@font-face` rules rather than restated here, so the test
- * cannot drift from the declarations it is guarding. One entry per (family,
- * weight, style) — a face split across `unicode-range` subsets is several rules
- * but one face, and which subset a glyph comes from is not what this measures.
- *
- * This parsed a `fonts.googleapis.com/css2` URL until the fonts were
- * self-hosted; the parity it asserts is unchanged.
- */
-function declaredFaces(): Set<string> {
-  const css = readFileSync(FONTS_CSS, "utf8");
-  const faces = new Set<string>();
-
-  for (const [, body] of css.matchAll(/@font-face\s*\{([^}]*)\}/g)) {
-    const value = (prop: string) =>
-      body.match(new RegExp(`${prop}\\s*:\\s*([^;]+);`))?.[1].trim().replace(/^['"]|['"]$/g, "");
-
-    const family = value("font-family");
-    const weight = value("font-weight");
-    const style = value("font-style");
-    expect(
-      family && weight && style,
-      `every @font-face in fonts.css should declare family, weight and style — got ${body}`
-    ).toBeTruthy();
-
-    faces.add(`${family}|${weight}|${style}`);
-  }
-
-  expect(faces.size, "fonts.css should declare at least one face").toBeGreaterThan(0);
-  return faces;
-}
-
-/**
- * Every face actually painted in the current document.
- *
- * Only elements owning a non-empty text node count — an ancestor's computed
- * style is inherited, not painted, so counting every element would report faces
- * no glyph is ever drawn in. Invisible subtrees are skipped for the same
- * reason: `display:none` is the closed overlay, which the explicit overlay
- * cases below open properly.
- */
-const collectFaces = () => {
-  const seen = new Set<string>();
-  for (const el of document.querySelectorAll("body *")) {
-    const paintsText = [...el.childNodes].some(
-      (n) => n.nodeType === Node.TEXT_NODE && n.textContent?.trim()
-    );
-    if (!paintsText) continue;
-
-    const style = getComputedStyle(el);
-    if (style.display === "none" || style.visibility === "hidden") continue;
-
-    const family = style.fontFamily.split(",")[0].replace(/["']/g, "").trim();
-    seen.add(`${family}|${style.fontWeight}|${style.fontStyle}`);
-  }
-  return [...seen];
-};
+// `declaredFaces` (what fonts.css declares) and `collectFaces` (what a document
+// paints) live in `./font-face-probe` because `post-emphasis-faces.spec.ts`
+// asks the same two questions of the renderer that this file asks of the built
+// sitemap. Two copies could drift, and the drift would show up as one of the
+// two going quietly green. Their reasoning moved with them.
 
 /**
  * The 668 codepoints self-hosting stopped serving.
@@ -177,14 +123,6 @@ function fallbackGlyphs(texts: string[]) {
     }
   }
   return [...new Set(found)];
-}
-
-/**
- * Faces in families we do not load are not ours to check: `ui-sans-serif` and
- * friends come from the fallback stack, cost nothing and are always available.
- */
-function ours(faces: Iterable<string>, families: Set<string>) {
-  return [...faces].filter((f) => families.has(f.split("|")[0]));
 }
 
 const DECLARED = declaredFaces();

@@ -23,6 +23,10 @@ const withProps = (children, propsFor) =>
 // markdown implementation, so the emitted HTML is identical to what shipped
 // before rather than merely similar.
 const components = {
+  // `inHeading` tells the emphasis mappings below that they are painting on
+  // Space Grotesk 700 — the only display face declared — so a `strong` here
+  // must match that weight rather than hard-set its own. See the `strong`
+  // comment for why this is a prop and not a descendant selector.
   h2: ({ children }) =>
     h(
       "h2",
@@ -30,13 +34,13 @@ const components = {
         className:
           "font-display text-2xl lg:text-3xl font-bold text-foreground mt-12 mb-6 border-l-2 border-primary pl-4",
       },
-      children
+      withProps(children, () => ({ inHeading: true }))
     ),
   h3: ({ children }) =>
     h(
       "h3",
       { className: "font-display text-xl font-bold text-foreground mt-10 mb-4" },
-      children
+      withProps(children, () => ({ inHeading: true }))
     ),
   p: ({ children }) =>
     h(
@@ -144,16 +148,88 @@ const components = {
           { className: "rounded bg-muted px-1.5 py-0.5 text-foreground" },
           children
         ),
-  strong: ({ children }) =>
-    h("strong", { className: "text-foreground font-semibold" }, children),
-  em: ({ children }) => h("em", { className: "text-primary/80" }, children),
+  // Emphasis has to land on a face `src/styles/fonts.css` actually declares,
+  // and the declared set is narrow enough that the naive mappings could not:
+  // four JetBrains Mono faces (400 normal, 400 italic, 600 normal, 700 normal)
+  // and exactly one Space Grotesk — 700 normal. A heading is `font-display` at
+  // `font-bold`, so it is already *on* the only display face there is, and any
+  // emphasis that moved its weight or its style fell off the set. The browser
+  // then snaps to a neighbouring weight or synthesizes an oblique, and the type
+  // degrades with nothing going red (PRA-1004). `e2e/post-emphasis-faces.spec.ts`
+  // is the gate; the four originally-measured failures are listed there.
+  //
+  // Declaring the missing faces is the obvious fix and it is blocked: the same
+  // spec family asserts every *declared* face is painted somewhere, because an
+  // unpainted declaration is the 30KB defect `e2e/font-faces.spec.ts` exists to
+  // prevent. So the renderer is what gives.
+  //
+  // The context is threaded as props rather than expressed as descendant
+  // selectors on the heading (`[&_strong]:font-bold`) on purpose. Two such
+  // rules — the heading's and `em`'s — would both match a `strong` inside an
+  // `em` inside a heading at identical specificity, leaving the winner to
+  // Tailwind's emission order, which puts `font-normal` before `font-bold` and
+  // would have resolved that case to an undeclared Space Grotesk 700 italic.
+  // `withProps` is already how this file tells a child what its parent knows.
+  //
+  // `strong` keeps 600 in ordinary prose: that mapping is the only thing in the
+  // whole product painting `JetBrains Mono|600|normal`, so dropping it would
+  // orphan a declared face and fail the parity check from the other direction.
+  strong: ({ children, inHeading, inEm }) =>
+    h(
+      "strong",
+      {
+        // Inside an `em` the weight has to be 400: italic is declared at 400
+        // only, so bolding it lands on an italic face that does not exist.
+        // `font-normal` is stated rather than left to inherit from the `em`,
+        // because omitting it does not inherit — Tailwind's preflight sets
+        // `b, strong { font-weight: bolder }`, which resolves against the
+        // parent and computed to 700 here, i.e. straight back onto an
+        // undeclared `JetBrains Mono|700|italic`. Measured; it is the same
+        // `bolder` behaviour `e2e/font-faces.spec.ts` warns about in its header.
+        //
+        // In a heading the weight axis is used up — matching the heading's 700
+        // is the only declared option — so the emphasis has to be carried by
+        // colour or not at all. Not at all is the wrong answer: it renders
+        // `**bold**` identically to the words around it, which silently
+        // discards what the author wrote. `text-primary` is the vocabulary `em`
+        // below already uses for emphasis, not a new one.
+        className: inEm
+          ? "text-foreground font-normal"
+          : inHeading
+            ? "text-primary font-bold"
+            : "text-foreground font-semibold",
+      },
+      children
+    ),
+  // `font-mono font-normal` pins emphasis to `JetBrains Mono|400|italic`, the
+  // one italic face that exists. In prose both are no-ops — the body is already
+  // mono at 400 — and in a heading they are the whole point: without them the
+  // heading's Space Grotesk 700 inherits into the `em` and the browser
+  // synthesizes an oblique of a family that ships none.
+  //
+  // The visible cost is a mixed-family heading, and it is the honest one. There
+  // is no Space Grotesk italic to reach for, so the alternatives were mono
+  // italic or silently discarding the author's emphasis; this keeps the
+  // emphasis, in the family the rest of the site is set in.
+  em: ({ children }) =>
+    h(
+      "em",
+      { className: "font-mono font-normal text-primary/80" },
+      withProps(children, () => ({ inEm: true }))
+    ),
   // Without an entry here a markdown link emits a bare <a>, and Tailwind's
   // preflight resets anchors to `color: inherit; text-decoration: inherit`.
   // That paints the link in the exact colour, weight and decoration as the
   // paragraph around it — indistinguishable from body text unless you happen
   // to hover it. Colour alone would not be enough anyway (WCAG 1.4.1), so the
   // underline is the part doing the real work.
-  a: ({ href, children }) =>
+  //
+  // A link is a pass-through for the emphasis context, not a consumer of it:
+  // `## Heading with [**a link**](url)` puts a `strong` two levels below the
+  // heading, so a mapping that only reached direct children would leave exactly
+  // that form painting an undeclared face. Measured — it was
+  // `Space Grotesk|600|normal` before this.
+  a: ({ href, children, inHeading, inEm }) =>
     h(
       "a",
       {
@@ -161,7 +237,7 @@ const components = {
         className:
           "text-primary underline underline-offset-2 decoration-primary/40 hover:decoration-primary transition-colors",
       },
-      children
+      withProps(children, () => ({ inHeading, inEm }))
     ),
 };
 
