@@ -22,26 +22,74 @@ const withProps = (children, propsFor) =>
 // This is deliberately the same renderer the page used to run, not a second
 // markdown implementation, so the emitted HTML is identical to what shipped
 // before rather than merely similar.
+// Every heading level renders through here, which is what keeps the set closed.
+// A level with no entry in `components` does not fall back to something plain —
+// it emits a bare tag, and two rules then meet: `src/index.css` puts every
+// `h1..h6` in `var(--font-display)`, while Tailwind's preflight sets
+// `h1..h6 { font-size: inherit; font-weight: inherit }`. So an unmapped heading
+// took Space Grotesk at weight 400 by inheritance from the body, and `fonts.css`
+// declares exactly one Space Grotesk face: 700 normal. Measured on `2f2bc06`,
+// `#### Heading` painted `Space Grotesk|400|normal` — undeclared, so the browser
+// snapped or synthesized — at `font-size: 14px` with `margin: 0`, i.e. the body's
+// own metrics. The heading was therefore invisible *as* a heading and wrong in
+// the face at the same time, with no emphasis involved and nothing going red
+// (PRA-1005). `e2e/post-emphasis-faces.spec.ts` now drives all six levels.
+//
+// `className` is spelled out per level rather than composed from a scale array
+// because Tailwind's scanner reads this file as text: a class assembled at
+// runtime (`text-${size}`) is never emitted into the stylesheet, and the markup
+// would reference a rule that does not exist.
+const heading = (tag, className) => ({ children }) =>
+  h(
+    tag,
+    { className },
+    // `inHeading` tells the emphasis mappings below that they are painting on
+    // Space Grotesk 700 — the only display face declared — so a `strong` here
+    // must match that weight rather than hard-set its own. See the `strong`
+    // comment for why this is a prop and not a descendant selector. Every level
+    // below is `font-display font-bold`, so every level needs this: without it
+    // `#### Heading with **bold**` resolves `strong`'s prose weight of 600
+    // against the display family and lands on `Space Grotesk|600|normal`, which
+    // is the PRA-1004 defect reintroduced one level down.
+    withProps(children, () => ({ inHeading: true }))
+  );
+
+const H2_CLASS =
+  "font-display text-2xl lg:text-3xl font-bold text-foreground mt-12 mb-6 border-l-2 border-primary pl-4";
+
 const components = {
-  // `inHeading` tells the emphasis mappings below that they are painting on
-  // Space Grotesk 700 — the only display face declared — so a `strong` here
-  // must match that weight rather than hard-set its own. See the `strong`
-  // comment for why this is a prop and not a descendant selector.
-  h2: ({ children }) =>
-    h(
-      "h2",
-      {
-        className:
-          "font-display text-2xl lg:text-3xl font-bold text-foreground mt-12 mb-6 border-l-2 border-primary pl-4",
-      },
-      withProps(children, () => ({ inHeading: true }))
-    ),
-  h3: ({ children }) =>
-    h(
-      "h3",
-      { className: "font-display text-xl font-bold text-foreground mt-10 mb-4" },
-      withProps(children, () => ({ inHeading: true }))
-    ),
+  // A post page spends its `<h1>` on the title (`src/pages/BlogPost.tsx`), which
+  // renders above and outside this body. A `#` in the markdown is the author
+  // asking for the top *body* level, and on this page that level is `h2` — so
+  // this emits an `h2` element rather than a second `h1`, and gets the `h2`
+  // styling with it. Rendering the `h1` tag would leave the document with two
+  // level-1 headings, which is what a screen-reader user navigating by level
+  // actually hears; the visual result is identical either way.
+  //
+  // Only `h1` is renumbered. Shifting the whole scale down would renumber the
+  // 190 `##`/`###` headings the 24 existing posts already use and break the
+  // outline they have; the author's *relative* levels are the part worth
+  // preserving, and `h1` is special only because the page has already spent it.
+  h1: heading("h2", H2_CLASS),
+  h2: heading("h2", H2_CLASS),
+  h3: heading(
+    "h3",
+    "font-display text-xl font-bold text-foreground mt-10 mb-4"
+  ),
+  // `h4`-`h6` continue the ramp down from `h3`'s `text-xl`, in the same
+  // vocabulary — display face, bold, `text-foreground` — with the top margin
+  // shrinking alongside it so a deep subsection does not open as much space as a
+  // section. `h6` lands on `text-sm`, the body's own size: the size axis runs
+  // out before the levels do, and family (Space Grotesk against the body's
+  // JetBrains Mono), weight and colour still separate it from the prose. Going
+  // smaller than the body text to buy one more step would make the deepest
+  // heading the least legible thing on the page.
+  h4: heading("h4", "font-display text-lg font-bold text-foreground mt-8 mb-3"),
+  h5: heading(
+    "h5",
+    "font-display text-base font-bold text-foreground mt-6 mb-2"
+  ),
+  h6: heading("h6", "font-display text-sm font-bold text-foreground mt-4 mb-2"),
   p: ({ children }) =>
     h(
       "p",
