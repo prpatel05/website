@@ -158,26 +158,42 @@ const Hero = () => {
         />
       </m.div>
 
-      {/* Terminal-like status bar with parallax */}
+      {/*
+        Terminal-like status bar with parallax.
+
+        The entrance is a level in from the fade, and has to be: `fade` hands
+        the same `opacity` MotionValue to all three elements here, and an
+        `initial` naming `opacity` on an element that also binds it does not
+        animate that element — framer writes the initial straight into the
+        shared value when the element mounts, which zeroes the fade for the
+        hero column too. Nested, the two opacities land on two elements and the
+        browser composites them, which is the intended reading anyway: the
+        entrance plays, and the scroll fade takes the result away. See
+        `useParallaxFade` (PRA-979).
+      */}
       <m.div
-        initial={entrance({ opacity: 0, x: -20 })}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 1.2, duration: 0.6 }}
         style={{ x: statusX, ...fade }}
-        className="absolute top-24 left-8 hidden lg:flex flex-col gap-4 font-mono text-[10px] text-muted-foreground"
+        className="absolute top-24 left-8 hidden lg:block font-mono text-[10px] text-muted-foreground"
       >
-        <div className="flex items-center gap-2">
-          <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
-          <span>SYSTEM ONLINE</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="w-1.5 h-1.5 bg-accent rounded-full" />
-          <span>WASHINGTON, DC</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="w-1.5 h-1.5 bg-primary/50 rounded-full" />
-          <span>11+ YRS EXP</span>
-        </div>
+        <m.div
+          initial={entrance({ opacity: 0, x: -20 })}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 1.2, duration: 0.6 }}
+          className="flex flex-col gap-4"
+        >
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
+            <span>SYSTEM ONLINE</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 bg-accent rounded-full" />
+            <span>WASHINGTON, DC</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 bg-primary/50 rounded-full" />
+            <span>11+ YRS EXP</span>
+          </div>
+        </m.div>
       </m.div>
 
       {/*
@@ -327,22 +343,26 @@ const Hero = () => {
         </m.div>
       </m.div>
 
-      {/* Scroll indicator */}
+      {/* Scroll indicator. Entrance nested inside the fade — see the status bar. */}
       <m.div
-        initial={entrance({ opacity: 0 })}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.5, duration: 0.5 }}
         style={{ ...fade }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+        className="absolute bottom-8 left-1/2 -translate-x-1/2"
       >
-        <span className="font-mono text-[10px] text-muted-foreground tracking-widest">SCROLL</span>
-        {/* Another endless loop — see the note on the drifting shapes above. */}
         <m.div
-          animate={{ y: [0, 8, 0] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-          className="w-px h-8 bg-gradient-to-b from-primary/50 to-transparent"
-          suppressHydrationWarning
-        />
+          initial={entrance({ opacity: 0 })}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.5, duration: 0.5 }}
+          className="flex flex-col items-center gap-2"
+        >
+          <span className="font-mono text-[10px] text-muted-foreground tracking-widest">SCROLL</span>
+          {/* Another endless loop — see the note on the drifting shapes above. */}
+          <m.div
+            animate={{ y: [0, 8, 0] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+            className="w-px h-8 bg-gradient-to-b from-primary/50 to-transparent"
+            suppressHydrationWarning
+          />
+        </m.div>
       </m.div>
     </section>
   );
