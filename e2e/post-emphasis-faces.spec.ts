@@ -75,6 +75,24 @@ const FORMS = [
   { name: "bold in an h3", md: "### Heading with **bold** in it" },
   { name: "italic in an h3", md: "### Heading with *italic* in it" },
   { name: "nested emphasis in an h3", md: "### Heading with ***both*** in it" },
+  // The four levels the renderer did not map until PRA-1005. The bare rows are
+  // the point of that issue: they carry no emphasis at all, so they failed on
+  // the heading's own text. The emphasis rows guard the `inHeading` threading
+  // the new mappings need — without it they land on `Space Grotesk|600|normal`,
+  // which is PRA-1004 reintroduced one level down.
+  { name: "bare h1", md: "# Heading" },
+  { name: "bare h4", md: "#### Heading" },
+  { name: "bare h5", md: "##### Heading" },
+  { name: "bare h6", md: "###### Heading" },
+  { name: "bold in an h1", md: "# Heading with **bold** in it" },
+  { name: "italic in an h1", md: "# Heading with *italic* in it" },
+  { name: "nested emphasis in an h1", md: "# Heading with ***both*** in it" },
+  { name: "bold in an h4", md: "#### Heading with **bold** in it" },
+  { name: "italic in an h4", md: "#### Heading with *italic* in it" },
+  { name: "nested emphasis in an h4", md: "#### Heading with ***both*** in it" },
+  { name: "bold in an h5", md: "##### Heading with **bold** in it" },
+  { name: "bold in an h6", md: "###### Heading with **bold** in it" },
+  { name: "bold inside a link in an h4", md: "#### Heading with [**a link**](https://example.com)" },
   { name: "bold inside a link in an h2", md: "## Heading with [**a link**](https://example.com)" },
   { name: "italic inside a link in an h2", md: "## Heading with [*a link*](https://example.com)" },
   { name: "code in an h2", md: "## Heading with `code` in it" },
@@ -91,21 +109,25 @@ const FORMS = [
 ] as const;
 
 /**
- * Known gap, deliberately not covered here: `h1` and `h4`-`h6` (PRA-1005).
+ * Every markdown heading level, `#` through `######`, for the second test below.
  *
- * The renderer maps `h2` and `h3` only, so the others emit bare tags — and
- * `src/index.css` puts *every* `h1..h6` in `font-display` while preflight sets
- * `font-weight: inherit`, so they paint `Space Grotesk|400|normal`, which is
- * not declared either. Adding
+ * The renderer mapped `h2` and `h3` only until PRA-1005, so the other four
+ * emitted bare tags and took `font-size: inherit; font-weight: inherit` from
+ * Tailwind's preflight. Measured on `2f2bc06`, `#### Heading` rendered at 14px /
+ * 400 with `margin: 0` — the body's own metrics — so it was not merely on an
+ * undeclared face, it did not read as a heading at all.
  *
- *   { name: "emphasis in an unmapped h1", md: "# Heading with **bold**" },
- *
- * to `FORMS` reproduces it, and it was measured that way before being pulled
- * back out. It is filed rather than fixed here because it is not an emphasis
- * bug — `# Heading` alone is enough — and closing it means choosing a type
- * scale for `h4`-`h6`, which is a design call and not this file's business.
- * No post on any branch uses those levels (531 content files scanned).
+ * That half is invisible to the face test above: a heading sized like body text
+ * still paints `Space Grotesk|700|normal` the moment someone gives it
+ * `font-bold`, and the face assertion goes green while the type scale is wrong.
+ * So the levels are measured here as well, against the paragraph they sit next
+ * to rather than against hard-coded pixels — the ramp is a design choice and may
+ * be retuned; "a heading outranks the prose around it" is the invariant.
  */
+const LEVELS = [1, 2, 3, 4, 5, 6].map((level) => ({
+  level,
+  md: `${"#".repeat(level)} Heading level ${level}`,
+}));
 
 
 const DECLARED = declaredFaces();
@@ -180,5 +202,88 @@ test("no emphasis a post can contain paints an undeclared font face", async ({ p
       `snaps to a neighbouring weight or synthesizes an oblique with nothing going red. ` +
       `Declared: ${[...DECLARED].sort().join(", ")}. ` +
       `Adding the missing faces is not the fix — see the header of this file.`
+  ).toEqual([]);
+});
+
+test("every heading level a post can contain renders as a heading", async ({ page }) => {
+  // The renderer half, checked before the browser is involved: a level with no
+  // entry in the component map emits a bare tag and therefore carries no class.
+  // This is the cheapest possible statement of "the set is closed", and it is
+  // the check that would have caught PRA-1005 at the moment the map was written.
+  const rendered = LEVELS.map(({ level, md }) => ({ level, html: renderMarkdownToHtml(md) }));
+  expect(
+    rendered.filter((r) => !/^<h[1-6] class="/.test(r.html)).map((r) => `h${r.level}: ${r.html}`),
+    `these heading levels emitted a bare tag, so the renderer has no mapping for them. ` +
+      `An unmapped heading still takes font-display from src/index.css but font-size and ` +
+      `font-weight from Tailwind's preflight, i.e. the body's — an undeclared face at body ` +
+      `size with no margins (PRA-1005).`
+  ).toEqual([]);
+
+  await page.goto(POST);
+  await page.waitForSelector("[data-post-body]");
+  await page.evaluate(() => document.fonts.ready);
+
+  // Every level plus a paragraph in one body, so the comparison is against the
+  // prose as it actually renders in this container rather than against a
+  // remembered pixel value.
+  const html = rendered.map((r) => r.html).join("") + renderMarkdownToHtml("Ordinary prose.");
+  const measured = await page.evaluate((body) => {
+    const host = document.querySelector("[data-post-body]") as HTMLElement;
+    host.innerHTML = body;
+    void host.offsetWidth;
+    const read = (el: Element) => {
+      const s = getComputedStyle(el);
+      return {
+        tag: el.tagName.toLowerCase(),
+        family: s.fontFamily.split(",")[0].replace(/["']/g, "").trim(),
+        weight: Number(s.fontWeight),
+        size: parseFloat(s.fontSize),
+        marginTop: parseFloat(s.marginTop),
+      };
+    };
+    return {
+      headings: [...host.querySelectorAll("h1,h2,h3,h4,h5,h6")].map(read),
+      prose: read(host.querySelector("p")!),
+    };
+  }, html);
+
+  expect(measured.headings, "one rendered element per markdown level").toHaveLength(LEVELS.length);
+
+  // A body `#` renders as an `h2`: the post title above this container is the
+  // page's `<h1>`, and a second one would leave a screen-reader user two
+  // level-1 headings to choose between. Asserted rather than left implicit —
+  // it is a deliberate renumbering, and the kind that gets "tidied" back.
+  expect(
+    measured.headings.map((row) => row.tag),
+    "a markdown h1 should be demoted to h2; the post title owns the page's only h1"
+  ).toEqual(["h2", "h2", "h3", "h4", "h5", "h6"]);
+
+  const failures: string[] = [];
+  for (const row of measured.headings) {
+    // Family and weight are what put the text on a declared face; size and
+    // margin are what make it legible as a heading. The original defect broke
+    // all four at once, and any one of them alone is still a defect.
+    if (row.family === measured.prose.family)
+      failures.push(`${row.tag}: same family as prose (${row.family})`);
+    if (row.weight !== 700) failures.push(`${row.tag}: weight ${row.weight}, expected 700`);
+    if (row.size < measured.prose.size)
+      failures.push(`${row.tag}: ${row.size}px, smaller than the ${measured.prose.size}px prose`);
+    if (row.marginTop <= 0) failures.push(`${row.tag}: margin-top ${row.marginTop}px`);
+  }
+
+  // The ramp itself: each level must be no larger than the one above it. `h1`
+  // and `h2` share a size by construction, hence `<=` and not `<` — the size
+  // axis also runs out at `h6`, which sits at the body's own size and is
+  // separated from the prose by family, weight and colour instead.
+  for (let i = 1; i < measured.headings.length; i++) {
+    const [prev, cur] = [measured.headings[i - 1], measured.headings[i]];
+    if (cur.size > prev.size)
+      failures.push(`${cur.tag} (${cur.size}px) is larger than ${prev.tag} (${prev.size}px)`);
+  }
+
+  expect(
+    failures,
+    `a heading must outrank the prose around it and the levels must descend. ` +
+      `Measured prose at ${measured.prose.size}px/${measured.prose.weight} ${measured.prose.family}.`
   ).toEqual([]);
 });
