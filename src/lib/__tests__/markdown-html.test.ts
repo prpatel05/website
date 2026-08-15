@@ -19,7 +19,53 @@ describe("markdown rendered at build time", () => {
     // would lose the ▸ the design uses instead of a list marker.
     expect(html).toContain('<span class="text-primary shrink-0 mt-1.5">▸</span>');
     expect(html).toContain('<strong class="text-foreground font-semibold">');
-    expect(html).toContain('<em class="text-primary/80">');
+    expect(html).toContain('<em class="font-mono font-normal text-primary/80">');
+  });
+
+  // Which face these classes resolve to is a browser question, and
+  // `e2e/post-emphasis-faces.spec.ts` is what answers it — it renders these
+  // same forms and reads back the computed (family, weight, style). This is the
+  // cheap half: the markup shape that fix depends on. Both halves are needed,
+  // because a class string proves nothing about the cascade and the browser
+  // test cannot say *why* a form resolved the way it did.
+  //
+  // fonts.css declares one Space Grotesk face (700 normal) and no italic
+  // outside JetBrains Mono 400, so emphasis in a heading has nowhere to move
+  // to; PRA-1004 measured four forms painting faces that do not exist.
+  it("keeps emphasis on a declared face wherever it lands", () => {
+    // In a heading, `strong` matches the heading's 700 instead of hard-setting
+    // 600 — which was both undeclared and, against a `font-bold` heading, a
+    // de-emphasis: asking for bold made the text lighter. Matching the weight
+    // leaves colour as the only way to show the emphasis at all, so the colour
+    // is asserted too: without it `**bold**` renders identically to the heading
+    // around it and the author's markup does nothing.
+    expect(renderMarkdownToHtml("## Heading with **bold**")).toContain(
+      '<strong class="text-primary font-bold">bold</strong>'
+    );
+    expect(renderMarkdownToHtml("A paragraph with **bold**.")).toContain(
+      '<strong class="text-foreground font-semibold">bold</strong>'
+    );
+
+    // `em` pins family and weight so italic always lands on JetBrains Mono 400
+    // italic, the only italic face there is, rather than a synthesized oblique
+    // of a family that ships none.
+    expect(renderMarkdownToHtml("## Heading with *italic*")).toContain(
+      '<em class="font-mono font-normal text-primary/80">italic</em>'
+    );
+
+    // Nested emphasis: the inner `strong` states 400 rather than inheriting it.
+    // Preflight's `b, strong { font-weight: bolder }` resolves against the
+    // parent, so an omitted class computes to 700 — an italic face that is not
+    // declared either.
+    expect(renderMarkdownToHtml("Prose with ***both***.")).toContain(
+      '<strong class="text-foreground font-normal">both</strong>'
+    );
+
+    // A link is a pass-through: `[**a link**](url)` in a heading puts the
+    // `strong` two levels down, where a direct-children-only fix misses it.
+    expect(renderMarkdownToHtml("## Heading with [**a link**](https://example.com)")).toContain(
+      '<strong class="text-primary font-bold">a link</strong>'
+    );
   });
 
   // A link the reader cannot see is a citation that does not exist. Tailwind's
