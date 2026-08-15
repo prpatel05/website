@@ -139,7 +139,14 @@ const About = () => {
                         <span className="font-mono text-xs text-foreground/80">{skill.name}</span>
                         <span className="font-mono text-xs text-primary">{skill.level}%</span>
                       </div>
-                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                      {/*
+                        The track is a background colour and the fill below is a gradient
+                        (a background *image*). Forced colours flatten the first to Canvas
+                        and remove the second outright, so all seven bars render as empty
+                        space. Re-draw the meter in system colours: an outlined track and a
+                        Highlight fill. See PRA-998.
+                      */}
+                      <div className="h-1.5 bg-muted rounded-full overflow-hidden forced-colors:border forced-colors:border-[CanvasText]">
                         <m.div
                           // Every other `entrance` call animates opacity or a transform, whose
                           // CSS default is already the resting state — so suppressing `initial`
@@ -152,7 +159,7 @@ const About = () => {
                           whileInView={{ width: `${skill.level}%` }}
                           viewport={{ once: true }}
                           transition={{ delay: 0.6 + i * 0.08, duration: 0.8, ease: "easeOut" }}
-                          className="h-full bg-gradient-to-r from-primary to-accent rounded-full"
+                          className="h-full bg-gradient-to-r from-primary to-accent rounded-full forced-colors:bg-[Highlight]"
                         />
                       </div>
                     </m.div>

@@ -299,7 +299,11 @@ const Hero = () => {
           >
             <a
               href="#contact"
-              className="font-mono text-sm bg-primary text-primary-foreground px-6 py-3 hover:bg-primary/90 transition-colors box-glow text-center"
+              // This button is drawn entirely with `background-color` (plus `box-glow`).
+              // Forced colours flatten the background to Canvas and drop box-shadow, so
+              // with no border it renders as bare link text — less button-like than the
+              // bordered secondary CTA beside it. See PRA-998.
+              className="font-mono text-sm bg-primary text-primary-foreground px-6 py-3 hover:bg-primary/90 transition-colors box-glow text-center forced-colors:border forced-colors:border-[ButtonText]"
             >
               ./contact --init
             </a>
