@@ -102,13 +102,37 @@ export function useParallax<T extends string | number>(
  * the invisible link out of the tab order and the accessibility tree, which is
  * the same defect for anyone not using a pointer.
  *
- * Both are driven off `progress` rather than off the returned `opacity`,
- * because that one does not stay in JS: framer hands a scroll-linked opacity to
- * a native ViewTimeline animation, so the inline style still reads `opacity: 1`
- * while the painted value is 0.004. `transform()` is the same clamped
- * interpolator `useTransform` builds, so the gate and the fade cannot drift —
- * and the clamp is why the ViewTimeline's rebound back to 0.4 past the end of
- * the range (out of view, behind the navbar) stays untappable too.
+ * Both are driven off `progress` rather than off the returned `opacity`.
+ * `transform()` is the same clamped interpolator `useTransform` builds, so the
+ * gate and the fade cannot drift — and the clamp is why a rebound past the end
+ * of the range (out of view, behind the navbar) stays untappable too.
+ *
+ * That invariant needs the opacity to stay on the JS path, which is why it is
+ * built from a function transformer below rather than from an array range.
+ * `useScroll({ target })` marks its progress value accelerable, and
+ * `useTransform` propagates that mark to any value derived from it through an
+ * array range — at which point framer stops writing the opacity itself and
+ * hands it to a native scroll-linked animation. Which timeline it gets is then
+ * decided by whether the target ref happened to be populated when framer built
+ * the animation: on a fresh load at `/` the hero got a `ViewTimeline` over its
+ * own section, but on a client-side arrival the ref was still null and it got a
+ * `ScrollTimeline` over the whole document instead. The fade then ran over
+ * ~4000px of document rather than the section's ~850px, so the hero was still
+ * 77% opaque where the design has it gone, sitting over the top of About —
+ * while the gate, computed here in JS off the correct `progress`, slammed shut
+ * at the section boundary and made it pop. Gate and paint had drifted onto two
+ * different ranges, which is exactly what this hook promises cannot happen
+ * (PRA-979).
+ *
+ * A function transformer is not accelerable, so the paint stays on `progress`
+ * and both readings come from one source. The opacity gives up the compositor
+ * for it; that costs this caller nothing, because the same element's `y` and
+ * `scale` are already JS-driven and write the same style on the same frame.
+ *
+ * One `opacity` value is shared by every element the caller spreads this into,
+ * so none of them may declare an `opacity` of their own: framer writes an
+ * `initial` straight into the bound value at mount, which would zero the fade
+ * for all of them. See the nesting in `Hero.tsx`.
  *
  * Spread into `style`. For `prefers-reduced-motion` it returns nothing at all,
  * matching `useParallax`: there the fade never runs, the element stays fully
@@ -122,8 +146,12 @@ export function useParallaxFade(
   output: number[],
   hold = false
 ): ScrollFade {
-  const opacity = useTransform(progress, input, output);
   const toOpacity = transform(input, output);
+  // Passed as a *function* rather than as `(progress, input, output)`, which is
+  // load-bearing: framer only hands a derived value to the compositor when it
+  // was built from an array range, so the array form is what put the paint on a
+  // timeline of framer's choosing rather than on `progress`. See above.
+  const opacity = useTransform(progress, toOpacity);
   const interactive = useTransform(progress, (p) => toOpacity(p) >= MIN_INTERACTIVE_OPACITY);
   const pointerEvents = useTransform(interactive, (on) => (on ? "auto" : "none"));
   const visibility = useTransform(interactive, (on) => (on ? "visible" : "hidden"));
