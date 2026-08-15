@@ -429,7 +429,9 @@ const BlogPost = () => {
               </p>
               <Link
                 to="/blog/"
-                className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 hover:bg-primary/90 transition-colors"
+                // Background-only button: forced colours flatten it to Canvas, so it needs
+                // a real border to stay identifiable as a control. See PRA-998.
+                className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 hover:bg-primary/90 transition-colors forced-colors:border forced-colors:border-[ButtonText]"
               >
                 <ArrowLeft className="w-4 h-4" />
                 cd ~/blog
