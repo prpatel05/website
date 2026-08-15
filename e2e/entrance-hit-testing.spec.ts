@@ -203,8 +203,80 @@ async function scrollTo(page: Page, y: number) {
  * reader can plainly see. Measured at 393x852 on a client-side arrival, at the
  * one stop that carries the CTAs: at 1550ms `./contact --init` was at opacity
  * 0.909 with 0 of 180 points topmost, at 1600ms it was 180 of 180 (PRA-978).
+ *
+ * This is how much time the entrance gets; `settle` below is what makes it
+ * time the entrance actually receives. Raising this number was the wrong fix
+ * for PRA-993 and would be the wrong fix again — a wall-clock wait can be
+ * arbitrarily long and still hand a frame-stepped animation nothing.
  */
 const SETTLED_MS = 2400;
+
+/**
+ * Advances `SETTLED_MS` of *animation* time, which is not the same quantity as
+ * `SETTLED_MS` of wall clock and is the one the entrance actually runs on.
+ *
+ * framer steps a tween from `requestAnimationFrame`, so its progress is
+ * denominated in frames the page produced, not in seconds that passed. Those
+ * come apart: the page under test intermittently stops producing frames
+ * entirely while Playwright is sleeping, and a tween cannot advance through a
+ * gap it is never called back in.
+ *
+ * Measured at 393x852 over 30 arrivals, comparing `document.timeline.currentTime`
+ * — which only moves when a frame is produced — against `performance.now()`
+ * across a 2400ms `waitForTimeout`. 28 of them produced 2400ms of frames for
+ * 2404ms of wall clock. Two did not: one got 933ms of frames in 3493ms, and one
+ * got **383ms in 2417ms**, a 2033ms stall in which framer wrote no style at all
+ * and the card was still at `opacity: 0` with `pointer-events: none` when the
+ * assertion read it. That is this file's `Received: 0` (PRA-993), and the
+ * sibling reading a stall of only a few hundred ms produces — the entrance
+ * landed but `onAnimationComplete` had not — is its `never became tappable
+ * again`. One cause, two messages.
+ *
+ * Waiting on frames rather than on the clock fixes both, and is not merely a
+ * longer wait: a pending `requestAnimationFrame` is itself what keeps the page
+ * producing frames, so the starvation does not happen, and the budget the
+ * entrance is given is the same 2400ms it was always meant to get. The
+ * assertion keeps all its strength — a gate that never releases still runs the
+ * budget out and still fails.
+ *
+ * Nothing here is a defect the reader can hit. A browser that is painting for
+ * someone produces frames, and a stalled entrance fails safe in any case: the
+ * card stays invisible *and* untapped, which is the contract, not the breach.
+ * The starvation is Chromium going idle behind a sleeping test runner.
+ */
+async function settle(page: Page) {
+  const budget = await page.evaluate(async (ms) => {
+    const wall0 = performance.now();
+    const frame0 = Number(document.timeline.currentTime);
+    // A ceiling, so a page that genuinely never paints again fails with the
+    // reading below instead of hanging until Playwright's own timeout.
+    const deadline = wall0 + ms * 4;
+
+    await new Promise<void>((resolve) => {
+      const tick = () => {
+        if (
+          Number(document.timeline.currentTime) - frame0 >= ms ||
+          performance.now() >= deadline
+        ) {
+          resolve();
+        } else {
+          requestAnimationFrame(tick);
+        }
+      };
+      requestAnimationFrame(tick);
+    });
+
+    return {
+      wall: Math.round(performance.now() - wall0),
+      framed: Math.round(Number(document.timeline.currentTime) - frame0),
+    };
+  }, SETTLED_MS);
+
+  expect(
+    budget.framed,
+    `the page produced only ${budget.framed}ms of frames in ${budget.wall}ms of wall clock, so an entrance stepped from requestAnimationFrame has not had its ${SETTLED_MS}ms and anything read now is mid-animation`,
+  ).toBeGreaterThanOrEqual(SETTLED_MS);
+}
 
 test.describe("Entrance animations do not leave invisible links taking taps", () => {
   test.use({ viewport: PHONE });
@@ -294,7 +366,7 @@ test.describe("Entrance animations do not leave invisible links taking taps", ()
     const best = new Map<string, Reading & { y: number }>();
     for (const y of stops) {
       await scrollTo(page, y);
-      await page.waitForTimeout(SETTLED_MS);
+      await settle(page);
       for (const r of await sampleLinks(page)) {
         if (r.opacity >= READABLE_OPACITY && r.onTop > 0) readable.add(r.key);
         const seen = best.get(r.key);
@@ -376,12 +448,24 @@ test.describe("Entrance animations do not leave invisible links taking taps", ()
 
       // ...and it has to come back. A gate that never releases is the same
       // defect with the sign flipped.
-      await page.waitForTimeout(SETTLED_MS);
+      await settle(page);
       const after = (await sampleLinks(page)).find((r) => r.key.includes(title));
-      expect(after?.opacity, `card "${title}" never finished its entrance`).toBeGreaterThanOrEqual(
-        READABLE_OPACITY,
-      );
-      expect(after?.onTop, `card "${title}" never became tappable again`).toBeGreaterThan(0);
+      // Asked first, and separately, because the two answers are not
+      // distinguishable further down: `after?.opacity` on a card that dropped
+      // out of the sample is `undefined`, and a card that is genuinely
+      // transparent reads 0 — both fail the same assertion under the same
+      // message, and they want opposite fixes. Dropping out means the jump no
+      // longer puts this card on screen, which is a broken case rather than a
+      // broken page.
+      expect(
+        after,
+        `card "${title}" was on screen for the reading before the settle and is not in the sample after it — the case moved, so it is not evidence about the entrance`,
+      ).toBeDefined();
+      expect(
+        after!.opacity,
+        `card "${title}" never finished its entrance`,
+      ).toBeGreaterThanOrEqual(READABLE_OPACITY);
+      expect(after!.onTop, `card "${title}" never became tappable again`).toBeGreaterThan(0);
     }
   });
 
@@ -397,7 +481,7 @@ test.describe("Entrance animations do not leave invisible links taking taps", ()
       () => document.documentElement.scrollHeight,
     );
     await scrollTo(page, height);
-    await page.waitForTimeout(SETTLED_MS);
+    await settle(page);
 
     const readings = await sampleLinks(page);
     expect(readings.length).toBeGreaterThan(0);
