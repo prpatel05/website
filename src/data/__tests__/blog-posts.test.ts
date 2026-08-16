@@ -261,6 +261,12 @@ describe("blog-posts data", () => {
       "See [the post][ref] here.\n\n[ref]:\n  /blog/foo\n",
       "See [the post][ref] here.\n\n[ref]: /og/foo.png\n",
       "See [the post][ref] here.\n\n[ref]: https://example.com/x\n",
+      // Definitions stack, so a block's leading run is read to its end. The
+      // slashless one here sits second, behind a correct one — reading only
+      // the first definition per block passes this row for the wrong reason.
+      "See [a][x] and [b][y].\n\n[x]: /blog/one/\n[y]: /blog/two\n",
+      "See [a][x] and [b][y].\n\n[x]: /blog/one/\n[y]: /blog/two/\n",
+      "See [a][x].\n\n[x]: /blog/one\nTrailing prose.\n",
       "Text here.\n[ref]: /blog/foo\n\nSee [the post][ref] there.\n",
       "See `[the post](/blog/foo)` here.",
       "```\n[ref]: /blog/foo\n```\n\nSee the post here.\n",
