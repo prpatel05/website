@@ -117,6 +117,64 @@ const unsupportedIn = (markdown: string) =>
     ).map((match) => ({ label, use, text: match[0] }))
   );
 
+// [text](destination). The destination is either <bracketed> or runs to the
+// first whitespace or closing paren; stopping at whitespace drops the optional
+// "title" that may follow it, which the older `[^)]*` swallowed into the path
+// and then reported as a slashless link.
+const INLINE_TARGET = /\]\([ \t]*(<[^<>\n]*>|[^\s()]*)/g;
+
+// [ref]: destination, the other half of a [text][ref], [text][] or bare [text]
+// link. Indented up to three spaces, because four makes it an indented code
+// block that renders nothing, and the destination may sit on the next line.
+//
+// The negative lookahead skips a footnote definition ([^1]: Source.), which is
+// shaped identically. See the test below for why that is safe rather than a
+// hole (PRA-1010, PRA-1021).
+const DEFINITION =
+  /^[ \t]{0,3}\[(?!\^)[^\]\n]+\]:[ \t]*(?:\n[ \t]*)?(<[^<>\n]*>|\S+)[^\n]*/;
+
+// Angle brackets around a destination are delimiters, not part of the href.
+const destination = (raw: string) => raw.replace(/^<(.*)>$/, "$1");
+
+// Every markdown form that can put a site-internal path in an href. There are
+// two syntaxes, not one: the inline [text](/path/), and the link reference
+// definition — [ref]: /path/ on its own line, paired elsewhere with
+// [text][ref], [text][] or a bare [text]. Measured 2026-08-16 against
+// scripts/markdown-html.mjs, every definition spelling emits a byte-identical
+// href="/path", and until PRA-1021 this read only the inline one — so four of
+// the five ways to write an internal link shipped the redirect unflagged.
+const internalHrefs = (markdown: string) => {
+  const body = stripCode(markdown);
+
+  // A definition parses only at the start of a block. One folded into a
+  // paragraph is lazy continuation — literal text that renders no anchor at
+  // all — so each block contributes only its leading run of definition lines.
+  const defined = body.split(/\n[ \t]*\n/).flatMap((block) => {
+    const hrefs: string[] = [];
+
+    for (let rest = block; ; ) {
+      const match = DEFINITION.exec(rest);
+      if (!match) return hrefs;
+
+      hrefs.push(match[1]);
+      rest = rest.slice(match[0].length).replace(/^\n/, "");
+    }
+  });
+
+  return [...Array.from(body.matchAll(INLINE_TARGET), (m) => m[1]), ...defined]
+    .map(destination)
+    .filter((href) => href.startsWith("/"));
+};
+
+// Every pratik.pa.tel path 301s to its slash form, with one exception: a path
+// whose last segment carries an extension is a file, not a directory index,
+// and is served exactly as written.
+const redirects = (href: string) => {
+  const [path] = href.split(/[?#]/);
+  const lastSegment = path.slice(path.lastIndexOf("/") + 1);
+  return !path.endsWith("/") && !lastSegment.includes(".");
+};
+
 describe("blog-posts data", () => {
   it("exports a non-empty posts array", () => {
     expect(Array.isArray(posts)).toBe(true);
@@ -164,19 +222,90 @@ describe("blog-posts data", () => {
   // through a redirect that the rest of the site no longer emits.
   it("writes internal links in a post body in their non-redirecting form", () => {
     const offenders = posts.flatMap((post) =>
-      Array.from(markdownSource(post.slug).matchAll(/\]\((\/[^)]*)\)/g))
-        .map((match) => match[1])
-        // A path whose last segment carries an extension is a file, not a
-        // directory index, and is served without a redirect.
-        .filter((href) => {
-          const [path] = href.split(/[?#]/);
-          const lastSegment = path.slice(path.lastIndexOf("/") + 1);
-          return !path.endsWith("/") && !lastSegment.includes(".");
-        })
+      internalHrefs(markdownSource(post.slug))
+        .filter(redirects)
         .map((href) => `${post.slug}: ${href}`)
     );
 
     expect(offenders).toEqual([]);
+  });
+
+  // The corpus check above passes on every published post and banked draft,
+  // and passed just as green while it could only see one of the two syntaxes
+  // that emit an href. A rule about what the renderer emits can only be
+  // checked against the renderer, so this asks both the same question and
+  // requires one answer: a form is flagged if and only if the href it renders
+  // would 301.
+  //
+  // Each row is written at the start of a block, which is where a link
+  // reference definition parses. A definition-shaped line folded into a
+  // paragraph is lazy continuation — literal text, no anchor — and is skipped
+  // for that reason rather than flagged (PRA-1021).
+  it("flags an internal link if and only if the href it renders redirects", () => {
+    const forms = [
+      "See [the post](/blog/foo) here.",
+      "See [the post](/blog/foo/) here.",
+      'See [the post](/blog/foo/ "Title") here.',
+      "See [the post](</blog/foo>) here.",
+      "See [the post](/og/foo.png) here.",
+      "See [the post](https://example.com/x) here.",
+      "See [the post][ref] here.\n\n[ref]: /blog/foo\n",
+      "See [the post][ref] here.\n\n[ref]: /blog/foo/\n",
+      "See [the post][] here.\n\n[the post]: /blog/foo\n",
+      "See [the post] here.\n\n[the post]: /blog/foo\n",
+      "- [the post][ref]\n\n[ref]: /blog/foo\n",
+      'See [the post][ref] here.\n\n[ref]: /blog/foo "Title"\n',
+      "See [the post][ref] here.\n\n[ref]: </blog/foo>\n",
+      "See [the post][ref] here.\n\n   [ref]: /blog/foo\n",
+      "See [the post][ref] here.\n\n    [ref]: /blog/foo\n",
+      "See [the post][ref] here.\n\n[ref]:\n  /blog/foo\n",
+      "See [the post][ref] here.\n\n[ref]: /og/foo.png\n",
+      "See [the post][ref] here.\n\n[ref]: https://example.com/x\n",
+      // Definitions stack, so a block's leading run is read to its end. The
+      // slashless one here sits second, behind a correct one — reading only
+      // the first definition per block passes this row for the wrong reason.
+      "See [a][x] and [b][y].\n\n[x]: /blog/one/\n[y]: /blog/two\n",
+      "See [a][x] and [b][y].\n\n[x]: /blog/one/\n[y]: /blog/two/\n",
+      "See [a][x].\n\n[x]: /blog/one\nTrailing prose.\n",
+      "Text here.\n[ref]: /blog/foo\n\nSee [the post][ref] there.\n",
+      "See `[the post](/blog/foo)` here.",
+      "```\n[ref]: /blog/foo\n```\n\nSee the post here.\n",
+    ];
+
+    const disagreements = forms.flatMap((markdown) => {
+      // Only the site's own paths: `redirects` describes pratik.pa.tel's
+      // routing, and an absolute URL to another host says nothing about it.
+      const rendered = Array.from(
+        renderMarkdownToHtml(markdown).matchAll(/href="(\/[^"]*)"/g),
+        (match) => match[1]
+      );
+      const shipsARedirect = rendered.some(redirects);
+      const flagged = internalHrefs(markdown).filter(redirects);
+
+      return (flagged.length > 0) === shipsARedirect
+        ? []
+        : [
+            `${JSON.stringify(markdown)} renders ${JSON.stringify(rendered)}` +
+              (shipsARedirect
+                ? " and nothing flags it"
+                : ` but is flagged as ${JSON.stringify(flagged)}`),
+          ];
+    });
+
+    expect(disagreements).toEqual([]);
+  });
+
+  // The scan skips a definition whose label opens with `^`, because a footnote
+  // definition is shaped identically. That would be a hole if nothing else saw
+  // the line: [^1]: /blog/foo does render href="/blog/foo". It is not silent —
+  // the unsupported-markdown rule rejects the footnote outright, and the fix
+  // it asks for is an inline link, which lands the path back under the gate.
+  it("leaves a footnote definition's internal path to the footnote rule", () => {
+    const labels = unsupportedIn("Claim.[^1]\n\n[^1]: /blog/foo\n").map(
+      ({ label }) => label
+    );
+
+    expect(labels).toContain("footnote");
   });
 
   // Brand v1.9 §The `$` Character, a hard stop the board mandated in PRA-640
