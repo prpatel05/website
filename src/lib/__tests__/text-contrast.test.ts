@@ -75,3 +75,90 @@ describe("text contrast", () => {
     expect(failing).toEqual([]);
   });
 });
+
+/**
+ * The hero's decorative particles are a *background* the copy gets painted on.
+ *
+ * Everything above checks ink against a surface. These check the surface
+ * itself. The particles live on a full-bleed `inset-0 pointer-events-none`
+ * layer under the hero's content and drift on infinite loops, so each one
+ * becomes the backdrop of whatever text it passes under. A `bg-accent` dot at
+ * `opacity-40` did exactly that to the hero subtitle, taking it to 4.11:1 for
+ * part of every 4s cycle.
+ *
+ * This is checked here rather than in the e2e sweep because it is the only
+ * layer that can check it *deterministically*. Whether a given particle is
+ * behind a given glyph depends on the animation frame and the viewport, so a
+ * screenshot test samples one frame at one width and passes on the other half
+ * of the loop — `e2e/gradient-contrast.spec.ts` found this defect precisely
+ * because it happened to catch a bad frame, and it is not a reliable gate for
+ * it. The alphas are static values in source, so the worst case the particle
+ * can ever produce is arithmetic, and it holds at every viewport and frame.
+ *
+ * Scope is that one layer, not `bg-primary` everywhere: the primary CTA is a
+ * solid `bg-primary` button and is *supposed* to be, carrying
+ * `text-primary-foreground` chosen against it. Nothing paints body text over
+ * that. Only this layer has copy painted on top of it without any say in it.
+ */
+describe("hero ornament contrast", () => {
+  const hero = readFileSync("src/components/Hero.tsx", "utf8");
+
+  /** The particle layer: from its own class list to the tag that closes it. */
+  const layer = (() => {
+    const start = hero.indexOf("pointer-events-none");
+    const end = hero.indexOf("\n      </m.div>", start);
+    if (start < 0 || end < 0) throw new Error("could not find the hero particle layer in Hero.tsx");
+    return hero.slice(start, end);
+  })();
+
+  /**
+   * `bg-accent` + `opacity-25` and `bg-accent/25` composite identically, so
+   * both spellings collapse to one effective alpha. `opacity-[0.15]` is the
+   * arbitrary-value form — Tailwind's default scale has no 15.
+   */
+  const particles = [...layer.matchAll(/className="([^"]*)"/g)]
+    .map(([, cls]) => cls)
+    .flatMap((cls) => {
+      const colour = cls.match(/(?:bg|from)-(primary|accent)(?:\/(\d+))?\b/);
+      if (!colour) return [];
+      const opacity =
+        cls.match(/\bopacity-\[([\d.]+)\]/)?.[1] ?? cls.match(/\bopacity-(\d+)\b/)?.[1];
+      const classAlpha = colour[2] ? Number(colour[2]) / 100 : 1;
+      const elementAlpha = opacity
+        ? opacity.includes(".")
+          ? Number(opacity)
+          : Number(opacity) / 100
+        : 1;
+      return [{ cls, name: colour[1], alpha: classAlpha * elementAlpha }];
+    });
+
+  // The layer is found by string search, so a refactor that renames or reflows
+  // it would leave this matching nothing and passing for free.
+  it("finds the particles to check", () => {
+    expect(particles.length).toBeGreaterThanOrEqual(4);
+  });
+
+  /**
+   * Against `--muted-foreground`, the dimmest text on the page and the hero
+   * subtitle's own colour — the text that actually got hit. Anything that
+   * clears the floor against it clears it against `--foreground` too.
+   */
+  it("keeps text readable over every hero particle (4.5:1)", () => {
+    const background = hslToRgb(token("background"));
+    const text = luminance(hslToRgb(token("muted-foreground")));
+
+    const failing = particles
+      .map((p) => {
+        const composited = hslToRgb(token(p.name)).map(
+          (c, i) => c * p.alpha + background[i] * (1 - p.alpha)
+        ) as [number, number, number];
+        const behind = luminance(composited);
+        const ratio = (Math.max(text, behind) + 0.05) / (Math.min(text, behind) + 0.05);
+        return { ...p, ratio };
+      })
+      .filter((p) => p.ratio < 4.5)
+      .map((p) => `${p.cls.slice(0, 70)} → ${p.ratio.toFixed(2)}:1 at alpha ${p.alpha}`);
+
+    expect(failing).toEqual([]);
+  });
+});
