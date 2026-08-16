@@ -118,6 +118,39 @@ const Hero = () => {
         is one it would resolve by throwing the prerendered page away. Hence
         `suppressHydrationWarning` on each — framer takes them over a frame
         later regardless of what the attribute said.
+
+        Every alpha below is a contrast budget, not a taste call.
+
+        These drift on infinite loops across a full-bleed `inset-0` layer, and
+        the hero's copy is painted straight over them, so any one of them can
+        become the backdrop of body text at some frame — which is exactly what
+        happened. The `bg-accent` dot passes behind the hero subtitle on a 4s
+        loop and dragged it from 6.35:1 to 4.11:1, under the 4.5:1 SC 1.4.3
+        floor, for part of every cycle. axe cannot catch this: it reports the
+        node `incomplete` ("background could not be determined, element is
+        overlapped") and the gate only reads `violations`. Nor is it stable
+        enough to catch by eye — the same node measures clean on the other half
+        of the loop.
+
+        Position cannot be the fix. At 393px the copy spans the full width, so
+        there is nowhere on the layer a particle can drift that is reliably not
+        behind text. Brightness is the only lever that holds at every viewport,
+        so each alpha is set so that compositing that particle over
+        `--background` leaves a surface `--muted-foreground` — the dimmest text
+        on the page, and the subtitle's own colour — still clears 4.5:1 on.
+
+        `--primary` needs a much lower alpha than `--accent` for the same
+        budget, and that asymmetry is the point rather than an inconsistency:
+        `hsl(160 100% 50%)` is `rgb(0 255 170)` at luminance 0.744, near the top
+        of the sRGB range. At the 0.6 it used to carry it composites to a
+        surface that renders muted-foreground text at 1.32:1 — illegible, not
+        merely sub-AA — and it stayed green only because it happened not to
+        cross any glyph at the two widths anything measured.
+
+        `text-contrast.test.ts` is what holds this. It has to be the arithmetic
+        rather than the screenshot sweep that found it: whether a particle is
+        behind a glyph depends on the frame and the width, so a pixel gate
+        samples one of each and goes green on the other half of the loop.
       */}
       <m.div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ y: bgY }}>
         <m.div
@@ -135,25 +168,25 @@ const Hero = () => {
         <m.div
           animate={{ y: [0, -20, 0] }}
           transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-1/4 right-1/4 w-2 h-2 bg-primary rounded-full opacity-60"
+          className="absolute top-1/4 right-1/4 w-2 h-2 bg-primary rounded-full opacity-[0.15]"
           suppressHydrationWarning
         />
         <m.div
           animate={{ y: [0, 15, 0] }}
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-2/3 left-1/3 w-1.5 h-1.5 bg-accent rounded-full opacity-40"
+          className="absolute top-2/3 left-1/3 w-1.5 h-1.5 bg-accent rounded-full opacity-25"
           suppressHydrationWarning
         />
         <m.div
           animate={{ x: [0, 10, 0], y: [0, -10, 0] }}
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-1/3 left-1/4 w-1 h-1 bg-primary/40 rounded-full"
+          className="absolute top-1/3 left-1/4 w-1 h-1 bg-primary/15 rounded-full"
           suppressHydrationWarning
         />
         <m.div
           animate={{ x: [0, -8, 0], y: [0, 12, 0] }}
           transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-1/2 right-1/3 w-1 h-8 bg-gradient-to-b from-primary/20 to-transparent"
+          className="absolute top-1/2 right-1/3 w-1 h-8 bg-gradient-to-b from-primary/15 to-transparent"
           suppressHydrationWarning
         />
       </m.div>
