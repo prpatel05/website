@@ -3,7 +3,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it, expect } from "vitest";
 import { fromMarkdown } from "mdast-util-from-markdown";
-import type { Nodes } from "mdast";
+import type { Heading, Nodes, Paragraph } from "mdast";
 import {
   posts,
   getPostBySlug,
@@ -215,6 +215,124 @@ const internalHrefs = (markdown: string) => {
     .map(destination)
     .filter((href) => href.startsWith("/"));
 };
+
+// CommonMark folds a block's source lines into one flow, so what the reader
+// meets is a *rendered* line, not a source line. This walks a block's inline
+// content in order and returns one entry per rendered line: the source line of
+// the bold run that opens it, `false` if anything else opens it, and `null`
+// where a hard break puts a line ending the reader actually sees.
+//
+// Reading the parser rather than the source column is the whole point. A bold
+// run is a `strong` node however it was spelled and wherever it sits, so
+// `__bold__`, a line indented one to three spaces, a line inside a blockquote
+// or a list item, and a line whose bold sits behind a code chip are all the
+// same node — and each of those was invisible to a `line.startsWith("**")`
+// test that read column 0 (PRA-1052).
+const boldLeads = (block: Paragraph | Heading) => {
+  const lines: (number | false | null)[] = [];
+  let line: { copy: boolean; bold: number | false } = {
+    copy: false,
+    bold: false,
+  };
+
+  const endLine = (visible: boolean) => {
+    lines.push(line.bold);
+    if (visible) lines.push(null);
+    line = { copy: false, bold: false };
+  };
+
+  const walk = (node: Nodes) => {
+    switch (node.type) {
+      // A soft line break lives inside a text node's value rather than in a
+      // node of its own, and it is the only thing that starts a rendered line.
+      case "text":
+        node.value.split("\n").forEach((part, i) => {
+          if (i > 0) endLine(false);
+          if (part.trim()) line.copy = true;
+        });
+        return;
+      // A hard break does render. `components` in scripts/markdown-html.mjs
+      // names no `br`, but react-markdown falls through to the default element
+      // for every tag it does not name, so `**One.**  \n**Two.**` emits
+      // `<strong>One.</strong><br/>` — measured 2026-08-16. The two lines are
+      // therefore two lines, and this is not the fold.
+      case "break":
+        endLine(true);
+        return;
+      // Code is not copy — the same rule every gate in this file reads its
+      // bodies through. A span's own newlines render as spaces (`` `a\nb` ``
+      // ships `<code>a b</code>`), so it starts no rendered line either.
+      case "inlineCode":
+        return;
+      case "strong":
+        if (!line.copy) line.bold = node.position!.start.line;
+        line.copy = true;
+        // A bold run can hold a soft break of its own, and the line that break
+        // opens sits *inside* the bold rather than being led by it.
+        node.children.forEach(walk);
+        return;
+      default:
+        // A link or an emphasis is a wrapper: `[**One.**](/a/)` still opens its
+        // line with a bold run. An image or a raw HTML span is not — it paints
+        // something of its own ahead of the bold.
+        if ("children" in node) node.children.forEach(walk);
+        else line.copy = true;
+    }
+  };
+
+  block.children.forEach(walk);
+  endLine(false);
+  return lines;
+};
+
+// Two rendered lines in one block that each open with a bold run: the pair an
+// author wrote as two lines, folded into one run-on. Reported as the source
+// lines of the two bold runs.
+//
+// A heading is scanned alongside a paragraph because a setext heading is
+// written over as many lines as the author likes and folds them the same way.
+const stackedBoldLeads = (markdown: string) => {
+  const offenders: [number, number][] = [];
+
+  const walk = (node: Nodes) => {
+    if (node.type === "paragraph" || node.type === "heading") {
+      const lines = boldLeads(node);
+
+      lines.forEach((bold, i) => {
+        const next = lines[i + 1];
+        if (bold && next) offenders.push([bold, next]);
+      });
+      return;
+    }
+
+    if ("children" in node) node.children.forEach(walk);
+  };
+
+  walk(fromMarkdown(markdown));
+  return offenders;
+};
+
+// The same question asked of the rendered HTML, so the pairing test below can
+// require one answer from both. A NUL cannot occur in the markup, so it is
+// safe as the "a bold run starts here" mark.
+const BOLD_LEAD = "\u0000";
+
+const rendersStackedBold = (html: string) =>
+  html
+    // Every tag that is not inline copy ends the run the browser lays out
+    // continuously: a `p`, an `li`'s span and an `h2` are separate flows, and
+    // `br` is the one line ending it honours. A line break left inside a run is
+    // one the reader never sees as a break.
+    .split(/<\/?(?!(?:strong|em|a|code)\b)[a-z][^>]*>/i)
+    .some((flow) =>
+      flow
+        .replace(/<code\b[^>]*>[\s\S]*?<\/code>/g, "")
+        .replace(/<strong\b[^>]*>/g, BOLD_LEAD)
+        .replace(/<[^>]*>/g, "")
+        .split("\n")
+        .map((rendered) => rendered.trimStart().startsWith(BOLD_LEAD))
+        .some((bold, i, all) => bold && all[i + 1])
+    );
 
 // Every pratik.pa.tel path 301s to its slash form, with one exception: a path
 // whose last segment carries an extension is a file, not a directory index,
@@ -567,23 +685,122 @@ describe("blog-posts data", () => {
   // top of 2743 — the same visual line. At 393px they separated only by
   // accidental wrap, not by structure.
   //
-  // The fix is a blank line. `br` is not in the renderer's tag map, so a
-  // two-trailing-space hard break renders as nothing and is not a workaround.
+  // The fix is a blank line, which is the separator that survives an editor.
+  // A hard break does work — `**One.**  \n**Two.**` emits a real `<br/>`,
+  // because react-markdown falls through to the default element for every tag
+  // `components` does not name — but it is spelled with two invisible trailing
+  // spaces, so the version this file used to claim ("`br` is not in the
+  // renderer's tag map, so it renders as nothing") was wrong about the reason
+  // while landing on the right advice. Measured 2026-08-16 (PRA-1052).
   it("does not fold a post's stacked bold lines into one paragraph", () => {
     const offenders = posts.flatMap((post) => {
-      const lines = stripCode(markdownSource(post.slug)).split("\n");
-      return lines.flatMap((line, i) =>
-        line.startsWith("**") && lines[i + 1]?.startsWith("**")
-          ? [
-              `${post.slug}: two bold lines with no blank line between them ` +
-                `render as one paragraph — "${line.slice(0, 40)}" then ` +
-                `"${lines[i + 1].slice(0, 40)}"`,
-            ]
-          : []
+      const body = markdownSource(post.slug);
+      const lines = body.split("\n");
+
+      return stackedBoldLeads(body).map(
+        ([first, second]) =>
+          `${post.slug}: two bold lines with no blank line between them ` +
+          `render as one paragraph — "${lines[first - 1].trim().slice(0, 40)}" ` +
+          `then "${lines[second - 1].trim().slice(0, 40)}"`
       );
     });
 
     expect(offenders).toEqual([]);
+  });
+
+  // The corpus check above passes on every published post and banked draft, and
+  // passed just as green while it could see exactly one of the five ways to
+  // write the defect. `line.startsWith("**")` reads column 0, where the
+  // renderer's rule is about block structure, so `__bold__`, an indented line,
+  // a blockquote, a list item's continuation and a line whose bold sits behind
+  // a code chip all shipped the run-on the gate exists to catch — each of them
+  // rendering markup byte-identical to the row it was written for.
+  //
+  // So this asks both sides the same question and requires one answer: a form
+  // is flagged if and only if the renderer folds it into one flow. The rows
+  // below were each checked against a mutated rule to make sure they are
+  // evidence rather than decoration — the spelling rows go red if the gate
+  // reads columns again, the code rows if a code chip counts as copy, the
+  // `<br/>` rows if a hard break stops being a break, the setext row if
+  // headings are skipped, and the blank-line row if a blank line stops
+  // separating (PRA-1052).
+  it("flags stacked bold lines if and only if the renderer folds them", () => {
+    const forms = [
+      // The row the gate was written for, and the four spellings of it that
+      // read column 0 and found nothing. A tab is one character and four
+      // columns, and an indented code block cannot interrupt a paragraph, so
+      // the 4-space line below is lazy continuation and folds like the rest.
+      "**One.**\n**Two.**\n",
+      "__One.__\n__Two.__\n",
+      "**One.**\n__Two.__\n",
+      "**One.**\n   **Two.**\n",
+      "**One.**\n    **Two.**\n",
+      "**One.**\n\t**Two.**\n",
+      // The shape the defect actually arrives in: a label and its definition.
+      "**One.** Def one.\n**Two.** Def two.\n",
+      // Code is not copy, so a chip in front of the bold does not stop the line
+      // opening with it. The second is a span pairing across a line break: it
+      // renders `<code>a b</code>`, one rendered line out of two source lines,
+      // which is why the pair cannot be found by counting source lines.
+      "**One.**\n`x`**Two.**\n",
+      "**One.**\n`a\nb`**Two.**\n",
+      // Container blocks. The bold is in the same place relative to its
+      // container and nowhere near column 0; the third is lazy continuation,
+      // which folds into the quote above it.
+      "> **One.**\n> **Two.**\n",
+      "- **One.**\n  **Two.**\n",
+      "1. **One.**\n   **Two.**\n",
+      "> **One.**\n**Two.**\n",
+      // A link and an emphasis wrap the bold rather than preceding it.
+      "[**One.**](/a/)\n[**Two.**](/b/)\n",
+      "*__One.__*\n*__Two.__*\n",
+      // A setext heading is written over as many lines as the author likes and
+      // folds them exactly as a paragraph does.
+      "**One.**\n**Two.**\n---\n",
+      // Copy that must survive, each a near-miss of a row above. The blank line
+      // is the fix this rule asks for, so it has to come out the other side or
+      // every row above is decoration.
+      "**One.**\n\n**Two.**\n",
+      "- **One.**\n- **Two.**\n",
+      "# **One.**\n**Two.**\n",
+      "**One.** Def one. **Two.** Def two.\n",
+      // A hard break, in both spellings. Two rendered lines, so no fold.
+      "**One.**  \n**Two.**\n",
+      "**One.**\\\n**Two.**\n",
+      // A bold that does not open its line is prose emphasis, not a label, and
+      // stacked prose emphasis is how a wrapped paragraph reads.
+      "**One.**\nSee **Two.** here\n",
+      "Text **One.** more\ntext **Two.** more\n",
+      // The break belongs to the bold run rather than separating two of them.
+      "**One.\nTwo.**\n**Three.**\n",
+      // An image paints ahead of the bold, so that line opens with the image.
+      "**One.**\n![alt](/i.png)**Two.**\n",
+      // Not copy at all: two of these are code and the third ships escaped.
+      "```\n**One.**\n**Two.**\n```\n",
+      "Prose.\n\n    **One.**\n    **Two.**\n",
+      "<div>\n**One.**\n**Two.**\n</div>\n",
+      // Emphasis is deliberately out of scope. A stacked `*italic*` pair folds
+      // the same way, but a line opening with an italic is ordinary prose — a
+      // cited publication, a ship name — far more often than it is a label,
+      // and this gate rejects what it flags.
+      "*One.*\n*Two.*\n",
+    ];
+
+    const disagreements = forms.flatMap((markdown) => {
+      const folds = rendersStackedBold(renderMarkdownToHtml(markdown));
+      const flagged = stackedBoldLeads(markdown).length > 0;
+
+      return flagged === folds
+        ? []
+        : [
+            `${JSON.stringify(markdown)} ` +
+              (folds
+                ? "renders as one folded flow and nothing flags it"
+                : "renders as separate lines but is flagged"),
+          ];
+    });
+
+    expect(disagreements).toEqual([]);
   });
 
   // `subtitle` renders directly under the title, so it is allowed to be a
