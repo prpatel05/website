@@ -166,45 +166,41 @@ async function place(page: Page, selector: string): Promise<Placed | null> {
       })
   );
 
-  return page.evaluate(
-    ({ selector, mark }) => {
-      void mark;
-      const el = document.querySelector<HTMLElement>(selector);
-      if (!el) return null;
-      const cs = getComputedStyle(el);
-      if (cs.visibility !== "visible" || cs.display === "none") return null;
+  return page.evaluate((selector) => {
+    const el = document.querySelector<HTMLElement>(selector);
+    if (!el) return null;
+    const cs = getComputedStyle(el);
+    if (cs.visibility !== "visible" || cs.display === "none") return null;
 
-      let opacity = 1;
-      for (let node: HTMLElement | null = el; node; node = node.parentElement) {
-        opacity *= parseFloat(getComputedStyle(node).opacity || "1");
-      }
-      if (opacity < 0.999) return null;
+    let opacity = 1;
+    for (let node: HTMLElement | null = el; node; node = node.parentElement) {
+      opacity *= parseFloat(getComputedStyle(node).opacity || "1");
+    }
+    if (opacity < 0.999) return null;
 
-      let own = "";
-      for (const child of Array.from(el.childNodes)) {
-        if (child.nodeType === Node.TEXT_NODE) own += child.textContent ?? "";
-      }
-      own = own.trim();
-      if (!/[a-z0-9]/i.test(own)) return null;
+    let own = "";
+    for (const child of Array.from(el.childNodes)) {
+      if (child.nodeType === Node.TEXT_NODE) own += child.textContent ?? "";
+    }
+    own = own.trim();
+    if (!/[a-z0-9]/i.test(own)) return null;
 
-      // Padding box, not border box: a 1px `border-primary/20` ring on a 10px
-      // chip is >2% of the area and is not backdrop.
-      const r = el.getBoundingClientRect();
-      const x = Math.max(0, Math.ceil(r.left + (parseFloat(cs.borderLeftWidth) || 0)));
-      const y = Math.max(0, Math.ceil(r.top + (parseFloat(cs.borderTopWidth) || 0)));
-      const right = Math.min(window.innerWidth, Math.floor(r.right - (parseFloat(cs.borderRightWidth) || 0)));
-      const bottom = Math.min(window.innerHeight, Math.floor(r.bottom - (parseFloat(cs.borderBottomWidth) || 0)));
-      if (right - x < 4 || bottom - y < 4) return null;
+    // Padding box, not border box: a 1px `border-primary/20` ring on a 10px
+    // chip is >2% of the area and is not backdrop.
+    const r = el.getBoundingClientRect();
+    const x = Math.max(0, Math.ceil(r.left + (parseFloat(cs.borderLeftWidth) || 0)));
+    const y = Math.max(0, Math.ceil(r.top + (parseFloat(cs.borderTopWidth) || 0)));
+    const right = Math.min(window.innerWidth, Math.floor(r.right - (parseFloat(cs.borderRightWidth) || 0)));
+    const bottom = Math.min(window.innerHeight, Math.floor(r.bottom - (parseFloat(cs.borderBottomWidth) || 0)));
+    if (right - x < 4 || bottom - y < 4) return null;
 
-      return {
-        rect: { x, y, width: right - x, height: bottom - y },
-        fontPx: parseFloat(cs.fontSize),
-        bold: (parseInt(cs.fontWeight, 10) || 400) >= 700,
-        text: own.slice(0, 60),
-      };
-    },
-    { selector, mark: MARK }
-  );
+    return {
+      rect: { x, y, width: right - x, height: bottom - y },
+      fontPx: parseFloat(cs.fontSize),
+      bold: (parseInt(cs.fontWeight, 10) || 400) >= 700,
+      text: own.slice(0, 60),
+    };
+  }, selector);
 }
 
 async function raw(page: Page, rect: Placed["rect"]) {
