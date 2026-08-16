@@ -42,6 +42,93 @@ describe("web app manifest", () => {
     expect(maskable.some((i) => i.sizes === "512x512")).toBe(true);
   });
 
+  it("the maskable icon keeps its mark inside the 80% safe circle", async () => {
+    // A maskable icon is never shown as drawn: the launcher applies its own mask
+    // — a circle on Pixel, a squircle elsewhere — and only the central 80%
+    // *circle* survives it. The tile that shipped before this test scaled the
+    // artwork to 410.7px, within a pixel of 409.6 = 80% of 512, so it had been
+    // fitted to the safe-zone **square**. The mark is a rounded square, whose
+    // corners sit further from the centre than its edges: they reached radius
+    // 217.9 against a safe radius of 204.8, and a circular mask took 13px off
+    // each corner of a 30px stroke. The window outline rendered as four
+    // disconnected arcs. Asserting a 512x512 maskable entry exists — all this
+    // file used to do — cannot see that, because the file was the right size.
+    const maskable = icons.filter((i) => i.purpose === "maskable");
+    expect(maskable.length).toBeGreaterThan(0);
+
+    for (const icon of maskable) {
+      const { data, info } = await sharp(`public${icon.src}`)
+        .ensureAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      const px = (x: number, y: number) => (y * info.width + x) * info.channels;
+
+      // A maskable icon must be opaque edge to edge — a transparent margin gets
+      // letterboxed and the mask then cuts the artwork instead of the backdrop.
+      // That also makes the corner a sound read of the backdrop colour, which
+      // the mark test below classifies against.
+      let transparent = 0;
+      for (let i = 3; i < data.length; i += info.channels) {
+        if (data[i] < 255) transparent += 1;
+      }
+      expect(transparent, `${icon.src} has ${transparent} non-opaque pixels`).toBe(0);
+
+      const corners = [
+        [0, 0],
+        [info.width - 1, 0],
+        [0, info.height - 1],
+        [info.width - 1, info.height - 1],
+      ].map(([x, y]) => [...data.subarray(px(x, y), px(x, y) + 3)]);
+      for (const corner of corners) {
+        expect(corner, `${icon.src} is not a flat full-bleed backdrop`).toEqual(corners[0]);
+      }
+      const [br, bg, bb] = corners[0];
+
+      // Classify mark-vs-backdrop with an explicit threshold. In this artwork the
+      // mark colours sit at euclidean RGB distance 38 (the frame stroke #1a1f2e),
+      // 267 (#00ff80) and 289 (#a855f7) from the #0a0c10 backdrop, so 19 is the
+      // midpoint to the nearest of them — the 50%-coverage contour of an
+      // antialiased edge. The measurement barely depends on the choice: every
+      // threshold from 1 to 37 puts the outermost pixel within a pixel of the
+      // same radius. Picking one above 38 would silently drop the frame and
+      // measure only the two glyphs, which is the way this test could go vacuous.
+      // Measure against the raster's own dimensions rather than the `sizes` the
+      // manifest declares — a file that disagreed with its declaration would
+      // otherwise be measured about the wrong centre. (Another test in this file
+      // asserts the two match; this just does not depend on that one running.)
+      const THRESHOLD = 19;
+      const centre = info.width / 2;
+      const safeRadius = (0.8 * info.width) / 2;
+      let maxRadius = 0;
+      let mark = 0;
+      for (let y = 0; y < info.height; y += 1) {
+        for (let x = 0; x < info.width; x += 1) {
+          const i = px(x, y);
+          const distance = Math.hypot(data[i] - br, data[i + 1] - bg, data[i + 2] - bb);
+          if (distance < THRESHOLD) continue;
+          mark += 1;
+          maxRadius = Math.max(maxRadius, Math.hypot(x + 0.5 - centre, y + 0.5 - centre));
+        }
+      }
+
+      expect(mark, `${icon.src} has no mark to measure`).toBeGreaterThan(0);
+      expect(
+        maxRadius,
+        `${icon.src} paints out to radius ${maxRadius.toFixed(1)}px, past the ${safeRadius}px safe circle — a circular launcher mask will cut it`
+      ).toBeLessThanOrEqual(safeRadius);
+
+      // Two-sided on purpose. Shrinking the artwork until nothing reaches the
+      // edge would satisfy the assertion above while making the icon a speck in
+      // a field of backdrop, and deleting the frame outright would leave only
+      // the glyphs, which reach ~124px here. The mark is meant to fill the safe
+      // zone, not merely avoid it.
+      expect(
+        maxRadius,
+        `${icon.src} only reaches radius ${maxRadius.toFixed(1)}px of ${safeRadius}px — the mark is too small for the safe zone`
+      ).toBeGreaterThan(0.85 * safeRadius);
+    }
+  });
+
   it("every declared icon exists and is exactly the size it claims", () => {
     // A manifest that points at a missing file, or lies about dimensions, is worse
     // than no manifest: the browser accepts it and then renders a broken icon.
