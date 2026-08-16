@@ -1,4 +1,12 @@
 import { test, expect } from "./fixtures";
+import { settleFrames } from "./frame-time";
+
+/**
+ * The entrance is 500ms (`PageTransition`'s `pageVariants`). This is that plus
+ * room for the frame the completion lands on — denominated in frames the page
+ * produced, so it is the time the animation actually receives.
+ */
+const ENTRANCE_SETTLE_MS = 800;
 
 /**
  * The animation feature set loads from its own chunk (src/lib/motion-features),
@@ -38,8 +46,10 @@ const blogLink = (page: import("@playwright/test").Page) =>
  * visibility is the product of the whole ancestor chain, not one element's
  * opacity.
  */
+const ARCHIVE_HEADING = "Blog archive";
+
 const heading = (page: import("@playwright/test").Page) =>
-  page.getByRole("heading", { level: 1, name: "Blog archive" });
+  page.getByRole("heading", { level: 1, name: ARCHIVE_HEADING });
 
 const effectiveOpacity =(page: import("@playwright/test").Page) =>
   heading(page).evaluate((el) => {
@@ -59,6 +69,75 @@ const effectiveOpacity =(page: import("@playwright/test").Page) =>
       opacity *= Number(getComputedStyle(node).opacity);
     }
     return opacity;
+  });
+
+/**
+ * The incoming route's mount, recorded from before the navigation starts.
+ *
+ * The entrance is 500ms and `AnimatePresence` is `mode="wait"`, so it does not
+ * begin until the outgoing route's 300ms exit is done. Sampling for a
+ * transparent moment *after* the click therefore has to win a race against
+ * both: click, `toHaveURL`, and resolving a locator are CDP round trips, and
+ * whatever is left of the 500ms when they finish is all the sampler gets.
+ * Measured on an otherwise idle machine, the sampler this replaced started
+ * 886ms after the click on `mobile-chrome` and read an effective opacity of
+ * **0.99897** — it was catching the entrance with 0.1% of its range left. One
+ * busier machine and the first sample reads exactly 1, at which point a working
+ * animation is reported as "the entrance never ran". That is the flake, and
+ * raising a timeout cannot fix it: the sampler is chasing a window that has
+ * already closed.
+ *
+ * What is not a race is the mount itself. framer writes `initial` into the
+ * inline style of the element it renders, so the wrapper enters the document
+ * already carrying `opacity: 0` — and a `MutationObserver` childList record is
+ * delivered as a microtask after the insertion, not on a frame. It cannot be
+ * missed by a busy machine, and it does not keep frames coming the way a
+ * pending `requestAnimationFrame` does, so it measures the page rather than the
+ * instrument.
+ *
+ * Deliberately *not* asserted: that opacity passes through some intermediate
+ * value. framer steps a tween from `requestAnimationFrame` and headless
+ * Chromium intermittently stops producing frames, so a stall can take the
+ * inline style straight from 0 to 1 with nothing written in between. That is
+ * the same wall-clock-versus-frame-time trap this test just came out of.
+ */
+const recordRouteMount = (page: import("@playwright/test").Page, name: string) =>
+  page.evaluate((headingName) => {
+    const mounts: { inlineOpacity: string; holdsTheHeading: boolean }[] = [];
+    const observer = new MutationObserver((records) => {
+      for (const record of records) {
+        for (const node of Array.from(record.addedNodes)) {
+          if (!(node instanceof HTMLElement)) continue;
+          mounts.push({
+            inlineOpacity: node.style.opacity,
+            // Guards against an unrelated element that happens to mount
+            // transparent standing in for the route. React builds a subtree
+            // before attaching it, so the heading is already inside the
+            // wrapper by the time the insertion is reported.
+            holdsTheHeading: Array.from(node.querySelectorAll("h1")).some(
+              (h1) => h1.textContent?.trim() === headingName
+            ),
+          });
+        }
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    Object.assign(window, { __routeMounts: { mounts, observer } });
+  }, name);
+
+const readRouteMounts = (page: import("@playwright/test").Page) =>
+  page.evaluate(() => {
+    const recorded = (
+      window as unknown as {
+        __routeMounts?: {
+          mounts: { inlineOpacity: string; holdsTheHeading: boolean }[];
+          observer: MutationObserver;
+        };
+      }
+    ).__routeMounts;
+    if (!recorded) throw new Error("the mount recorder was never installed");
+    recorded.observer.disconnect();
+    return recorded.mounts;
   });
 
 test.describe("motion features arriving late", () => {
@@ -170,47 +249,54 @@ test.describe("motion features arriving late", () => {
     await page.goto("/");
     await chunkLanded;
 
+    // Armed before the click, so there is no window to lose: the recorder is
+    // already watching when the route it is there to catch mounts.
+    await recordRouteMount(page, ARCHIVE_HEADING);
+
     await blogLink(page).click();
     await expect(page).toHaveURL(/\/blog\/$/);
+    await expect(heading(page)).toBeAttached();
 
-    // Sampled immediately after the click: with features loaded the entrance
-    // runs, so the incoming route starts transparent and is opaque by the time
-    // it settles. Both ends are asserted so a build where the animation
-    // silently stopped running is not mistaken for a passing one.
-    const sawTransparent = await heading(page)
-      .evaluate(
-        (el) =>
-          new Promise<boolean>((resolve) => {
-            const ancestors: Element[] = [];
-            for (
-              let node: Element | null = el;
-              node && node !== document.documentElement;
-              node = node.parentElement
-            ) {
-              ancestors.push(node);
-            }
-            const transparent = () =>
-              ancestors.some(
-                (node) => Number(getComputedStyle(node).opacity) < 1
-              );
+    const mounts = await readRouteMounts(page);
+    const route = mounts.find((mount) => mount.holdsTheHeading);
 
-            let seen = transparent();
-            const started = performance.now();
-            const tick = () => {
-              seen ||= transparent();
-              if (seen || performance.now() - started > 400) return resolve(seen);
-              requestAnimationFrame(tick);
-            };
-            tick();
-          })
-      );
-
+    // Positive control. Without it every assertion below is vacuous against a
+    // build where the navigation never mounted the archive at all.
     expect(
-      sawTransparent,
-      "the entrance animation never ran — the feature chunk loaded but nothing is animating"
-    ).toBe(true);
-    await expect
-      .poll(() => effectiveOpacity(page), { timeout: 2000 })
-      .toBe(1);
+      route,
+      `nothing carrying an <h1> of "${ARCHIVE_HEADING}" was attached during the navigation — the recorder saw ${mounts.length} insertion(s) and none of them was the route`
+    ).toBeDefined();
+
+    // Both ends of the entrance, so a build where the animation silently
+    // stopped running is not mistaken for a passing one. This end is the half
+    // that used to be raced: the route has to arrive transparent...
+    //
+    // Read as a string first. A suppressed entrance writes no inline opacity
+    // at all, and `Number("")` is 0 — so comparing the number alone would take
+    // the build with no animation whatsoever for the most transparent mount
+    // there is, and pass hardest exactly where it should fail.
+    expect(
+      route?.inlineOpacity,
+      "the archive mounted with no inline opacity — `initial` was never written, so the entrance is suppressed rather than running"
+    ).not.toBe("");
+    expect(
+      Number(route?.inlineOpacity),
+      "the archive mounted opaque — the feature chunk loaded but the entrance is not running"
+    ).toBeLessThan(1);
+    // ...and something has to clear it, which is the defect the first test in
+    // this file covers from the other direction.
+    //
+    // Settled in frame time rather than by polling against a wall-clock
+    // timeout, for the same reason the mount above is observed rather than
+    // sampled. The 500ms entrance advances only in frames the page produced,
+    // and under contention this poll's 2000ms of wall clock bought it far
+    // fewer: measured here at 12-way CPU load, it timed out reading **0.459**
+    // — an animation that was running correctly and simply had not been given
+    // its 500ms. Raising the timeout does not fix that and stays wrong.
+    await settleFrames(page, ENTRANCE_SETTLE_MS);
+    expect(
+      await effectiveOpacity(page),
+      "the entrance started but never finished — the archive is still transparent after a full entrance of frame time"
+    ).toBe(1);
   });
 });
