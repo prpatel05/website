@@ -155,6 +155,58 @@ test.describe("every route passes axe at WCAG 2.1 AA", () => {
   });
 
   /**
+   * The scan above opens the terminal and reads it as it lands: three welcome
+   * lines, well inside the `min-h-[200px]` floor. That is not yet a scroll
+   * container, so every rule about scroll containers was vacuous there —
+   * `scrollable-region-focusable` among them, and it was failing. The log had no
+   * `tabIndex` and no focusable descendant, so on WebKit nothing keyboard-driven
+   * could scroll it and the output above the fold was unreachable (PRA-1034).
+   *
+   * So this scans the state the reader actually reaches: a scrollback that has
+   * outgrown the panel. It is a separate test rather than more commands in the
+   * one above, because both states are worth scanning and the fresh one is what
+   * most visitors see.
+   *
+   * The overflow is asserted, not assumed. It is the whole precondition, and the
+   * way this rule went quiet the first time was by being pointed at a box that
+   * did not overflow — a silent, green failure that would repeat the moment the
+   * cap, the floor or the `help` text changed.
+   */
+  test("the terminal passes axe once the scrollback overflows", async ({ page }) => {
+    await page.goto("/");
+    await openTerminalByClick(page);
+
+    // The banner tells the reader to type `help`, and `help` lists these.
+    for (const command of ["help", "socials", "skills"]) {
+      await page.getByPlaceholder('type "help" to get started...').fill(command);
+      await page.keyboard.press("Enter");
+    }
+
+    const log = page.locator('[role="log"][aria-label="Terminal output"]');
+    const overflow = await log.evaluate((el) => el.scrollHeight - el.clientHeight);
+    expect(
+      overflow,
+      "the scrollback has to outgrow the log for this scan to mean anything"
+    ).toBeGreaterThan(0);
+
+    const { violations } = await new AxeBuilder({ page }).withTags(WCAG_AA).analyze();
+
+    expect(
+      violations.map((v) => v.id),
+      `the terminal with ${overflow}px of scrollback out of view has ` +
+        `${violations.length} violation(s):\n  ${violations
+          .map((v) => `[${v.impact}] ${v.id} — ${v.help}`)
+          .join("\n  ")}`
+    ).toEqual([]);
+
+    // Said once directly too: axe's rule is the reason this was caught, but the
+    // requirement is that a keyboard can reach the scroller, and that outlives
+    // any one rule id. Chromium synthesises a tab stop here even without the
+    // attribute, so only the attribute itself distinguishes the engines.
+    await expect(log).toHaveAttribute("tabindex", "0");
+  });
+
+  /**
    * Both at once — reachable by Ctrl+K with the menu up, and a state no sweep
    * saw before PRA-912. Two `aria-modal` dialogs is the shape axe cannot flag
    * (there is no rule for it) but which everything downstream of it depends on,

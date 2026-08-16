@@ -295,6 +295,28 @@ const InteractiveTerminal = () => {
                   aria-live="polite"
                   aria-label="Terminal output"
                   /*
+                    A scroll container with no focusable descendant, so nothing
+                    but this attribute puts it in the tab ring — and once the
+                    scrollback outgrows the cap below, scrolling this box is the
+                    only way to read what went off the top. ArrowUp cannot stand
+                    in: the command line takes it for history.
+
+                    Chromium hid this. It synthesises a tab stop for a scroller
+                    with no focusable child, so there the div was already
+                    reachable and PageUp already worked. WebKit has no such
+                    behaviour — measured on WebKit 26.0, Tab never visited it,
+                    `el.focus()` did not even stick, and no key moved
+                    `scrollTop`, while the wheel moved it fine. So a Safari
+                    keyboard reader who typed `help`, which the welcome banner
+                    tells them to do, could not read the answer: the effect above
+                    pins to the bottom, stranding 329px of banner and command
+                    list with no way back (PRA-1034).
+
+                    `useFocusTrap`'s FOCUSABLE already matches `[tabindex]`, so
+                    this joins the trap in DOM order — close button, log, input.
+                  */
+                  tabIndex={0}
+                  /*
                     The `min-h` floor gives the log a body when the scrollback is
                     short, and it is the only item here that may shrink — but a
                     `min-height` is a floor flexbox may not shrink past, and the
