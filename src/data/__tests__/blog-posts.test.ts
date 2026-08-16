@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it, expect } from "vitest";
+import { fromMarkdown } from "mdast-util-from-markdown";
+import type { Nodes } from "mdast";
 import {
   posts,
   getPostBySlug,
@@ -22,11 +24,51 @@ const markdownSource = (slug: string) =>
     "utf-8"
   );
 
-// A fenced block or an inline code span is a sample of someone else's syntax,
-// not copy the renderer is meant to interpret, so every copy rule below reads
-// the body with both removed.
-const stripCode = (markdown: string) =>
-  markdown.replace(/```[\s\S]*?```/g, "").replace(/`[^`\n]*`/g, "");
+// A code sample is someone else's syntax, not copy the renderer is meant to
+// interpret, so every copy rule below reads the body with code removed.
+//
+// "A fenced block or an inline code span" was this comment's own scope until
+// PRA-1033, and that is two of CommonMark's forms rather than all of them.
+// react-markdown paints the rest as <pre><code> just the same: a `~~~` fence,
+// a 4-space or tab-indented block, a fence left unterminated, a
+// ``double-backtick`` span, and a span that pairs across a line break. Each one
+// the helper missed was read as prose by all five rules below at once.
+//
+// So this asks the renderer's own parser for the ranges rather than matching
+// the forms. Enumerating them is what was wrong before, and the enumeration
+// cannot be finished by hand anyway: an indented block nests relative to its
+// container, so a fence in a blockquote and a sample under a list item need the
+// block structure that mdast-util-from-markdown — the parser remark-parse runs
+// underneath react-markdown — has already worked out.
+//
+// Each range is blanked rather than deleted, so every offset and line number a
+// rule below reads still lines up with the source the author wrote.
+const blank = (source: string) => source.replace(/[^\n]/g, " ");
+
+const stripCode = (markdown: string) => {
+  const ranges: [number, number][] = [];
+
+  const walk = (node: Nodes) => {
+    if (node.type === "code" || node.type === "inlineCode") {
+      const start = node.position?.start.offset;
+      const end = node.position?.end.offset;
+
+      if (start !== undefined && end !== undefined) ranges.push([start, end]);
+      return;
+    }
+
+    if ("children" in node) node.children.forEach(walk);
+  };
+
+  walk(fromMarkdown(markdown));
+
+  // Blanking preserves length, so an earlier edit never shifts a later range.
+  return ranges.reduce(
+    (body, [start, end]) =>
+      body.slice(0, start) + blank(body.slice(start, end)) + body.slice(end),
+    markdown
+  );
+};
 
 // The constructs remark-gfm would add, and what to write instead. Hoisted out
 // of the test below so the pairing check further down can run the same rules
@@ -127,6 +169,14 @@ const INLINE_TARGET = /\]\([ \t]*(<[^<>\n]*>|[^\s()]*)/g;
 // link. Indented up to three spaces, because four makes it an indented code
 // block that renders nothing, and the destination may sit on the next line.
 //
+// That bound no longer decides anything: since PRA-1033 stripCode blanks the
+// indented block before this pattern sees the line, and relaxing {0,3} to *
+// leaves the whole table below green. It stays because it states CommonMark's
+// rule where the pattern is read — but it was never the whole rule on its own.
+// [ \t] counts a tab as one character and a tab is four columns, so a
+// tab-indented definition cleared the bound and was flagged as shipping a
+// redirect while rendering no anchor at all. stripCode is what closes that.
+//
 // The negative lookahead skips a footnote definition ([^1]: Source.), which is
 // shaped identically. See the test below for why that is safe rather than a
 // hole (PRA-1010, PRA-1021).
@@ -215,6 +265,94 @@ describe("blog-posts data", () => {
     expect(new Set(images).size).toBe(images.length);
   });
 
+  // stripCode is the exemption all five copy rules read the body through, so a
+  // form it does not recognise is not one false positive but five. The same
+  // sample, written as a 4-space indented block, trips the `$` rule with
+  // `export $PATH=/usr/bin`, the unsupported-markdown rule with a pipe table
+  // row, the bare-URL rule inside it, the stacked-bold rule with two lines
+  // opening `**`, and the trailing-slash rule with `[t](/blog/foo)` — five
+  // simultaneous failures, on markdown that is correct. The cheapest way to
+  // make a red gate green is to reshape the sample until it passes, so the cost
+  // lands on whoever is writing, silently, and never appears as a bug.
+  //
+  // The corpus cannot catch that: a sweep of `origin/main` plus all 28 banked
+  // blog branches — 41 post bodies — finds none of these forms, so the gates
+  // have been green through every hole listed below. This asks the renderer
+  // instead, in the shape PRA-1010 and PRA-1021 established.
+  //
+  // The question is "does this reach the reader as prose", not "is it inside
+  // <code>", because those differ in one direction that matters: a fence's info
+  // string (```js) renders nowhere at all, and removing it is right for the
+  // same reason removing the block is (PRA-1033).
+  it("strips a sample if and only if the renderer does not paint it as prose", () => {
+    const forms = [
+      // The two forms the helper was named for, plus the plain paragraph that
+      // must survive — a row reading "ok" is only evidence if something in the
+      // table is required to come out the other side.
+      "```\nPAYLOAD\n```\n",
+      "```js\nPAYLOAD\n```\n",
+      "See `PAYLOAD` here.\n",
+      "See PAYLOAD here.\n",
+      // Fences the two-form helper also happened to catch. The last one is the
+      // info string: it renders nowhere, so "stripped" is the right answer for
+      // it and "inside <code>" would have been the wrong question.
+      "````\nPAYLOAD\n````\n",
+      "  ```\n  PAYLOAD\n  ```\n",
+      "- item\n\n  ```\n  PAYLOAD\n  ```\n",
+      "> ```\n> PAYLOAD\n> ```\n",
+      "```PAYLOAD\nbody\n```\n",
+      // Code to the renderer, prose to the two-form helper. The first six are
+      // PRA-1033 as filed; the three after them turned up rendering the table.
+      // A code span pairs across a line break, which is why the mirror-hole
+      // argument for the old `[^`\n]*` — "renderer and helper agree within a
+      // line" — held only within a line. The last two are container blocks: an
+      // indented block nests relative to its parent, so no amount of pattern
+      // gets them without the block structure the parser already has.
+      "Prose.\n\n    PAYLOAD\n",
+      "Prose.\n\n\tPAYLOAD\n",
+      "~~~\nPAYLOAD\n~~~\n",
+      "~~~js\nPAYLOAD\n~~~\n",
+      "See ``PAYLOAD`` here.\n",
+      "```\nPAYLOAD\n",
+      "See `foo\nPAYLOAD` here.\n",
+      "- item\n\n      PAYLOAD\n",
+      "> Prose.\n>\n>     PAYLOAD\n",
+      // Prose that must survive, each a near-miss of a row above: an indented
+      // block cannot interrupt a paragraph or a list item's own continuation,
+      // an unpaired backtick opens nothing, `~~` and `~~~` inline are literal
+      // punctuation rather than a fence — the strikethrough rule above still
+      // needs to see them — and a raw HTML block ships as escaped text.
+      "Prose line.\n    PAYLOAD\n",
+      "- item\n\n    PAYLOAD\n",
+      "A ` char and PAYLOAD here.\n",
+      "See ~~PAYLOAD~~ here.\n",
+      "See ~~~PAYLOAD~~~ here.\n",
+      "<div>\nPAYLOAD\n</div>\n",
+    ];
+
+    const disagreements = forms.flatMap((markdown) => {
+      // <code> cannot nest, so removing each element's contents leaves exactly
+      // what the reader is given as copy.
+      const prose = renderMarkdownToHtml(markdown).replace(
+        /<code[^>]*>[\s\S]*?<\/code>/g,
+        ""
+      );
+      const readAsProse = prose.includes("PAYLOAD");
+      const stripped = !stripCode(markdown).includes("PAYLOAD");
+
+      return stripped === !readAsProse
+        ? []
+        : [
+            `${JSON.stringify(markdown)} ` +
+              (readAsProse
+                ? "renders as prose but stripCode removes it"
+                : "renders as code but stripCode leaves it for the copy rules"),
+          ];
+    });
+
+    expect(disagreements).toEqual([]);
+  });
+
   // Post bodies are the one place internal links are hand-written rather than
   // built from a slug, so they are where the trailing-slash convention drifts
   // back. Every pratik.pa.tel path 301s to its slash form, and a markdown link
@@ -270,6 +408,13 @@ describe("blog-posts data", () => {
       "Text here.\n[ref]: /blog/foo\n\nSee [the post][ref] there.\n",
       "See `[the post](/blog/foo)` here.",
       "```\n[ref]: /blog/foo\n```\n\nSee the post here.\n",
+      // An indented code block is the other way to write a sample, and both
+      // halves of this rule were blind to it until PRA-1033: the inline link
+      // was flagged though the renderer paints it inside <code>, and a
+      // tab-indented definition slipped under the `{0,3}` bound above as a
+      // definition when a tab is four columns and makes the line code.
+      "Prose.\n\n    See [the post](/blog/foo) here.\n",
+      "See [the post][ref] here.\n\n\t[ref]: /blog/foo\n",
     ];
 
     const disagreements = forms.flatMap((markdown) => {
