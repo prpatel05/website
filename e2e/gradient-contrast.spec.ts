@@ -47,10 +47,10 @@ import { test, expect, type Page } from "./fixtures";
  * real copy. Sub-pixel `|` separators and the `/>` watermark at opacity 0.03
  * are the same category.
  *
- * Measured this way on 2026-08-16 the page is clean: 23 nodes at 1280px and 21
- * at 393px, nothing below its floor. The margin is thinner than the palette
+ * Measured this way on 2026-08-16 the page is clean: 46 nodes across the two
+ * viewports, nothing below its floor. The margin is thinner than the palette
  * suggests, which is the point of measuring rather than computing — the hero
- * subtitle lands at 4.79:1 against a 4.5 floor, and `text-accent` "writes" at
+ * subtitle lands at 5.30:1 against a 4.5 floor, and `text-accent` "writes" at
  * 4.92:1 is only large-text (3:1) copy. Standing the gate up while it is green
  * is the point, as in `a11y-axe.spec.ts` — the job is the next regression, not
  * a backlog.
