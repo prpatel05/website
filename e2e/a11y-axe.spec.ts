@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import AxeBuilder from "@axe-core/playwright";
 import { renderMarkdownToHtml } from "../scripts/markdown-html.mjs";
+import { unmeasuredContrastNodes } from "./axe-unmeasured";
 import { test, expect,
   openMobileMenu,
   openTerminalByClick,
@@ -45,6 +46,18 @@ const routes = [...readFileSync(SITEMAP, "utf8").matchAll(/<loc>([^<]+)<\/loc>/g
 
 const WCAG_AA = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
 
+/**
+ * The one route allowed to hand axe text it cannot measure.
+ *
+ * `/` sits on a gradient, so axe returns its copy as `incomplete` rather than
+ * judging it, and `gradient-contrast.spec.ts` measures those nodes by pixel
+ * instead. Every other route is flat and axe measures it outright — swept on
+ * 2026-08-16 across all 26 sitemap routes at both breakpoints: `/` produced 24
+ * unmeasured nodes at 1280px and 21 at 393px, the other 25 produced none at
+ * either width.
+ */
+const MEASURED_BY_PIXEL = "/";
+
 test.describe("every route passes axe at WCAG 2.1 AA", () => {
   for (const route of routes) {
     test(`${route} has no accessibility violations`, async ({ page }) => {
@@ -55,7 +68,30 @@ test.describe("every route passes axe at WCAG 2.1 AA", () => {
       // dialog roles and focus management exist at all.
       await expect(page.getByRole("navigation", { name: "Main" })).toBeVisible();
 
-      const { violations } = await new AxeBuilder({ page }).withTags(WCAG_AA).analyze();
+      const { violations, incomplete } = await new AxeBuilder({ page }).withTags(WCAG_AA).analyze();
+
+      /*
+        A green `violations` list is not the same as axe having measured the
+        page, and until PRA-1023 this file treated it as if it were.
+
+        Text whose backdrop axe cannot resolve comes back `incomplete` instead,
+        and on `/` that quietly excused the whole page — hero `h1` through
+        footer — while a decorative particle drifted behind the subtitle and
+        took it under AA for part of every animation cycle. `/` is measured by
+        pixel now. This is what stops that from being a one-page patch: the day
+        a gradient lands on any other route, that route's copy stops being
+        checked by anything, and this is the only thing that would say so.
+      */
+      if (route !== MEASURED_BY_PIXEL) {
+        const unmeasured = unmeasuredContrastNodes(incomplete);
+        expect(
+          unmeasured,
+          `${route} at ${page.viewportSize()?.width}px gives axe ${unmeasured.length} text node(s) ` +
+            `it cannot measure the contrast of, so nothing checks them. Either flatten the ` +
+            `surface, or add the route to \`e2e/gradient-contrast.spec.ts\` so it is measured ` +
+            `by pixel the way \`/\` is:\n  ${unmeasured.join("\n  ")}`
+        ).toEqual([]);
+      }
 
       const detail = violations
         .map(

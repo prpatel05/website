@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import sharp from "sharp";
 import { test, expect, type Page } from "./fixtures";
+import { unmeasuredContrastNodes } from "./axe-unmeasured";
 
 /**
  * Measures text contrast on the one surface neither existing check can see.
@@ -64,9 +65,6 @@ const LARGE_MIN = 3;
 const FULL_INK = 0.95;
 
 const WCAG_AA = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
-
-/** axe's own words for "this is decoration, not copy". */
-const DECORATIVE = "non-text characters";
 
 const STYLE_ID = "__gradient_contrast_ink";
 const MARK = "data-gradient-contrast";
@@ -252,15 +250,7 @@ const required = (placed: Placed) =>
 /** The nodes axe declined to measure, minus the ones it declined because they are decoration. */
 async function unmeasuredByAxe(page: Page) {
   const { incomplete } = await new AxeBuilder({ page }).withTags(WCAG_AA).analyze();
-  return incomplete
-    .filter((result) => result.id === "color-contrast")
-    .flatMap((result) => result.nodes)
-    .filter((node) =>
-      [...(node.any ?? []), ...(node.all ?? []), ...(node.none ?? [])].every(
-        (check) => !(check.message ?? "").includes(DECORATIVE)
-      )
-    )
-    .map((node) => node.target.join(" "));
+  return unmeasuredContrastNodes(incomplete);
 }
 
 test.describe("text axe cannot measure still clears AA", () => {
