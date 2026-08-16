@@ -1,4 +1,5 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
+import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 
 // Read the manifest off disk rather than importing it. Vite serves public/ verbatim,
@@ -56,5 +57,46 @@ describe("web app manifest", () => {
         height: h,
       });
     }
+  });
+
+  it("the apple-touch-icon is fully opaque", async () => {
+    // iOS ignores alpha in a home-screen icon: it composites onto black, then
+    // applies its own superellipse mask at the full tile size. A transparent
+    // margin therefore survives the mask as a black band, and the tile reads
+    // smaller than every neighbouring app icon and is ringed in #000000. This
+    // shipped for real — 30.3% of the tile was alpha 0, a 13px margin all round.
+    //
+    // The other icons are deliberately not held to this: a favicon paints over
+    // browser chrome that may be light or dark, and Android gets its opaque
+    // tile from the separate `maskable` entry.
+    //
+    // Read the href out of index.html rather than the manifest — the `<link
+    // rel="apple-touch-icon">` is what iOS actually reads, and the manifest
+    // does not drive the home-screen icon at all.
+    const html = readFileSync("index.html", "utf8");
+    const href = html.match(
+      /<link[^>]*rel="apple-touch-icon"[^>]*href="([^"]+)"/
+    )?.[1];
+    expect(href, "index.html declares no apple-touch-icon").toBeDefined();
+
+    const image = sharp(`public${href}`);
+    const { width, height } = await image.metadata();
+    expect({ width, height }).toEqual({ width: 180, height: 180 });
+
+    // Count alpha rather than trusting the channel count: an RGBA png whose
+    // alpha is uniformly 255 is opaque too, and regenerating through a
+    // different tool could reasonably produce either.
+    const { data, info } = await image
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    let transparent = 0;
+    for (let i = 3; i < data.length; i += info.channels) {
+      if (data[i] < 255) transparent += 1;
+    }
+    expect(
+      transparent,
+      `${href} has ${transparent} non-opaque pixels; iOS will flatten those to black`
+    ).toBe(0);
   });
 });
