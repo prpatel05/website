@@ -132,6 +132,11 @@ async function setInk(page: Page, color: string | null) {
  * the SCROLL label to opacity < 1, and all three dropped out of the sweep
  * silently. They are on screen and fully opaque exactly where the page already
  * is at load, so nodes already in view are shot without touching the scroll.
+ *
+ * Each node is judged from the top of the page rather than from wherever the
+ * previous one left the scroll, so which branch a node takes does not depend on
+ * the order axe happened to return it in. Without the reset the hero is only
+ * safe for as long as it sorts before everything below the fold.
  */
 async function place(page: Page, selector: string): Promise<Placed | null> {
   const inView = await page.evaluate(
@@ -140,6 +145,7 @@ async function place(page: Page, selector: string): Promise<Placed | null> {
       if (!el) return null;
       document.querySelectorAll(`[${mark}]`).forEach((n) => n.removeAttribute(mark));
       el.setAttribute(mark, "");
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
       const r = el.getBoundingClientRect();
       return r.top >= 0 && r.left >= 0 && r.bottom <= window.innerHeight && r.right <= window.innerWidth;
     },
