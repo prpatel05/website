@@ -3,6 +3,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it, expect } from "vitest";
 import { fromMarkdown } from "mdast-util-from-markdown";
+import rehypeRaw from "rehype-raw";
 import type { Heading, Nodes, Paragraph } from "mdast";
 import {
   posts,
@@ -68,6 +69,62 @@ const stripCode = (markdown: string) => {
       body.slice(0, start) + blank(body.slice(start, end)) + body.slice(end),
     markdown
   );
+};
+
+// scripts/markdown-html.mjs runs react-markdown with no rehype-raw, so a tag
+// the author wrote is neither rendered nor dropped: it is escaped and painted
+// as visible angle brackets. `The price was <del>40</del> 20.` ships
+// `&lt;del&gt;40&lt;/del&gt;` — measured. PRA-1072 removed the advice that
+// pointed authors at a raw tag and gated the advice against the renderer; this
+// is the body side it scoped out, which had no gate at all.
+//
+// The rule reads the parser rather than matching the form, and that is the
+// whole difficulty of this one. An angle bracket is not evidence of anything:
+// `<https://example.com/x>` and `<hello@example.com>` are CommonMark autolinks
+// that render as real anchors, and the second is what the bare-email row's own
+// advice tells the author to write — so a rule that rejects a bracket
+// contradicts the advice one screen up, which is the over-match PRA-1010
+// retired. The tag production the PRA-1072 advice gate uses is no help here
+// either: `/<\/?[A-Za-z][^<>]*>/` matches both autolinks, because `https` and
+// `hello` are legal tag names.
+//
+// CommonMark already draws the line exactly, and the parser is where it is
+// drawn: an autolink is a `link` node, a tag is an `html` node. That also picks
+// up what no tag pattern can — an HTML comment has no tag name, so `[A-Za-z]`
+// misses `<!-- note -->` outright, and it escapes to visible text just as a tag
+// does (measured) — and it exempts a sample for free, since a tag inside a
+// fence or a span is part of a `code` node and never an `html` one. Same move,
+// and for the same reason, as PRA-1033 asking the parser for code ranges
+// instead of enumerating the forms.
+const rawHtml = (markdown: string) => {
+  const found: string[] = [];
+
+  const walk = (node: Nodes) => {
+    if (node.type === "html") {
+      found.push(node.value);
+      return;
+    }
+
+    if ("children" in node) node.children.forEach(walk);
+  };
+
+  walk(fromMarkdown(markdown));
+  return found;
+};
+
+// Raw HTML is reported alongside the rules below rather than as one of them: it
+// is not a construct remark-gfm would add, and it is not found by a pattern. It
+// belongs in the same failure because it fails in the same way — the author
+// wrote markup and the reader is shown its source.
+const RAW_HTML = {
+  label: "raw HTML",
+  // Every other row names a different syntax for the same thing. This one
+  // cannot: what to write instead depends on the tag, and for a tag with no
+  // markdown spelling the honest answer is the one the strikethrough row
+  // already gives — rewrite the sentence. No angle bracket is spelled here, so
+  // the advice gate below passes it trivially, which is the point: advice for
+  // avoiding raw HTML should not contain any.
+  use: "the markdown for it (`**bold**`, `*italic*`, `` `code` ``, `[text](url)`), or plain wording where markdown has no spelling for one",
 };
 
 // The constructs remark-gfm would add, and what to write instead. Hoisted out
@@ -169,12 +226,14 @@ const unsupported = [
   },
 ];
 
-const unsupportedIn = (markdown: string) =>
-  unsupported.flatMap(({ label, pattern, use, exempt }) =>
+const unsupportedIn = (markdown: string) => [
+  ...unsupported.flatMap(({ label, pattern, use, exempt }) =>
     Array.from(
       (exempt ? markdown.replace(exempt, "") : markdown).matchAll(pattern)
     ).map((match) => ({ label, use, text: match[0] }))
-  );
+  ),
+  ...rawHtml(markdown).map((text) => ({ ...RAW_HTML, text })),
+];
 
 // [text](destination). The destination is either <bracketed> or runs to the
 // first whitespace or closing paren; stopping at whitespace drops the optional
@@ -638,6 +697,15 @@ describe("blog-posts data", () => {
   // "a bare URL renders unlinked" is three constructs, not one — GFM autolinks
   // https://, www. and bare email literals — and until 2026-08-16 this covered
   // the first and mistook one CommonMark form for it. See the rules above.
+  //
+  // Raw HTML is reported here too, and it is the one thing on the list that GFM
+  // would not fix: the missing plugin is rehype-raw, not remark-gfm. It belongs
+  // in this failure because the author meets it the same way — markup written,
+  // source shipped — and because it is what the strikethrough row used to
+  // advise (PRA-1072). Measured across 24 published bodies and 346 on banked
+  // blog/* branches, 280 of the 370 carrying a `**` as a positive control: no
+  // body trips it today, so the cost lands on the first author to reach for a
+  // tag rather than on anything already written.
   it("writes post bodies in markdown the renderer supports", () => {
     const offenders = posts.flatMap((post) =>
       unsupportedIn(stripCode(markdownSource(post.slug))).map(
@@ -724,13 +792,96 @@ describe("blog-posts data", () => {
   // did — measured. Requiring a leading letter is what keeps the looser bound
   // honest: it matches a tag, and not a `<` used as prose punctuation.
   it("gives advice that spells no angle-bracket form the renderer escapes", () => {
-    const escaped = unsupported.flatMap(({ label, use }) =>
+    const escaped = [...unsupported, RAW_HTML].flatMap(({ label, use }) =>
       Array.from(use.matchAll(/<\/?[A-Za-z][^<>]*>/g))
         .filter(([form]) => !/<a /.test(renderMarkdownToHtml(form)))
         .map(([form]) => `${label}: ${form} in "${use}" ships escaped`)
     );
 
     expect(escaped).toEqual([]);
+  });
+
+  // The raw HTML rule, measured the way every rule in this file is: against the
+  // renderer, over a table of forms, with one answer required from both sides.
+  //
+  // It needs a different oracle than the rules above, because on the page the
+  // defect leaves no trace. `<del>40</del>` reaches the reader as the literal
+  // text `<del>40</del>`; `5 < 10` reaches the reader as the literal text
+  // `5 < 10`. One is markup the renderer refused and the other is punctuation
+  // the author typed, and the rendered HTML holds the same escaped bracket for
+  // both — so "does the output contain &lt;" cannot separate them, and neither
+  // can any pattern read off the output.
+  //
+  // rehype-raw is the renderer that can: it keeps exactly what this one
+  // escapes, so a form is raw HTML if and only if turning it on changes what
+  // ships. That is also the honest statement of the lint — the body is written
+  // for a renderer without it — and it stays true if the product ever gains it,
+  // at which point the two renders agree everywhere, this gate demands zero
+  // flags, and the rule goes red instead of silently outliving its reason.
+  //
+  // The two autolinks are the rows that matter most: they are the forms a
+  // bracket-matching rule rejects, and one of them is what the bare-email row's
+  // advice tells the author to write. The four code rows are not exemptions
+  // applied here — `unsupportedIn` is called on the raw source, without
+  // stripCode — but the parser declining to call a sample's tag an `html` node.
+  it("flags a form if and only if rehype-raw would change what ships", () => {
+    const forms = [
+      // The three rows the issue measured, plus the block form the stripCode
+      // table above already leans on as a case built on raw HTML escaping.
+      "The price was <del>40</del> 20.",
+      '<span style="text-decoration:line-through">struck</span>',
+      "<br />",
+      "Line one.<br />Line two.",
+      "<div>\nBODY\n</div>",
+      "<kbd>Ctrl</kbd>",
+      // A raw anchor is the one tag whose element `components` does map, and it
+      // escapes like any other: the map is reached through markdown, not
+      // through the tag.
+      '<a href="https://example.com/">raw anchor</a>',
+      // No tag name at all, so every tag pattern misses it and the reader is
+      // shown a comment that was meant to be invisible.
+      "<!-- a note -->",
+      "Prose with <!-- inline note --> in it.",
+      // CommonMark autolinks. Real anchors, and `<hello@example.com>` is the
+      // bare-email row's own advice — flagging either is PRA-1010 again.
+      "See <https://example.com/x> here.",
+      "See <hello@example.com> here.",
+      // Prose punctuation. The last is the near-miss of the tag production: a
+      // bracket against a letter, with nothing closing it.
+      "A value under 5 < 10 holds.",
+      "Compare 3 < 5 and 9 > 2.",
+      "A stray 5 <x in prose.",
+      // A tag is someone else's syntax in all four ways to write a sample.
+      "See `<del>40</del>` here.",
+      "See ``<del>40</del>`` here.",
+      "```\n<del>40</del>\n```\n",
+      "Prose.\n\n    <del>40</del>\n",
+      // Prose that must survive: the strikethrough rule above still has to see
+      // its own tildes, and a body with no brackets is the control.
+      "See ~~struck~~ here.",
+      "Plain prose with **bold**.",
+    ];
+
+    const disagreements = forms.flatMap((markdown) => {
+      const kept = renderMarkdownToHtml(markdown, [rehypeRaw]);
+      const escapes = renderMarkdownToHtml(markdown) !== kept;
+      const flagged = unsupportedIn(markdown).filter(
+        ({ label }) => label === RAW_HTML.label
+      );
+
+      return (flagged.length > 0) === escapes
+        ? []
+        : [
+            `${JSON.stringify(markdown)} ` +
+              (escapes
+                ? "is raw HTML and nothing flags it"
+                : `renders as written but is flagged as ${JSON.stringify(
+                    flagged.map(({ text }) => text)
+                  )}`),
+          ];
+    });
+
+    expect(disagreements).toEqual([]);
   });
 
   // CommonMark folds adjacent lines into one paragraph. Two lines that each
