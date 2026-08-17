@@ -83,7 +83,13 @@ const unsupported = [
   {
     label: "strikethrough",
     pattern: /~~[^~\n]+~~/g,
-    use: "plain wording, or <del> if the strike is the point",
+    // A strike has no CommonMark spelling, so unlike every other row here the
+    // fix is a rewrite rather than a different syntax — the sentence has to
+    // carry the meaning. Naming a raw tag was the one false claim on this list:
+    // it is escaped to visible angle brackets, not rendered (PRA-1072). Getting
+    // a real strike is a renderer change — rehype-raw, or a `del` entry in
+    // `components` — and belongs in a filed issue rather than in advice here.
+    use: "plain wording — a strike has no markdown spelling, and raw HTML is escaped to literal angle brackets rather than rendered",
   },
   {
     label: "footnote",
@@ -111,7 +117,13 @@ const unsupported = [
     // leaf-level match. Same shape as the `<code[\s>]` over-match retired in
     // #113: a scope pattern catching markup that ships correctly (PRA-1010).
     pattern: /(?<![([<])\bhttps?:\/\/[^\s)<>\]]+/g,
-    use: "[descriptive text](the-url), or <the-url> to cite it bare",
+    // The scheme is spelled inside the brackets because the scheme is what
+    // makes an autolink one: `<the-url>` read literally is a tag name, and
+    // escapes exactly as `<del>` did. It resolved correctly in practice — this
+    // rule matches on a scheme, so the author substituting always had one — but
+    // advice that is true only after substitution cannot be measured against
+    // the renderer, and this row sits next to the one that was false (PRA-1072).
+    use: "[descriptive text](the-url), or <https://the-url> to cite it bare",
     // A link reference definition — [ref]: https://example.com/ on its own
     // line, paired with a [text][ref] elsewhere — is CommonMark, not GFM,
     // and react-markdown renders it as a real <a>. Its URL is a link
@@ -670,6 +682,41 @@ describe("blog-posts data", () => {
           : `${JSON.stringify(markdown)} ships unlinked and nothing flags it`
       ).toBe(!linked);
     }
+  });
+
+  // Every `use:` string above is a claim about the renderer, and the rules have
+  // been measured against it while the advice never was. The strike row's claim
+  // was false: react-markdown runs with no rehype-raw, so a raw tag is neither
+  // rendered nor dropped — it is escaped and painted as visible angle brackets.
+  // `The price was <del>40</del> 20.` ships `&lt;del&gt;40&lt;/del&gt;`, so an
+  // author who hit the strikethrough lint and did what it said put literal
+  // angle brackets on the page, in the one sentence where the strike was the
+  // point. Nothing fired: every rule here is aimed at the GFM constructs, not
+  // at the advice for avoiding them (PRA-1072).
+  //
+  // The angle bracket is the whole ambiguity, and the file already disagreed
+  // with itself about it — the stripCode table above uses `<div>` as a case
+  // built on raw HTML shipping escaped, one screen from advice that assumed the
+  // opposite. `<https://…>` and `<hello@example.com>` are CommonMark autolinks
+  // that render as real anchors (PRA-1010); `<del>` matches the raw HTML tag
+  // production and escapes. The two are indistinguishable by eye in a failure
+  // message, which is why this asks the renderer rather than a reader.
+  //
+  // Spelling the scheme inside the brackets is what makes the bare-URL row
+  // answerable at all. `<the-url>` is a placeholder that resolves correctly
+  // only because that rule matches on a scheme the author therefore already
+  // has — but read literally it is a tag name, so it escapes, and advice that
+  // is true only after substitution cannot be checked. `<https://the-url>`
+  // renders as an anchor as written, and says the part that carries the
+  // meaning: an autolink is a scheme in brackets, not brackets.
+  it("gives advice that spells no angle-bracket form the renderer escapes", () => {
+    const escaped = unsupported.flatMap(({ label, use }) =>
+      Array.from(use.matchAll(/<[^<>\s]+>/g))
+        .filter(([form]) => !/<a /.test(renderMarkdownToHtml(form)))
+        .map(([form]) => `${label}: ${form} in "${use}" ships escaped`)
+    );
+
+    expect(escaped).toEqual([]);
   });
 
   // CommonMark folds adjacent lines into one paragraph. Two lines that each
