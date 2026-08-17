@@ -219,6 +219,17 @@
  * read back off the rasterized sheet: `h1`/`h2`/`strong` 2.50:1 -> 16.88:1,
  * links 1.32:1 -> 6.98:1, subtitle 1.15:1 -> 10.17:1, chips 1.19:1 -> 6.30:1.
  * `e2e/print-contrast.spec.ts` is the gate.
+ *
+ * Every figure on that line is ink against *paper*, and the last one is the
+ * reason to say so out loud. "chips 1.19:1 -> 6.30:1" reports the inline code
+ * chip as fixed, and by that measure it is — but the chip's cue was never its
+ * ink, it was its fill, and `--muted` going white below takes the fill with it.
+ * On paper the span landed 1.75:1 from the prose beside it in the same family,
+ * size and weight, so a field name read as the English word. A number that
+ * answers the wrong question is worse than no number: it is what kept the loss
+ * invisible from inside the suite. The chip now carries a `print:border` and
+ * `print-contrast.spec.ts` has a third sweep that compares a run of ink to the
+ * ink around it rather than to the sheet (PRA-1086).
  */
 @media print {
   :root {

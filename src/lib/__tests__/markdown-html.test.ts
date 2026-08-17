@@ -143,6 +143,39 @@ describe("markdown rendered at build time", () => {
     expect(html).toMatch(/<code class="[^"]*bg-muted[^"]*">constraints<\/code>/);
   });
 
+  // The line above is the *screen* cue, and it is a fill — the one kind of cue
+  // paper does not carry. `--muted` is white under `@media print` by design and
+  // Chrome drops backgrounds regardless, so on paper the chip was the paper and
+  // the only thing left was a 1.75:1 step between two greys (PRA-1086).
+  //
+  // A class in a string is not a compiled rule — `tailwind.config.ts` has to be
+  // globbing `scripts/**/*.mjs` for `print:border-border` to exist at all, and
+  // only a browser can say whether it does. `e2e/print-contrast.spec.ts`
+  // measures that. This pins the intent where dropping it costs a `npm test`
+  // rather than a browser run nobody does locally.
+  it("leaves inline code a cue once the fill drops on paper", () => {
+    const html = renderMarkdownToHtml("Set `constraints` first.\n");
+
+    const [, cls] = html.match(/<code class="([^"]*)">constraints<\/code>/) ?? [];
+    expect(cls).toBeDefined();
+    // Split rather than `toContain`, because "print:border-border" contains
+    // "print:border" as a substring, and a substring check would let the width
+    // utility alone satisfy both expectations.
+    //
+    // The width is the load-bearing half: preflight already sets every element's
+    // `border-color` to `hsl(var(--border))`, and the print block redeclares
+    // that token, so the colour arrives at the printed 3.20:1 with or without
+    // the second utility. It is written out anyway, and asserted, for the same
+    // reason `pre` carries `border border-border` rather than a bare `border`:
+    // an edge that is only achromatic because of a preflight default is relying
+    // on a default to hold a decision the print block makes on purpose. The
+    // screen token is `160 30% 15%` — a saturated green, which is the shape of
+    // the failure the whole print block exists for (PRA-1063).
+    const classes = (cls ?? "").split(/\s+/);
+    expect(classes).toContain("print:border");
+    expect(classes).toContain("print:border-border");
+  });
+
   // Styling inline code is what puts `pre` in scope: a fenced block wraps a
   // <code>, so without an entry every line of it would wear the inline chip.
   // No post has a fenced block today, which is exactly why a broken one would

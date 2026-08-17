@@ -407,6 +407,249 @@ for (const route of ROUTES) {
 }
 
 /*
+ * ## The third way this design system marks something, and the first sweep that
+ * can see it
+ *
+ * The two sweeps above read ink-against-paper and edge-against-paper. This
+ * design system marks things a third way — with a *fill* — and a fill is the
+ * one cue that cannot survive paper: `--muted`, `--card` and `--secondary` are
+ * all white under `@media print` by policy, and Chrome drops backgrounds
+ * anyway unless the reader ticks "Background graphics".
+ *
+ * Inline `code` was marked that way and nothing else. `scripts/markdown-html.mjs`
+ * says so at its `code` entry — the body font is already JetBrains Mono, so
+ * family, size and colour already match the prose, and "the chip is what makes
+ * it read as code". On paper both halves of the chip went: the fill became the
+ * paper at 1.00:1, and the saturated mint `--foreground` became the same
+ * achromatic ink as everything else. What was left was a 1.75:1 step between two
+ * greys, on `/blog/the-handoff-is-where-agents-break/`, where `constraints` and
+ * `unresolved` are field names in a sentence about a JSON shape and printed as
+ * the English words (PRA-1086).
+ *
+ * Neither sweep above could see it, and one of them actively vouched for it:
+ *
+ * - The text sweep reads `color` against paper. The chip's ink is 16.88:1 —
+ *   the print block's own header reports this element as fixed, "chips 1.19:1
+ *   -> 6.30:1". That figure is ink-against-paper. Nothing in this file compared
+ *   a run of ink to the ink *beside* it.
+ * - The edge sweep reads `borderColor`, and the chip had no border in either
+ *   medium. Adding `code` to that selector would have collected zero rows and
+ *   gone green.
+ *
+ * So this asks the question neither of them asks: is this run of ink still
+ * distinguishable from the ink around it, once the sheet is white?
+ *
+ * ## Why a colour difference does not count as an answer
+ *
+ * The cue has to be non-colour. Two reasons, and the second is the load-bearing
+ * one. The print path is already achromatic by construction — every token in
+ * the block is a grey, so "different colour" can only mean "different
+ * lightness", and 1.75:1 of lightness is what this test exists because of.
+ * And a reader who prints greyscale, or photocopies the sheet, keeps the edge
+ * and the typography and loses the rest. 1.4.1 is that argument on screen;
+ * paper makes it stricter, not looser.
+ */
+const INLINE_CODE_ROUTE = "/blog/the-handoff-is-where-agents-break/";
+
+const inlineChipPosts = () => {
+  const dir = new URL("../src/data/blog-posts/content/", import.meta.url);
+  const posts = readdirSync(dir).filter((name) => name.endsWith(".md"));
+  expect(posts.length).toBeGreaterThan(0);
+
+  return posts.filter((name) => {
+    const html = renderMarkdownToHtml(readFileSync(new URL(name, dir), "utf8"));
+    // A fenced block is `<pre><code>`, and that `code` wears no chip — it is
+    // the `pre` that carries the treatment, and the `pre` sweep that measures
+    // it. Removing the block first is what keeps this counting the inline form.
+    return /<code/.test(html.replace(/<pre[\s\S]*?<\/pre>/g, ""));
+  });
+};
+
+/*
+ * The route below is hardcoded, and a hardcoded route is a fact about the
+ * corpus written down somewhere the corpus cannot reach. Three published spans
+ * in one body of 24 is a thin thing to hang a gate on: one edit to that post and
+ * the browser test below measures an empty set on a page with nothing to
+ * measure.
+ *
+ * Asked of the renderer for the same reason the `pre` trip wire is — a grep for
+ * a backtick is the too-narrow enumeration one more time — and it names the
+ * replacement rather than just failing, because when this breaks the fix is to
+ * point the route somewhere else, not to think about it from scratch.
+ */
+test("print media: the inline-code route still renders an inline code chip", () => {
+  const withChip = inlineChipPosts();
+  const slug = INLINE_CODE_ROUTE.replace(/^\/blog\/|\/$/g, "");
+
+  expect(
+    withChip,
+    `INLINE_CODE_ROUTE is /blog/${slug}/ and that post no longer renders an ` +
+      "inline code chip, so the print sweep below measures an empty page and " +
+      "passes for it. Repoint INLINE_CODE_ROUTE at one of the posts listed here"
+  ).toContain(`${slug}.md`);
+});
+
+type Chip = {
+  text: string;
+  color: string;
+  background: string;
+  printColorAdjust: string;
+  decoration: string;
+  type: string;
+  edges: { side: string; color: string }[];
+  parentTag: string;
+  parentColor: string;
+  parentType: string;
+};
+
+const collectChips = async (page: Page) =>
+  page.evaluate<Chip[]>(() => {
+    const typography = (s: CSSStyleDeclaration) =>
+      [s.fontFamily, s.fontSize, s.fontWeight, s.fontStyle].join(" | ");
+
+    // `:not(pre code)` and not a filter on the whole `code` set, so a fenced
+    // block's inner `code` — which wears no chip and is measured by the `pre`
+    // sweep instead — cannot be counted as an unmarked inline span.
+    return [...document.querySelectorAll<HTMLElement>("code:not(pre code)")].map(
+      (el) => {
+        const s = getComputedStyle(el);
+        // The parent, and deliberately not the enclosing block. "The ink beside
+        // it" means the run the span is actually sitting in the middle of, and
+        // for a chip inside `**bold**` that is the `strong`, not the paragraph.
+        // Comparing to the paragraph there would report a `typography` cue —
+        // weight 700 against 400 — for a span that is identical to every word
+        // touching it, which is the exact false pass this sweep exists to
+        // prevent. Where a chip is a direct child of the paragraph, as all three
+        // on this route are, the two readings coincide.
+        const near = el.parentElement ?? el;
+        const bs = getComputedStyle(near);
+
+        const edges: { side: string; color: string }[] = [];
+        for (const side of ["Top", "Right", "Bottom", "Left"] as const) {
+          const width = parseFloat(s[`border${side}Width` as "borderTopWidth"]);
+          const line = s[`border${side}Style` as "borderTopStyle"];
+          if (!width || line === "none" || line === "hidden") continue;
+          edges.push({
+            side: side.toLowerCase(),
+            color: s[`border${side}Color` as "borderTopColor"],
+          });
+        }
+
+        return {
+          text: (el.textContent ?? "").trim().slice(0, 40),
+          color: s.color,
+          background: s.backgroundColor,
+          // The escape hatch `src/index.css` names by hand: "a component that
+          // genuinely wants a fill on paper opts in with `print-color-adjust`".
+          // Chrome reports the default as `economy`, which is "drop it".
+          printColorAdjust: s.printColorAdjust || "economy",
+          decoration: s.textDecorationLine,
+          type: typography(s),
+          edges,
+          parentTag: near.tagName.toLowerCase(),
+          parentColor: bs.color,
+          parentType: typography(bs),
+        };
+      }
+    );
+  });
+
+test(`print media: inline code is still code on ${INLINE_CODE_ROUTE}`, async ({
+  page,
+}) => {
+  await page.goto(INLINE_CODE_ROUTE);
+  await page.waitForSelector("main");
+  await page.emulateMedia({ media: "print" });
+
+  // Settled by agreement rather than by a sleep, for the reason
+  // `settleAfterMediaChange` gives: reading straight after `emulateMedia`
+  // catches the tween, and a fixed wait tuned to today's longest duration is one
+  // `duration-700` away from catching it again.
+  await page.waitForTimeout(700);
+  const first = await collectChips(page);
+  await page.waitForTimeout(400);
+  const chips = await collectChips(page);
+  expect(
+    chips.map((c) => `${c.text}|${c.color}|${JSON.stringify(c.edges)}`),
+    "chip styling still moving 1.1s after the media change — this is a tween, not the printed value"
+  ).toEqual(first.map((c) => `${c.text}|${c.color}|${JSON.stringify(c.edges)}`));
+
+  // The control the trip wire above cannot give: the corpus having a chip and
+  // the prerendered page painting one are two different claims, and a sweep
+  // over zero elements passes exactly like a sweep over three good ones.
+  expect(
+    chips.map((c) => c.text),
+    `no inline code chip rendered on ${INLINE_CODE_ROUTE} — this sweep is measuring nothing`
+  ).not.toEqual([]);
+
+  const verdicts = chips.map((c) => {
+    const fill = inkOnPaper(c.background);
+    const cues: string[] = [];
+
+    // An edge only counts if it would actually be seen. `border-border` prints
+    // at 3.19:1 since PRA-1073; a hairline below 1.4.11's 3:1 is a smudge, and
+    // a smudge is not a cue.
+    for (const e of c.edges) {
+      const paint = inkOnPaper(e.color);
+      if (paint && contrast(paint, PAPER) >= NON_TEXT) cues.push(`border-${e.side}`);
+    }
+
+    // The stylesheet's own escape hatch, mechanised. Nothing on this site takes
+    // it today — this branch is written to the policy sentence rather than to a
+    // measurement, and the first component that opts a fill in owes the text
+    // sweep above something this file does not currently do: composite its ink
+    // against *that fill* instead of against paper.
+    if (
+      c.printColorAdjust === "exact" &&
+      fill &&
+      contrast(fill, PAPER) > 1
+    ) {
+      cues.push("fill");
+    }
+
+    if (c.type !== c.parentType) cues.push("typography");
+    if (c.decoration && c.decoration !== "none") cues.push("underline");
+
+    return { ...c, cues };
+  });
+
+  const step = (c: (typeof verdicts)[number]) => {
+    const [ink, prose] = [inkOnPaper(c.color), inkOnPaper(c.parentColor)];
+    return ink && prose ? contrast(ink, prose).toFixed(2) : "n/a";
+  };
+
+  expect(
+    verdicts
+      .filter((c) => c.cues.length === 0)
+      .map(
+        (c) =>
+          `${JSON.stringify(c.text)} in <${c.parentTag}> carries no cue on paper — ` +
+          `same ${c.type}, no edge, fill ${c.background} at print-color-adjust ` +
+          `${c.printColorAdjust}, and ${step(c)}:1 of ink against the prose around it`
+      ),
+    "inline code that reads as prose once the print stylesheet drops its fill"
+  ).toEqual([]);
+
+  // Separate from the cue check on purpose: a chip with a faint edge and a bold
+  // face would pass the assertion above on typography alone, and still be
+  // painting a line the reader cannot see. This is 1.4.11 on whatever edges the
+  // chip actually has, the same question the edge sweep asks of `a`/`pre`.
+  const faint = verdicts.flatMap((c) =>
+    c.edges
+      .map((e) => ({ e, paint: inkOnPaper(e.color) }))
+      .filter(({ paint }) => paint && contrast(paint, PAPER) < NON_TEXT)
+      .map(
+        ({ e, paint }) =>
+          `${contrast(paint!, PAPER).toFixed(2)}:1 (needs ${NON_TEXT}) code border-${e.side} ${e.color}`
+      )
+  );
+  expect(
+    [...new Set(faint)],
+    "the inline chip's printed edge is below WCAG 1.4.11"
+  ).toEqual([]);
+});
+
+/*
  * The subtitle's `text-shadow: 0 0 20px/40px hsl(280 100% 65% / .5)` is not a
  * background, so `printBackground: false` does not drop it — it printed as a
  * solid purple wash about 40k px in area with the subtitle at 1.15:1 *inside*
