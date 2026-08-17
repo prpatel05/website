@@ -32,10 +32,15 @@ function publishedDate(slug) {
   return match ? match[1] : null;
 }
 
-// scripts/blog-automerge.sh merges a queued post once its dateISO is no later
-// than tomorrow, so a post goes live the day *before* the date it displays. Its
-// `article:published_time` is therefore tomorrow's date on the deploy that
-// publishes it, and a page cannot have been last modified tomorrow.
+// scripts/blog-automerge.sh merges a queued post on the morning of its dateISO
+// (PRA-1123), so on the deploy that publishes it `article:published_time` is
+// today and this clamp passes the value through untouched. It used to merge the
+// day *before* the displayed date, which made a future `article:published_time`
+// the routine case on every publish-day deploy rather than an anomaly.
+//
+// The clamp stays, because the hazard was never tied to that schedule: any post
+// reaching `main` ahead of its own date -- a hand merge, a backfill -- carries a
+// future date with it, and a page cannot have been last modified tomorrow.
 //
 // A future <lastmod> is the documented trigger for a crawler discarding the
 // value — and not just on that one URL: Google treats an unreliable date as a

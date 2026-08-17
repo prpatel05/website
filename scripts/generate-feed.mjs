@@ -43,25 +43,23 @@ function toRfc822(dateISO) {
   return date.toUTCString();
 }
 
-// scripts/blog-automerge.sh merges a queued post once its dateISO is no later
-// than tomorrow, so a post is live on the site the day before the date it
-// displays. Matching that window keeps the feed in step with the site; a
-// stricter `<= today` would hold every post back a day and make the feed
-// permanently trail the pages it points at.
+// scripts/blog-automerge.sh merges a queued post on the morning of its dateISO
+// (PRA-1123), so every post on `main` is due today or earlier and the site and
+// the feed agree on `<= today`.
 //
-// The check is still worth keeping. A post hand-merged well ahead of its date
-// is an anomaly, and a feed item — unlike a page, which can be corrected in
-// place — is pushed to subscribers and cannot be recalled.
+// This used to be `<= tomorrow`, because merging happened the day *before* the
+// displayed date; a stricter window would then have held every post back a day
+// and made the feed permanently trail the pages it points at. That is no longer
+// true, and the extra day is not harmless slack. A post hand-merged ahead of
+// its date is an anomaly, and a feed item -- unlike a page, which can be
+// corrected in place -- is pushed to subscribers and cannot be recalled, so
+// early is the one direction never worth erring in.
 function publishCutoff(today) {
-  const date = new Date(`${today}T12:00:00Z`);
-
-  if (Number.isNaN(date.getTime())) {
+  if (Number.isNaN(new Date(`${today}T12:00:00Z`).getTime())) {
     throw new Error(`Invalid today: ${today}`);
   }
 
-  date.setUTCDate(date.getUTCDate() + 1);
-
-  return date.toISOString().slice(0, 10);
+  return today;
 }
 
 function isPublished(post, cutoff) {

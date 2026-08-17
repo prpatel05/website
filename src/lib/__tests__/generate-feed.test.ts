@@ -62,12 +62,20 @@ beforeAll(() => {
     join(postsDir, "newer.ts"),
     post("newer-post", "Newer & Bolder", "2026-07-14", 'Quotes "and" ampersands & such.')
   );
-  // blog-automerge.sh merges a post once its dateISO is no later than tomorrow,
-  // so a post dated the day after FEED_TODAY is already live on the site and
-  // belongs in the feed. Anything beyond that is not.
+  // blog-automerge.sh merges a post on the morning of its dateISO, so a post
+  // dated FEED_TODAY is live on the site and belongs in the feed -- the cutoff
+  // is inclusive, and getting that wrong would withhold every post on the one
+  // day it matters.
+  writeFileSync(
+    join(postsDir, "today.ts"),
+    post("today-post", "Today Post", "2026-07-19", "Published this morning.")
+  );
+  // A post dated tomorrow has not merged yet, so it cannot be on the site. If
+  // one reaches `main` early anyway, the feed must not push it to subscribers
+  // ahead of its date -- a feed item cannot be recalled.
   writeFileSync(
     join(postsDir, "tomorrow.ts"),
-    post("tomorrow-post", "Tomorrow Post", "2026-07-20", "Live on the site today.")
+    post("tomorrow-post", "Tomorrow Post", "2026-07-20", "Not due until tomorrow.")
   );
   writeFileSync(
     join(postsDir, "future.ts"),
@@ -105,15 +113,23 @@ describe("generate-feed", () => {
       (m) => m[1]
     );
     expect(titles).toEqual([
-      "Tomorrow Post",
+      "Today Post",
       "Newer &amp; Bolder",
       "Overridden Post",
       "Older Post",
     ]);
   });
 
-  it("includes a post dated tomorrow, which auto-merge has already published", () => {
-    expect(feed).toContain("https://pratik.pa.tel/blog/tomorrow-post/");
+  it("includes a post dated today, the morning auto-merge publishes it", () => {
+    expect(feed).toContain("https://pratik.pa.tel/blog/today-post/");
+  });
+
+  // Until PRA-1123 the cutoff was `<= tomorrow`, matching a routine that merged
+  // the day before the displayed date. It no longer does, and a feed item is
+  // pushed to subscribers and cannot be recalled.
+  it("withholds a post dated tomorrow, which has not been published yet", () => {
+    expect(feed).not.toContain("tomorrow-post");
+    expect(feed).not.toContain("Tomorrow Post");
   });
 
   it("withholds posts dated beyond the auto-merge window", () => {
@@ -148,7 +164,7 @@ describe("generate-feed", () => {
   it("dates are RFC 822 and land on the intended day", () => {
     const dates = [...feed.matchAll(/<pubDate>([^<]+)<\/pubDate>/g)].map((m) => m[1]);
     expect(dates).toEqual([
-      "Mon, 20 Jul 2026 12:00:00 GMT",
+      "Sun, 19 Jul 2026 12:00:00 GMT",
       "Tue, 14 Jul 2026 12:00:00 GMT",
       "Thu, 02 Jul 2026 12:00:00 GMT",
       "Wed, 01 Jul 2026 12:00:00 GMT",
