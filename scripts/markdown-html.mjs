@@ -195,12 +195,38 @@ const components = {
   // paragraphs, links, list items and headings, so the rule moved up to the one
   // place that reaches all of them rather than being pasted into five. What is
   // left here is the chip described above.
+  //
+  // And the chip is a *fill*, which is the one cue paper does not carry.
+  // `src/index.css` flips `--muted` to white in print on purpose — "there are
+  // no filled surfaces on paper" — and Chrome drops backgrounds anyway unless
+  // the reader ticks "Background graphics". Both halves of the chip go with it:
+  // the fill becomes the paper (1.00:1) and the saturated mint `--foreground`
+  // becomes the same achromatic ink as everything else, leaving a 1.75:1 step
+  // between two greys as the only thing separating a field name from an English
+  // word. Measured on `/blog/the-handoff-is-where-agents-break/`, where
+  // `constraints` and `unresolved` are field names and print as prose
+  // (PRA-1086).
+  //
+  // So the chip opts into the substitute `pre` already has, for the identical
+  // reason `pre` has it: once the fill drops, a hairline is the only thing left
+  // saying "code" rather than "prose". `border-border` is the same token and
+  // the same 3.19:1 that `pre`'s hairline prints at since PRA-1073. The other
+  // route the print block names — opting the fill in with `print-color-adjust`
+  // and owning a foreground for it — is declined deliberately: it spends toner
+  // and argues with a site-wide decision to settle one inline element, where
+  // the edge agrees with it.
+  //
+  // Print-only. On screen the fill is present, saturated and doing the work, so
+  // an edge there would be a second cue for something already unambiguous.
   code: ({ children, fenced }) =>
     fenced
       ? h("code", { className: "text-muted-foreground" }, children)
       : h(
           "code",
-          { className: "rounded bg-muted px-1.5 py-0.5 text-foreground" },
+          {
+            className:
+              "rounded bg-muted px-1.5 py-0.5 text-foreground print:border print:border-border",
+          },
           children
         ),
   // Emphasis has to land on a face `src/styles/fonts.css` actually declares,
