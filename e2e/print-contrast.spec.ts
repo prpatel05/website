@@ -81,14 +81,40 @@ const CONTENT_DIR = new URL("../src/data/blog-posts/content/", import.meta.url);
 const rendersCodeBlock = (markdown: string) =>
   renderMarkdownToHtml(markdown).includes("<pre");
 
-const codeBlockRoutes = () =>
-  discoverPostSlugs()
-    .filter((slug) =>
-      rendersCodeBlock(readFileSync(new URL(`${slug}.md`, CONTENT_DIR), "utf8"))
-    )
-    .map((slug) => `/blog/${slug}/`);
+/*
+ * A slug whose `content/{slug}.md` is missing is a state the app tolerates —
+ * `loadPostContent` rejects that one post and the rest of the site is fine — so
+ * this read cannot be the thing that decides it is fatal. Read at module scope,
+ * an ENOENT here does not fail this gate: it fails the *file*, taking all of
+ * these sweeps down with a stack trace that names `readFileSync` rather than
+ * the post, and it would do it on the same unattended cron merge the discovery
+ * below exists to survive. So the miss is collected and named by a test instead.
+ *
+ * Collected, and not skipped quietly: a slug dropped from the scan is a post
+ * whose body was never asked about, and a `pre` in that body would then print
+ * an unmeasured hairline with the sweep still green — the exact false pass this
+ * file is built to prevent. The test below is what makes that loud.
+ */
+const bodyOf = (slug: string) => {
+  try {
+    return readFileSync(new URL(`${slug}.md`, CONTENT_DIR), "utf8");
+  } catch {
+    return null;
+  }
+};
 
-const CODE_BLOCK_ROUTES = codeBlockRoutes();
+const SCANNED = discoverPostSlugs().map((slug) => ({
+  slug,
+  body: bodyOf(slug),
+}));
+
+const UNREADABLE_SLUGS = SCANNED.filter(({ body }) => body === null).map(
+  ({ slug }) => slug
+);
+
+const CODE_BLOCK_ROUTES = SCANNED.filter(
+  ({ body }) => body !== null && rendersCodeBlock(body)
+).map(({ slug }) => `/blog/${slug}/`);
 
 // Deduped: the hand-picked post above would be swept twice, under two identical
 // test titles, the day it grows a fence.
@@ -436,6 +462,23 @@ test("print media: every swept route has an entry in each per-route control", ()
     expect(FIXED_CHROME[route], `${route} has no FIXED_CHROME entry`)
       .toBeDefined();
   }
+});
+
+/*
+ * The other half of the tolerant read above: every discovered slug must have
+ * been asked about. A slug this scan could not read is one whose body never
+ * reached the detector, so a code block in it would print an unmeasured
+ * hairline with every sweep in this file still green.
+ */
+test("print media: the code-block scan read every post it discovered", () => {
+  expect(SCANNED.length).toBeGreaterThan(0);
+
+  expect(
+    UNREADABLE_SLUGS,
+    "these posts are discovered by `discoverPostSlugs()` but have no readable " +
+      "`content/{slug}.md`, so nothing asked whether they render a code " +
+      "block. Add the missing body, or drop the post file if it is a stray"
+  ).toEqual([]);
 });
 
 // 1.4.11, flat: non-text contrast has no large-text relaxation.
