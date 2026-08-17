@@ -1,3 +1,6 @@
+import { readFileSync, readdirSync } from "node:fs";
+
+import { renderMarkdownToHtml } from "../scripts/markdown-html.mjs";
 import { test, expect, type Page } from "./fixtures";
 
 /*
@@ -218,7 +221,8 @@ for (const route of ROUTES) {
  * 1.4.11 asks for 3:1 from graphical objects *required to understand the
  * content* and from the visual information *required to identify a UI
  * component* — not from every painted line. Scoping to `a`/`button` boundaries,
- * link underlines and the blockquote rule is that clause, mechanised.
+ * link underlines, the blockquote rule and the code block's hairline is that
+ * clause, mechanised.
  *
  * What it deliberately lets through, measured on this tree: the tag chip's
  * `border-primary/20` box at 1.37:1 (the tag word inside it is ink and already
@@ -240,9 +244,19 @@ const collectEdges = async (page: Page) =>
 
     // Queried by selector rather than swept off every node, because the scope
     // *is* semantic: which element it is decides whether its edge is load
-    // bearing. `a`/`button` are the UI components; `blockquote` is the one
-    // content element whose meaning lives entirely in its rule.
-    for (const el of document.querySelectorAll<HTMLElement>("a, button, blockquote")) {
+    // bearing. `a`/`button` are the UI components; `blockquote` and `pre` are
+    // the two content elements whose meaning lives entirely in their edge.
+    //
+    // `pre` earns its place by the same argument as `blockquote`, one property
+    // over: the body font is already JetBrains Mono (`src/index.css`), and
+    // `bg-card` is white on paper like every other fill, so once the fill drops
+    // the hairline is the only thing left saying "this is a code sample and not
+    // prose". It is here rather than in the exempt list below because the
+    // reason it currently collects nothing is a fact about the corpus, not
+    // about the element — see the trip wire under `REQUIRED_EDGES` (PRA-1074).
+    for (const el of document.querySelectorAll<HTMLElement>(
+      "a, button, blockquote, pre"
+    )) {
       const style = getComputedStyle(el);
       if (style.display === "none" || style.visibility === "hidden") continue;
       if (el.closest("[hidden]")) continue;
@@ -301,6 +315,53 @@ const REQUIRED_EDGES: Record<string, string[]> = {
   "/blog/": ["a border-left"],
   "/": ["a border-left"],
 };
+
+/*
+ * `pre` is in the collector above and matches nothing on any route in `ROUTES`,
+ * because no post in the published corpus renders a code block — 0 across 24
+ * posts, checked. A rule that has never once run is a rule nobody should trust,
+ * and there is no route to point it at while that stays true, so this is the
+ * trip wire that arms it instead.
+ *
+ * It is not hypothetical: `blog/your-context-window-is-a-budget` is unmerged
+ * and opens two fenced blocks, so the first published code sample is already
+ * written. The moment it lands, this fails and names the route to add — rather
+ * than the `pre` sweep staying quietly green on markup that does not exist,
+ * which is the exact shape of the bug this whole gate keeps being widened for
+ * (#159 enumerated `text-*`, #160 enumerated one toggle, PRA-1073 enumerated
+ * two elements; each was right about the mechanism and too narrow about where
+ * it applied).
+ *
+ * Which is why this asks the renderer instead of grepping for ``` — that
+ * grep is the same too-narrow enumeration one more time. CommonMark has three
+ * ways to reach a `pre`, and react-markdown emits one for all three: a backtick
+ * fence, a `~~~` fence, and a 4-space indented block. Driven through
+ * `renderMarkdownToHtml`, the two non-backtick forms paint the same unmeasured
+ * hairline and a ``` grep stays green on both. The renderer is the only thing
+ * that knows what a `pre` is, so it is what gets asked (PRA-1033).
+ */
+test("print media: a published code block has a route that measures its border", () => {
+  const dir = new URL("../src/data/blog-posts/content/", import.meta.url);
+  const posts = readdirSync(dir).filter((name) => name.endsWith(".md"));
+
+  // A trip wire that reads nothing passes exactly like one that reads a clean
+  // corpus, so prove the corpus was actually there before trusting the verdict.
+  expect(posts.length).toBeGreaterThan(0);
+
+  const withCodeBlock = posts.filter((name) =>
+    renderMarkdownToHtml(readFileSync(new URL(name, dir), "utf8")).includes(
+      "<pre"
+    )
+  );
+
+  expect(
+    withCodeBlock,
+    "a published post now renders a code block, so `pre` paints a border on " +
+      "paper that nothing measures. Add one of these posts' routes to ROUTES " +
+      "above and give it a `pre border-top` entry in REQUIRED_EDGES, so the " +
+      "code block's hairline is checked on a page that actually renders one"
+  ).toEqual([]);
+});
 
 // 1.4.11, flat: non-text contrast has no large-text relaxation.
 const NON_TEXT = 3;
