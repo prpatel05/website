@@ -89,7 +89,12 @@ const unsupported = [
     // it is escaped to visible angle brackets, not rendered (PRA-1072). Getting
     // a real strike is a renderer change — rehype-raw, or a `del` entry in
     // `components` — and belongs in a filed issue rather than in advice here.
-    use: "plain wording — a strike has no markdown spelling, and raw HTML is escaped to literal angle brackets rather than rendered",
+    //
+    // The clause is joined with a semicolon rather than a dash because the
+    // failure message already spends one on `use ${use} — "${text}"`, and a
+    // second dash inside the advice leaves the reader guessing which one
+    // separates the advice from the offending text.
+    use: "plain wording; raw HTML is escaped to literal angle brackets, so a strike has no spelling this renderer accepts",
   },
   {
     label: "footnote",
