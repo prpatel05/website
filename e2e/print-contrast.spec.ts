@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync } from "node:fs";
 
+import { discoverPostSlugs } from "../scripts/blog-posts.mjs";
 import { renderMarkdownToHtml } from "../scripts/markdown-html.mjs";
 import { test, expect, type Page } from "./fixtures";
 
@@ -36,7 +37,62 @@ import { test, expect, type Page } from "./fixtures";
  * block vouch for text that prints on white.
  */
 
-const ROUTES = ["/blog/your-eval-suite-measures-the-wrong-thing/", "/blog/", "/"];
+// One post, the index, the home page. Posts that render a code block are
+// appended by the discovery below rather than added here by hand.
+const SAMPLE_ROUTES = [
+  "/blog/your-eval-suite-measures-the-wrong-thing/",
+  "/blog/",
+  "/",
+];
+
+/*
+ * ## Why the code-block route is discovered and not listed
+ *
+ * `pre` is in the edge collector below and, on the corpus as it stands, matches
+ * nothing on any route above: no published post renders a code block. A rule
+ * that has never once run is a rule nobody should trust, and the first version
+ * of this was a trip wire that failed and asked a human to add the route.
+ *
+ * The human is the problem. A blog post reaches `main` through the auto-merge
+ * cron at 18:00Z the day before its `dateISO`, with nobody watching, so a gate
+ * that demands a hand-written entry in the same merge as the post demands it at
+ * the one moment there is no one to write it — and PRA-978 recorded that a gate
+ * red on `main` costs the cron its ability to read PR status, so that failure
+ * lands on the mechanism that merges everything after it (PRA-1107).
+ *
+ * The join is `discoverPostSlugs()` rather than a glob of `content/*.md`
+ * because that is the exact list `scripts/prerender.mjs` turns into routes, so
+ * a slug here is a page that provably exists in `dist/`. Globbing the markdown
+ * instead would name a route for an orphaned body with no post file, and the
+ * sweep would 404 rather than measure. It also cannot read an empty corpus and
+ * pass: `postFilePaths()` throws when it discovers nothing.
+ *
+ * And it asks the renderer instead of grepping for a fence, because that grep
+ * is the same too-narrow enumeration this gate keeps being widened for (#159
+ * enumerated `text-*`, #160 one toggle, PRA-1073 two elements; each was right
+ * about the mechanism and too narrow about where it applied). CommonMark has
+ * three ways to reach a `pre` and react-markdown emits one for all three: a
+ * backtick fence, a `~~~` fence, and a 4-space indented block. The two
+ * non-backtick forms paint the same unmeasured hairline and a fence grep stays
+ * green on both (PRA-1033).
+ */
+const CONTENT_DIR = new URL("../src/data/blog-posts/content/", import.meta.url);
+
+const rendersCodeBlock = (markdown: string) =>
+  renderMarkdownToHtml(markdown).includes("<pre");
+
+const codeBlockRoutes = () =>
+  discoverPostSlugs()
+    .filter((slug) =>
+      rendersCodeBlock(readFileSync(new URL(`${slug}.md`, CONTENT_DIR), "utf8"))
+    )
+    .map((slug) => `/blog/${slug}/`);
+
+const CODE_BLOCK_ROUTES = codeBlockRoutes();
+
+// Deduped: the hand-picked post above would be swept twice, under two identical
+// test titles, the day it grows a fence.
+const ROUTES = [...new Set([...SAMPLE_ROUTES, ...CODE_BLOCK_ROUTES])];
 
 const PAPER: [number, number, number] = [255, 255, 255];
 
@@ -253,7 +309,8 @@ const collectEdges = async (page: Page) =>
     // the hairline is the only thing left saying "this is a code sample and not
     // prose". It is here rather than in the exempt list below because the
     // reason it currently collects nothing is a fact about the corpus, not
-    // about the element — see the trip wire under `REQUIRED_EDGES` (PRA-1074).
+    // about the element — see `CODE_BLOCK_ROUTES` above, which points this at a
+    // post the day one renders a fence (PRA-1074).
     for (const el of document.querySelectorAll<HTMLElement>(
       "a, button, blockquote, pre"
     )) {
@@ -316,51 +373,69 @@ const REQUIRED_EDGES: Record<string, string[]> = {
   "/": ["a border-left"],
 };
 
+// A discovered route is one whose body renders a `pre`, so the hairline round
+// the code sample is exactly the carrier it was discovered for. Appended rather
+// than assigned: the route may already be in the table by hand.
+for (const route of CODE_BLOCK_ROUTES) {
+  REQUIRED_EDGES[route] = [
+    ...(REQUIRED_EDGES[route] ?? []),
+    "pre border-top",
+  ];
+}
+
 /*
- * `pre` is in the collector above and matches nothing on any route in `ROUTES`,
- * because no post in the published corpus renders a code block — 0 across 24
- * posts, checked. A rule that has never once run is a rule nobody should trust,
- * and there is no route to point it at while that stays true, so this is the
- * trip wire that arms it instead.
+ * The discovery above is inert until a post renders a code block, and inert
+ * code is code nobody has run: with `CODE_BLOCK_ROUTES` empty, every route in
+ * `ROUTES` was hand-written and the append loop never fires. So the detector is
+ * checked against markdown held here rather than against the corpus, which
+ * gives it the three CommonMark routes to a `pre` on a day the corpus has none.
  *
- * It is not hypothetical: `blog/your-context-window-is-a-budget` is unmerged
- * and opens two fenced blocks, so the first published code sample is already
- * written. The moment it lands, this fails and names the route to add — rather
- * than the `pre` sweep staying quietly green on markup that does not exist,
- * which is the exact shape of the bug this whole gate keeps being widened for
- * (#159 enumerated `text-*`, #160 enumerated one toggle, PRA-1073 enumerated
- * two elements; each was right about the mechanism and too narrow about where
- * it applied).
- *
- * Which is why this asks the renderer instead of grepping for ``` — that
- * grep is the same too-narrow enumeration one more time. CommonMark has three
- * ways to reach a `pre`, and react-markdown emits one for all three: a backtick
- * fence, a `~~~` fence, and a 4-space indented block. Driven through
- * `renderMarkdownToHtml`, the two non-backtick forms paint the same unmeasured
- * hairline and a ``` grep stays green on both. The renderer is the only thing
- * that knows what a `pre` is, so it is what gets asked (PRA-1033).
+ * The negative case is the load-bearing one, and it is not theoretical: driven
+ * through the renderer, the corpus is 24 posts, 0 rendering a `<pre` and
+ * exactly 1 rendering a `<code` — `the-handoff-is-where-agents-break`, the post
+ * `INLINE_CODE_ROUTE` below is already pointed at. The chip is a different
+ * element with a different print treatment (it is marked by a *fill*, which is
+ * why it needs the separate sweep at the bottom of this file), so a detector
+ * that armed on it would discover that route, require a `pre border-top` on it,
+ * and fail for an element the post does not contain.
  */
-test("print media: a published code block has a route that measures its border", () => {
-  const dir = new URL("../src/data/blog-posts/content/", import.meta.url);
-  const posts = readdirSync(dir).filter((name) => name.endsWith(".md"));
-
-  // A trip wire that reads nothing passes exactly like one that reads a clean
-  // corpus, so prove the corpus was actually there before trusting the verdict.
-  expect(posts.length).toBeGreaterThan(0);
-
-  const withCodeBlock = posts.filter((name) =>
-    renderMarkdownToHtml(readFileSync(new URL(name, dir), "utf8")).includes(
-      "<pre"
-    )
-  );
+test("print media: the code-block detector sees every CommonMark route to a `pre`", () => {
+  const arms: [string, string][] = [
+    ["backtick fence", "```\nnpm run build\n```"],
+    ["tilde fence", "~~~\nnpm run build\n~~~"],
+    ["indented block", "paragraph\n\n    npm run build\n"],
+  ];
+  for (const [form, markdown] of arms) {
+    expect(rendersCodeBlock(markdown), `${form} did not arm the sweep`).toBe(
+      true
+    );
+  }
 
   expect(
-    withCodeBlock,
-    "a published post now renders a code block, so `pre` paints a border on " +
-      "paper that nothing measures. Add one of these posts' routes to ROUTES " +
-      "above and give it a `pre border-top` entry in REQUIRED_EDGES, so the " +
-      "code block's hairline is checked on a page that actually renders one"
-  ).toEqual([]);
+    rendersCodeBlock("A sentence with `npm run build` set inline."),
+    "inline code armed the sweep — that is the chip, not a fenced block"
+  ).toBe(false);
+});
+
+/*
+ * Every route the sweeps below iterate is looked up in a table keyed by route,
+ * and a discovered route lands in `ROUTES` without passing through the literal
+ * that defines any of those tables. A missing key is not a soft failure —
+ * `for (const x of undefined)` throws — and it would throw for the first time
+ * on the unattended merge that discovers the route. This is the check that
+ * turns that into a red on the PR that adds the table instead.
+ */
+test("print media: every swept route has an entry in each per-route control", () => {
+  // Discovery reading nothing would leave `ROUTES` at its three hand-written
+  // entries and this test green, so prove the scan found the corpus first.
+  expect(discoverPostSlugs().length).toBeGreaterThan(0);
+
+  for (const route of ROUTES) {
+    expect(REQUIRED_EDGES[route], `${route} has no REQUIRED_EDGES entry`)
+      .toBeDefined();
+    expect(FIXED_CHROME[route], `${route} has no FIXED_CHROME entry`)
+      .toBeDefined();
+  }
 });
 
 // 1.4.11, flat: non-text contrast has no large-text relaxation.
@@ -472,7 +547,7 @@ const inlineChipPosts = () => {
  * the browser test below measures an empty set on a page with nothing to
  * measure.
  *
- * Asked of the renderer for the same reason the `pre` trip wire is — a grep for
+ * Asked of the renderer for the same reason `CODE_BLOCK_ROUTES` is — a grep for
  * a backtick is the too-narrow enumeration one more time — and it names the
  * replacement rather than just failing, because when this breaks the fix is to
  * point the route somewhere else, not to think about it from scratch.
@@ -749,6 +824,14 @@ const FIXED_CHROME: Record<string, string[]> = {
   "/blog/": [NAV],
   "/": [NAV, TERMINAL_TOGGLE],
 };
+
+// A discovered route is a post page, and a post renders the navbar and no
+// terminal toggle — the same chrome as the hand-listed post above. Left alone
+// if the route is already named by hand, so this cannot quietly widen an entry
+// that was written narrower on purpose.
+for (const route of CODE_BLOCK_ROUTES) {
+  FIXED_CHROME[route] ??= [NAV];
+}
 
 for (const route of ROUTES) {
   test(`print media: fixed chrome on ${route} does not repeat on every sheet`, async ({
