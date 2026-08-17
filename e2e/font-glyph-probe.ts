@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import type { Page } from "@playwright/test";
+import { COMMANDS, processTerminalCommand } from "@/lib/terminal-commands";
 import { expect } from "./fixtures";
 import { FONTS_CSS } from "./font-face-probe";
 
@@ -109,6 +110,71 @@ export function postCharacters() {
       if (ch.codePointAt(0)! < 0x80 || isEmoji(ch)) continue;
       if (!found.has(ch)) found.set(ch, new Set());
       found.get(ch)!.add(file);
+    }
+  }
+  return found;
+}
+
+const TERMINAL_SOURCE = "src/lib/terminal-commands.ts";
+
+/** A verb no `case` matches, so the `default` branch is the one that prints. */
+const TERMINAL_MISS = "zzznotacommand";
+
+/**
+ * Every command the terminal answers — the `case` labels and `COMMANDS` both.
+ *
+ * Two lists that can drift. `COMMANDS` is what `help` prints and the one an
+ * enumeration would naturally reach for, but a `case` with no `COMMANDS` entry
+ * is invisible to it, and a command that prints without being listed is exactly
+ * the too-narrow enumeration the sweep above exists to stop. Reading them
+ * together costs one regex and cannot be narrowed by either list going stale.
+ */
+export function terminalCommandNames(): string[] {
+  const source = readFileSync(TERMINAL_SOURCE, "utf8");
+  const cases = [...source.matchAll(/^\s*case "([^"]*)":/gm)].map(([, name]) => name);
+  expect(
+    cases.length,
+    `no \`case "…":\` labels matched in ${TERMINAL_SOURCE}. The switch was rewritten, or restyled ` +
+      `to single quotes, and this now reads as "the terminal prints nothing" — a scan that passes ` +
+      `because it scanned nothing looks identical to a clean one`
+  ).toBeGreaterThan(0);
+  return [...new Set([...cases, ...Object.keys(COMMANDS), TERMINAL_MISS])];
+}
+
+/**
+ * Every non-ASCII, non-emoji character the terminal can print, with the commands
+ * that print it.
+ *
+ * Terminal output is authored copy — the box art, the bar chart, the ASCII logo,
+ * the four navigation lines — and none of it is in the DOM until a visitor
+ * types. That puts it outside both of the other scopes: the post scan reads
+ * `src/data/blog-posts`, and the live scan reads what is on screen at the moment
+ * it looks. The live sweep does open the terminal, but it typed `help` and one
+ * miss, so the output of 13 of the 14 commands was never measured by anything.
+ *
+ * `processTerminalCommand` is pure and hands back its lines, so the whole set is
+ * reachable without a browser. That beats typing a longer list of commands into
+ * the live sweep: it is faster, it needs no viewport (the terminal is
+ * desktop-only, the probe is not), and it grows on its own when command 15
+ * lands.
+ *
+ * Arguments are not included. `echo` is run bare because what it prints back is
+ * the visitor's own text, and this file is about the copy the site authored.
+ */
+export function terminalCharacters(): Map<string, Set<string>> {
+  const found = new Map<string, Set<string>>();
+  for (const name of terminalCommandNames()) {
+    const result = processTerminalCommand(name);
+    // `clear` and the empty command return an action with no lines to read.
+    if (!("lines" in result)) continue;
+    const where =
+      name === TERMINAL_MISS ? "an unrecognised command" : name === "" ? "the empty command" : name;
+    for (const { text } of result.lines) {
+      for (const ch of text) {
+        if (ch.codePointAt(0)! < 0x80 || isEmoji(ch)) continue;
+        if (!found.has(ch)) found.set(ch, new Set());
+        found.get(ch)!.add(where);
+      }
     }
   }
   return found;
