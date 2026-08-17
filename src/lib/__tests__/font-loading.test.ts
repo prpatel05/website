@@ -76,23 +76,32 @@ describe("font loading", () => {
    * these families (cyrillic, cyrillic-ext, greek, latin, latin-ext, vietnamese)
    * to latin and latin-ext. That is 668 codepoints — Greek, Cyrillic, the
    * Vietnamese precomposed block U+1EA0-1EF1, and the combining accents
-   * U+0300-0301/0303/0309/0323 — that now paint from the system stack instead of
-   * the brand font. It was an acceptable trade for the FCP win on an
-   * English-language site, and nothing in the repo uses any of them, so this is
-   * not a regression to revert.
+   * U+0300-0301/0303/0309/0323 — that are no longer routed to a brand face at
+   * all. It was an acceptable trade for the FCP win on an English-language site,
+   * and nothing in the repo uses any of them, so this is not a regression to
+   * revert.
    *
    * It is a decision, though, and until now nothing recorded it: the face-parity
    * spec matches on (family, weight, style) and the resolve check only asks for
    * a 200, so dropping latin-ext, or regressing a range to something narrower,
    * stayed green in both directions.
    *
+   * What this pin is *not* is a statement about glyphs. `unicode-range` routes;
+   * it says which face the browser should try for a codepoint, and says nothing
+   * about whether the file behind that face contains it. Most of what these two
+   * ranges route to a brand face is not in any committed .woff2 — measured, and
+   * `e2e/font-glyph-coverage.spec.ts` is where that is checked, in a browser,
+   * per character. Widening SUBSETS here does not make a character paintable;
+   * only committing a file that has the glyph does.
+   *
    * Restated here rather than read off fonts.css on purpose — the opposite of
-   * how `e2e/font-faces.spec.ts` derives its face set. That set has an oracle to
-   * measure against (what a browser actually paints), so restating it would only
-   * let the two drift. Subset scope has no such oracle: an under-covered range
-   * renders perfectly, just in the wrong font, for text nobody has written yet.
-   * A second independent copy is the whole mechanism — widening or narrowing
-   * means editing both, which is exactly the deliberate act being asked for.
+   * how `e2e/font-face-probe.ts` derives its face set. Both of those have an
+   * oracle to measure against (what a browser actually paints), so restating
+   * them would only let the two copies drift. Which codepoints get *routed* has
+   * no such oracle — a narrowed range renders perfectly, from the system stack,
+   * for text nobody has written yet. A second independent copy is the whole
+   * mechanism: widening or narrowing means editing both, which is exactly the
+   * deliberate act being asked for.
    *
    * Values are Google's own, byte-for-byte, for
    * `css2?family=JetBrains+Mono:ital,wght@0,400;0,600;0,700;1,400&family=Space+Grotesk:wght@700`.
@@ -156,9 +165,9 @@ describe("font loading", () => {
       .map((d) => `${d.face} -> ${d.range}`);
     expect(
       unexpected,
-      "a face covers a codepoint set that is neither latin nor latin-ext. Widening the subset " +
+      "a face routes a codepoint set that is neither latin nor latin-ext. Widening the subset " +
         "scope is fine — commit the .woff2 and add the subset to SUBSETS here — but it has to be " +
-        "deliberate, because an under-covered range still renders, in the system stack"
+        "deliberate, because a narrowed range still renders, in the system stack"
     ).toEqual([]);
 
     // The other direction: dropping latin-ext entirely would leave every

@@ -51,80 +51,23 @@ const routes = [...readFileSync(SITEMAP, "utf8").matchAll(/<loc>([^<]+)<\/loc>/g
 // two going quietly green. Their reasoning moved with them.
 
 /**
- * The 668 codepoints self-hosting stopped serving.
+ * Which *characters* a face can paint is `font-glyph-coverage.spec.ts`.
  *
- * Google's css2 returned six subsets for these families; `src/styles/fonts.css`
- * commits two. This is exactly the difference — Greek, Cyrillic, the Vietnamese
- * precomposed block, and the combining accents U+0300-0301/0303/0309/0323 that
- * only the vietnamese and cyrillic subsets carried. Text using any of them still
- * renders, in the system stack, mid-word, next to brand-font neighbours.
+ * This file used to carry that too, as a hardcoded list of the 668 codepoints
+ * self-hosting stopped serving — Greek, Cyrillic, the Vietnamese precomposed
+ * block — checked against the text every route paints. The list existed because
+ * `getComputedStyle` cannot see per-glyph fallback: the computed family still
+ * reads as ours on exactly the text that is painting in something else, so
+ * something had to say what to look for.
  *
- * That trade was made knowingly on the measurement that no content needed them.
- * The point of asserting it is that the measurement was a one-off: nothing stops
- * the next post from carrying a transliterated name, and the fallback is quiet.
- * Going red here is not "revert PRA-911" — it is "this post needs a subset;
- * commit the .woff2 and its rule, and widen `SUBSETS` in
- * src/lib/__tests__/font-loading.test.ts to match."
- *
- * Scoped to the *delta*, not to everything the declarations miss. Plenty of
- * painted codepoints have never been covered by either set — emoji across a
- * dozen posts, and U+2192, which Google's latin subset omits while carrying
- * U+2191 and U+2193 — so "uncovered" would report two dozen pre-existing
- * fallbacks that self-hosting did not cause and no committed file can fix.
+ * Naming what to look for is what made it miss. It only ever considered
+ * *undeclared* codepoints, and a declared one can be missing from the file just
+ * as easily: on this machine 856 of the 1542 codepoints `fonts.css` routes to a
+ * brand face paint from the system stack, more than the 668 the list covered.
+ * CDP answers the question directly, per character, so the list is gone and
+ * nothing has to be named for it to be caught. What stays here is the face
+ * parity — (family, weight, style), measured against what the site paints.
  */
-const DROPPED_SUBSETS =
-  "U+0300-0301, U+0303, U+0309, U+0323, U+0370-0377, U+037A-037F, U+0384-038A, U+038C, " +
-  "U+038E-03A1, U+03A3-052F, U+1C80-1C8A, U+1EA0-1EF1, U+2116, U+2DE0-2DFF, U+A640-A69F, " +
-  "U+FE2E-FE2F";
-
-const dropped = new Set<number>();
-for (const part of DROPPED_SUBSETS.split(",")) {
-  const [from, to] = part.trim().replace("U+", "").split("-");
-  for (let c = parseInt(from, 16); c <= parseInt(to ?? from, 16); c++) dropped.add(c);
-}
-
-/**
- * Text painted in one of our families in the current document.
- *
- * Same traversal rules as `collectFaces` and for the same reasons. Families are
- * filtered here rather than after the fact because the question is per element:
- * a Greek letter in a `ui-monospace` code block was never ours to serve, while
- * the same letter in JetBrains Mono is the fallback this is looking for. Note
- * font matching falls back per *glyph*, so the computed family still reads as
- * ours on exactly the text that is painting in something else.
- */
-const collectOurText = (families: string[]) => {
-  const out: string[] = [];
-  for (const el of document.querySelectorAll("body *")) {
-    const text = [...el.childNodes]
-      .filter((n) => n.nodeType === Node.TEXT_NODE)
-      .map((n) => n.textContent ?? "")
-      .join("");
-    if (!text.trim()) continue;
-
-    const style = getComputedStyle(el);
-    if (style.display === "none" || style.visibility === "hidden") continue;
-
-    const family = style.fontFamily.split(",")[0].replace(/["']/g, "").trim();
-    if (families.includes(family)) out.push(text);
-  }
-  return out;
-};
-
-/** Every dropped codepoint in `texts`, with the word it appears in. */
-function fallbackGlyphs(texts: string[]) {
-  const found: string[] = [];
-  for (const text of texts) {
-    for (const ch of text) {
-      const c = ch.codePointAt(0)!;
-      if (!dropped.has(c)) continue;
-      const word = text.split(/\s+/).find((w) => w.includes(ch)) ?? text;
-      found.push(`U+${c.toString(16).toUpperCase().padStart(4, "0")} in "${word.slice(0, 40)}"`);
-    }
-  }
-  return [...new Set(found)];
-}
-
 const DECLARED = declaredFaces();
 const FAMILIES = new Set([...DECLARED].map((f) => f.split("|")[0]));
 
@@ -279,53 +222,6 @@ test.describe("the site paints exactly the font faces it requests", () => {
       painted.filter((f) => !DECLARED.has(f)).sort(),
       `the open mobile menu paints faces fonts.css never declares. Declared: ${[...DECLARED].sort().join(", ")}`
     ).toEqual([]);
-  });
-
-  test("no content needs a subset self-hosting dropped", async ({ page }) => {
-    const families = [...FAMILIES];
-    const offenders: string[] = [];
-
-    for (const route of routes) {
-      await page.goto(route);
-      await expect(page.getByRole("navigation", { name: "Main" })).toBeVisible();
-      const texts = await page.evaluate(collectOurText, families);
-      expect(texts.length, `${route} painted no text in ${families.join("/")}`).toBeGreaterThan(0);
-      for (const g of fallbackGlyphs(texts)) offenders.push(`${route}: ${g}`);
-    }
-
-    // The terminal is authored copy like any other and the likeliest place for a
-    // stray symbol, so it is swept rather than left to the resting page.
-    await page.goto("/");
-    const mobile = (page.viewportSize()?.width ?? 0) < 768;
-    if (mobile) {
-      await openMobileMenu(page);
-    } else {
-      await page.locator('button[title="Open terminal (Ctrl+K)"]').click();
-      await expect(page.getByRole("textbox", { name: "Terminal command" })).toBeFocused();
-      await page.keyboard.type("help");
-      await page.keyboard.press("Enter");
-      await expect(page.getByRole("textbox", { name: "Terminal command" })).toHaveValue("");
-    }
-    for (const g of fallbackGlyphs(await page.evaluate(collectOurText, families)))
-      offenders.push(`overlay: ${g}`);
-
-    expect(
-      offenders.sort(),
-      "this text paints in the system stack mid-word, because self-hosting ships latin and " +
-        "latin-ext only. Add the subset's .woff2 and @font-face rule back and widen SUBSETS in " +
-        "src/lib/__tests__/font-loading.test.ts — see DROPPED_SUBSETS above"
-    ).toEqual([]);
-
-    // Positive control: the probe does see a dropped codepoint when one is
-    // painted in our family, so an empty `offenders` is "no such text" rather
-    // than a traversal that quietly matched nothing.
-    await page.evaluate((family) => {
-      const p = document.createElement("p");
-      p.textContent = "Ερμής Đặng";
-      p.style.fontFamily = family;
-      document.body.append(p);
-    }, families[0]);
-    expect(fallbackGlyphs(await page.evaluate(collectOurText, families)).length).toBeGreaterThan(0);
   });
 
   /**
