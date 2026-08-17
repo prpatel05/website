@@ -20,4 +20,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-        run: bash scripts/blog-automerge.sh
+        run: bash scripts/blog-automerge-morning-of.sh
