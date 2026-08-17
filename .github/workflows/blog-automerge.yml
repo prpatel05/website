@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "0 12 * * *"
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Read everything, merge nothing. Reports what would merge, and exercises the CI gate against the real API so `checks: read` is proven before a publish date depends on it."
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -24,4 +29,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          # Empty on `schedule`, where the `inputs` context does not exist. The
+          # script treats anything but 1/true as a real run, so the daily cron
+          # keeps merging for real and only a deliberate dispatch goes dry.
+          AUTOMERGE_DRY_RUN: ${{ inputs.dry_run }}
         run: bash scripts/blog-automerge.sh
