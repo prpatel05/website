@@ -11,6 +11,8 @@ import {
   paintedFrom,
   postCharacters,
   postFiles,
+  terminalCharacters,
+  terminalCommandNames,
   type Face,
   type Probe,
 } from "./font-glyph-probe";
@@ -34,16 +36,29 @@ import {
  * The measurement replaces both enumerations: nobody has to list Greek for Greek
  * to be caught, and nothing has to be listed for `‰` to be caught either.
  *
- * Two scopes, because the two have different oracles:
+ * Three scopes, because each has a different oracle:
  *
  * - post content is read from `src/data/blog-posts`, so a banked post is checked
  *   before it has a route to paint on, and metadata counts as much as prose;
+ * - terminal output is read from `processTerminalCommand`, which is pure, so
+ *   every command's copy is checked without anybody having to type it;
  * - the live sweep walks every built route and both overlays, so the site's own
- *   chrome — which the file scan cannot see — is checked as it actually renders.
+ *   chrome — which neither source scan can see — is checked as it renders.
  *
- * Both fail closed. A character that falls back is an offender unless something
- * below says otherwise in writing, which is the opposite of the list-what-to-
- * look-for shape that let the declared ranges hide behind themselves.
+ * The terminal scope is the newest and the reason is worth keeping. This file
+ * shipped with two, and the live sweep opened the terminal and typed `help` and
+ * one miss — so 13 of the 14 commands printed nothing anybody measured, and the
+ * `→`, `█ ░` and `═ ║ ╔ ╗ ╚ ╝` they print were absent from the list below
+ * because nothing had ever shown them to a person, not because a person had
+ * looked at them. The list was drawn around the sweep's reach and then read as
+ * evidence about everything outside it. A render scan can only ever see what is
+ * on screen when it looks, so authored copy that needs an interaction to exist
+ * needs a source oracle, not a longer script of keystrokes.
+ *
+ * All three fail closed. A character that falls back is an offender unless
+ * something below says otherwise in writing, which is the opposite of the
+ * list-what-to-look-for shape that let the declared ranges hide behind
+ * themselves.
  */
 
 const SITEMAP = fileURLToPath(new URL("../dist/sitemap.xml", import.meta.url));
@@ -90,6 +105,16 @@ const PUBLISHED: { char: string; slug: string; note: string }[] = [];
  * character by character rather than by block so that adding one is a decision
  * somebody makes rather than a range somebody widens.
  *
+ * "Sits inside a word" is the whole test, and it is the reason `→` is not here
+ * despite being box-adjacent geometry by every other measure. The terminal
+ * printed `→ Navigating to #about...` as a single text node: the arrow in Menlo,
+ * the four words beside it in JetBrains Mono, one element, one sentence. That is
+ * the defect, not an instance of the exemption, so the line was rewritten to
+ * `->` rather than listed here. `75a54ec` had already taken the same character
+ * out of a published post for the same reason while the site's own chrome went
+ * on painting it, which is what an exemption granted on the strength of a
+ * neighbouring shape would have preserved.
+ *
  * Not checked for staleness, unlike PUBLISHED: the terminal is desktop-only and
  * the mobile menu is phone-only, so neither Playwright project paints all of
  * these and "unused here" would be wrong in both.
@@ -102,6 +127,18 @@ const SYSTEM_STACK_BY_DESIGN: { char: string; note: string }[] = [
   { char: "┐", note: "terminal box art" },
   { char: "└", note: "terminal box art" },
   { char: "┘", note: "terminal box art" },
+  // The next eight are what the terminal scope surfaced. Each stands alone on
+  // its own run of the line — the logo occupies six lines by itself, the bars
+  // are fenced by spaces from the label and the percentage — so there is no
+  // brand glyph beside any of them to change typeface against.
+  { char: "█", note: "the ASCII_LOGO, and the filled part of the skills bar chart" },
+  { char: "░", note: "the unfilled remainder of the skills bar chart" },
+  { char: "═", note: "ASCII_LOGO box art, printed by whoami" },
+  { char: "║", note: "ASCII_LOGO box art, printed by whoami" },
+  { char: "╔", note: "ASCII_LOGO box art, printed by whoami" },
+  { char: "╗", note: "ASCII_LOGO box art, printed by whoami" },
+  { char: "╚", note: "ASCII_LOGO box art, printed by whoami" },
+  { char: "╝", note: "ASCII_LOGO box art, printed by whoami" },
 ];
 
 const byDesign = new Set(SYSTEM_STACK_BY_DESIGN.map((e) => e.char));
@@ -198,6 +235,43 @@ test.describe("the site paints every character in the face it asked for", () => 
     ).toEqual([]);
   });
 
+  test("no terminal command needs a glyph the brand faces do not have", async ({ page }) => {
+    await page.goto("/");
+    const characters = terminalCharacters();
+
+    // Both projects run this. The terminal is desktop-only in the UI, but this
+    // scope never opens it — the probe paints into its own hidden container, so
+    // the phone project checks the same copy against the same faces.
+    expect(
+      terminalCommandNames().length,
+      "the terminal answers more commands than this — an enumeration this short means the source " +
+        "scan matched nothing and the set below is whatever `COMMANDS` happened to still hold"
+    ).toBeGreaterThan(10);
+    expect(
+      characters.size,
+      "terminal output is box art, a bar chart and an ASCII logo, so a run finding no non-ASCII " +
+        "character in any of it has stopped reading the output rather than found it clean"
+    ).toBeGreaterThan(0);
+
+    const painted = await paintedFrom(page, inEveryFace(characters.keys()));
+    const offenders = painted
+      .filter((p) => !p.fromBrandFace && !byDesign.has(p.char))
+      .map(
+        (p) =>
+          `${describeFallback(p.char, p.face, p.fonts)} — printed by ${[...characters.get(p.char)!]
+            .sort()
+            .join(", ")}`
+      );
+
+    expect(
+      [...new Set(offenders)].sort(),
+      "the terminal prints this from the system stack next to words in the brand font, and no " +
+        "sweep of the rendered page will tell you: the copy does not exist until somebody types " +
+        "the command. Rewrite it in a covered character (-> for an arrow), or, if it is standalone " +
+        "geometry with no brand glyph beside it, say so in SYSTEM_STACK_BY_DESIGN above"
+    ).toEqual([]);
+  });
+
   test("nothing the site paints falls back to the system stack unannounced", async ({ page }) => {
     const faces = new Map(FACES.map((f) => [faceKey(f), f]));
     // Keyed on character *and* face, and carrying the character rather than
@@ -244,6 +318,13 @@ test.describe("the site paints every character in the face it asked for", () => 
     // The terminal and the mobile menu are authored copy like any other and the
     // likeliest place for a stray symbol, so they are swept rather than left to
     // the resting page — the same blind spot the other overlay sweeps call out.
+    //
+    // What the terminal contributes here is its *chrome*: the title bar, the
+    // welcome banner, the prompt, the shell of the thing. Command output is the
+    // scope above's, which reads it out of `processTerminalCommand` instead of
+    // typing for it. Two commands are still typed, because a rendered line is
+    // the only proof that what the pure function returns is what reaches the
+    // page — but they are a spot check on the wiring now, not the coverage.
     await page.goto("/");
     if ((page.viewportSize()?.width ?? 0) < 768) {
       await openMobileMenu(page);

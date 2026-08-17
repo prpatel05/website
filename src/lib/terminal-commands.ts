@@ -72,18 +72,32 @@ export function processTerminalCommand(
         { type: "output", text: "  Tip: Ctrl+K to toggle terminal" },
       ]);
 
+    // `->`, not `→`. These four lines are the only place in this file where a
+    // symbol shares a text node with words, and U+2192 is in neither brand
+    // subset — Google's latin cut carries U+2191 and U+2193 and omits it. So the
+    // arrow painted in Menlo while "Navigating to #about..." beside it painted
+    // in JetBrains Mono: one sentence, two typefaces, with `getComputedStyle`
+    // reporting our family throughout, because font matching falls back per
+    // glyph. `75a54ec` took the same character out of a published post for the
+    // same reason; this is that edit, one surface later.
+    //
+    // The box art, the bar chart and the ASCII logo fall back too, and all of
+    // them stay: each is alone on its run, with no brand glyph beside it to
+    // change typeface against. They are recorded in SYSTEM_STACK_BY_DESIGN in
+    // e2e/font-glyph-coverage.spec.ts, which is also what goes red if a new
+    // arrow lands here.
     case "about":
       return {
         action: "scroll" as const,
         id: "about",
-        lines: wrapLines([{ type: "system", text: "→ Navigating to #about..." }]).lines,
+        lines: wrapLines([{ type: "system", text: "-> Navigating to #about..." }]).lines,
       };
 
     case "contact":
       return {
         action: "scroll" as const,
         id: "contact",
-        lines: wrapLines([{ type: "system", text: "→ Navigating to #contact..." }]).lines,
+        lines: wrapLines([{ type: "system", text: "-> Navigating to #contact..." }]).lines,
       };
 
     case "blog":
@@ -93,14 +107,14 @@ export function processTerminalCommand(
         // Pages 301s the bare form. This one goes through `navigate`, so the
         // unslashed path would sit in the address bar for the reader to copy.
         path: "/blog/",
-        lines: wrapLines([{ type: "system", text: "→ Opening /blog/..." }]).lines,
+        lines: wrapLines([{ type: "system", text: "-> Opening /blog/..." }]).lines,
       };
 
     case "resume":
       return {
         action: "open" as const,
         url: `${baseUrl}resume.pdf`,
-        lines: wrapLines([{ type: "system", text: "→ Downloading resume.pdf..." }]).lines,
+        lines: wrapLines([{ type: "system", text: "-> Downloading resume.pdf..." }]).lines,
       };
 
     case "socials":
