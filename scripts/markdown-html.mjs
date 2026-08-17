@@ -259,10 +259,17 @@ const components = {
   // is no Space Grotesk italic to reach for, so the alternatives were mono
   // italic or silently discarding the author's emphasis; this keeps the
   // emphasis, in the family the rest of the site is set in.
+  //
+  // `print:text-primary` drops the alpha on paper. The `@media print` block in
+  // `src/index.css` re-declares `--primary` dark, but an alpha modifier
+  // composites toward the *paper*, not the token: at the print `--primary` the
+  // 80% form lands at 4.46:1, just under AA, and clearing 4.5:1 through the
+  // token alone would need a lightness of 6% — near-black, which would take
+  // every link and heading rule with it. So the alpha goes instead (PRA-1063).
   em: ({ children }) =>
     h(
       "em",
-      { className: "font-mono font-normal text-primary/80" },
+      { className: "font-mono font-normal text-primary/80 print:text-primary" },
       withProps(children, () => ({ inEm: true }))
     ),
   // Without an entry here a markdown link emits a bare <a>, and Tailwind's

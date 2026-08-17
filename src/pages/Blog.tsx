@@ -124,7 +124,7 @@ const Blog = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <span className="font-mono text-xs text-primary/60 tracking-widest block mb-2">
+            <span className="font-mono text-xs text-primary/60 print:text-primary tracking-widest block mb-2">
               {'// all posts'}
             </span>
             <h1 className="font-display text-4xl lg:text-6xl font-bold mb-12">
@@ -199,7 +199,7 @@ const Blog = () => {
                           <span aria-hidden="true" className="text-border">|</span>
                           <span className="font-mono text-[10px] text-muted-foreground">{post.readTime}</span>
                           {post.tags.map((tag) => (
-                            <span key={tag} className="font-mono text-[10px] text-primary/60 border border-primary/20 px-2 py-0.5">
+                            <span key={tag} className="font-mono text-[10px] text-primary/60 print:text-primary border border-primary/20 px-2 py-0.5">
                               #{tag}
                             </span>
                           ))}

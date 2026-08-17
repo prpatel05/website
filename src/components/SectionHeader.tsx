@@ -31,7 +31,7 @@ const SectionHeader = ({
       viewport={{ once: true }}
       transition={{ duration: 0.6 }}
     >
-      <span className="font-mono text-xs text-primary/60 tracking-widest block mb-2">
+      <span className="font-mono text-xs text-primary/60 print:text-primary tracking-widest block mb-2">
         {label}
       </span>
       {children ?? (

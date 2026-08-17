@@ -254,7 +254,7 @@ const Hero = () => {
             initial={entrance({ opacity: 0 })}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
-            className="font-mono text-xs text-primary/60 mb-6 tracking-widest"
+            className="font-mono text-xs text-primary/60 print:text-primary mb-6 tracking-widest"
           >
             {'>'} initializing portfolio...
           </m.div>
@@ -285,7 +285,7 @@ const Hero = () => {
               `|` separators on the archive, the preview and the post page are
               all hidden the same way. The hero was the one place it was missed.
             */}
-            <span aria-hidden="true" className="text-primary/60">$ </span>
+            <span aria-hidden="true" className="text-primary/60 print:text-primary">$ </span>
             {/*
               A frame of a running animation, so the prerender captured this
               line part-typed and the client's first render starts it empty
@@ -336,7 +336,17 @@ const Hero = () => {
               // Forced colours flatten the background to Canvas and drop box-shadow, so
               // with no border it renders as bare link text — less button-like than the
               // bordered secondary CTA beside it. See PRA-998.
-              className="font-mono text-sm bg-primary text-primary-foreground px-6 py-3 hover:bg-primary/90 transition-colors box-glow text-center forced-colors:border forced-colors:border-[ButtonText]"
+              //
+              // Print is the same shape of failure with a different cause: the
+              // default Save as PDF drops backgrounds, so the fill goes and the
+              // button prints as bare text — and, before the `@media print`
+              // block flipped `--primary-foreground` to ink, as *white* bare
+              // text at 1.00:1, i.e. a blank rectangle. `print:bg-transparent`
+              // makes the two print modes agree rather than trading a blank
+              // button for dark-on-dark when a reader ticks "Background
+              // graphics"; the border is the answer PRA-998 already reached for
+              // the same missing fill (PRA-1063).
+              className="font-mono text-sm bg-primary text-primary-foreground px-6 py-3 hover:bg-primary/90 transition-colors box-glow text-center forced-colors:border forced-colors:border-[ButtonText] print:bg-transparent print:border print:border-primary"
             >
               ./contact --init
             </a>
@@ -387,7 +397,7 @@ const Hero = () => {
                 />
               </picture>
             </div>
-            <div className="absolute -bottom-3 -right-3 font-mono text-[10px] text-primary/60 border border-primary/10 px-2 py-1 bg-background">
+            <div className="absolute -bottom-3 -right-3 font-mono text-[10px] text-primary/60 print:text-primary border border-primary/10 px-2 py-1 bg-background">
               v3.0.1
             </div>
           </div>

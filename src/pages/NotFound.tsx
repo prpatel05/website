@@ -32,7 +32,7 @@ const NotFound = () => {
         transition={{ duration: 0.5 }}
         className="text-center max-w-lg"
       >
-        <span className="font-mono text-xs text-primary/60 tracking-widest block mb-4">
+        <span className="font-mono text-xs text-primary/60 print:text-primary tracking-widest block mb-4">
           {"// error:404"}
         </span>
         <h1 className="font-display text-6xl lg:text-8xl font-bold text-primary text-glow mb-4">
