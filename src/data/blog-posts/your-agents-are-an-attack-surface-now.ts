@@ -6,7 +6,7 @@ export const yourAgentsAreAnAttackSurfaceNow: BlogPost = {
   subtitle:
     "Almost everyone knows this is dangerous. Almost nobody has done anything about it. That gap is the whole story.",
   date: "2026.09",
-  dateISO: "2026-09-01",
+  dateISO: "2026-09-29",
   readTime: "7 min",
   tags: ["ai", "agents", "security", "governance"],
   image: "/images/blog-your-agents-are-an-attack-surface-now.webp",
