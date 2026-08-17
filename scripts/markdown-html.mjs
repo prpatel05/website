@@ -141,10 +141,17 @@ const components = {
   // component as any body paragraph — so without this a quotation is identical
   // to the author's own prose down to the pixel. The rule and the indent echo
   // the `h2` above rather than introducing a second vocabulary.
+  //
+  // Which is exactly why the rule has to survive paper. `print:border-primary`
+  // drops the alpha for the same reason `print:text-primary` does on `em`
+  // below: an alpha modifier composites toward the *paper*, not the token, so
+  // the 40% form landed at 1.95:1 under the print `--primary` — a rule the
+  // reader cannot see, on the one element whose entire meaning is that rule
+  // (PRA-1073).
   blockquote: ({ children }) =>
     h(
       "blockquote",
-      { className: "my-6 border-l-2 border-primary/40 pl-6" },
+      { className: "my-6 border-l-2 border-primary/40 print:border-primary pl-6" },
       children
     ),
   // The body font is already JetBrains Mono, so `code`'s one inherited default
@@ -284,13 +291,19 @@ const components = {
   // heading, so a mapping that only reached direct children would leave exactly
   // that form painting an undeclared face. Measured — it was
   // `Space Grotesk|600|normal` before this.
+  //
+  // And since the underline is the part doing the real work, it is the part
+  // that has to reach paper: `decoration-primary/40` composited to 1.95:1 on
+  // white, leaving the link identifiable by colour alone — the exact 1.4.1
+  // failure the underline was added to avoid. `print:decoration-primary` drops
+  // the alpha the same way `print:border-primary` does above (PRA-1073).
   a: ({ href, children, inHeading, inEm }) =>
     h(
       "a",
       {
         href,
         className:
-          "text-primary underline underline-offset-2 decoration-primary/40 hover:decoration-primary transition-colors",
+          "text-primary underline underline-offset-2 decoration-primary/40 print:decoration-primary hover:decoration-primary transition-colors",
       },
       withProps(children, () => ({ inHeading, inEm }))
     ),

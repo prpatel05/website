@@ -354,7 +354,13 @@ const Hero = () => {
               href={`${import.meta.env.BASE_URL}resume.pdf`}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-mono text-sm border border-primary/30 text-primary px-6 py-3 hover:bg-primary/10 transition-colors text-center"
+              // The sibling above got `print:border-primary` when its fill
+              // dropped on paper; this one has never had a fill, so the border
+              // has always been the whole button — and at `border-primary/30`
+              // composited onto white that boundary printed at 1.63:1, below
+              // the 3:1 WCAG 1.4.11 asks of anything identifying a control.
+              // Same alpha-toward-paper bug, one button over (PRA-1073).
+              className="font-mono text-sm border border-primary/30 print:border-primary text-primary px-6 py-3 hover:bg-primary/10 transition-colors text-center"
             >
               cat resume.pdf
             </a>

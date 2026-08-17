@@ -244,7 +244,18 @@
 
     --accent: 280 60% 32%;
 
-    --border: 220 10% 65%;
+    /*
+     * 65% here printed at 2.53:1 against paper. That is fine for the hairline
+     * round a code sample, and not fine for the post cards on `/blog/`: their
+     * `bg-card` is white on paper like every other fill, so this border is the
+     * only thing telling the reader where one card's link ends and the next
+     * one starts — 1.4.11's "required to identify a UI component", carried
+     * entirely by a colour that reads as a smudge. 58% puts it at 3.19:1.
+     * Darkening the token rather than exempting the cards is deliberate: the
+     * borders that did not need it are hairlines, and a slightly darker
+     * hairline costs a reader nothing (PRA-1073).
+     */
+    --border: 220 10% 58%;
 
     /*
      * There are no filled surfaces on paper — every `--*-background` and
