@@ -33,10 +33,13 @@ GRACE_SECONDS=$(( PUBLISH_GRACE_DAYS * 86400 ))
 # because every other way of exercising this routine publishes a real post --
 # the one thing you cannot undo -- so until now nobody could run it to find out
 # whether it works. The test suite drives this script against a stubbed `gh`,
-# which means it can prove the logic and cannot prove a single thing about the
-# workflow's token: `checks: read` is granted in blog-automerge.yml and no run
-# has ever used it. `true` and `1` both count, because a workflow_dispatch
-# boolean arrives as the string "true".
+# so it proves the logic and nothing at all about the real API or the token the
+# workflow runs as. The first dry run earned its keep immediately: it showed
+# the CI gate reads GREEN with `checks: none` as readily as with `checks: read`,
+# because this repo is public. See the note in blog-automerge.yml.
+#
+# `true` and `1` both count, because a workflow_dispatch boolean arrives as the
+# string "true".
 DRY_RUN=0
 case "${AUTOMERGE_DRY_RUN:-}" in
   1 | true | TRUE | yes) DRY_RUN=1 ;;
