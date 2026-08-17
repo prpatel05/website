@@ -298,7 +298,46 @@ export async function paintedFrom(page: Page, probes: Probe[]): Promise<Paint[]>
       // codepoint inside it, so the spans above are what triggers the load.
       // Until it lands the probe measures the fallback stack and calls every
       // character uncovered.
-      await page.waitForFunction(() => document.fonts.status === "loaded");
+      //
+      // The wait therefore has to be on those faces. `document.fonts.status`
+      // is not that wait: it reads "loaded" whenever nothing is *currently*
+      // pending, and the window before a freshly-inserted span's fetch has been
+      // kicked off satisfies that as well as the window after it returns. The
+      // window is widest for the italic face, the one face a resting page never
+      // paints, and under full-suite load it lost — the sentinel came back as
+      // Times (PRA-1114). Delaying `jetbrains-mono-italic-latin.woff2` puts the
+      // old wait on the wrong side of it every time, which is the spec's "waits
+      // for the subset it is about to measure".
+      //
+      // `document.fonts.load` takes the same shorthand and the same text as the
+      // spans, so it resolves once exactly the subsets covering these characters
+      // in these faces have arrived. That waits on the thing being measured
+      // rather than on the absence of pending work.
+      const unloadable = await page.evaluate(async (spans) => {
+        const wanted = new Map<string, string>();
+        for (const p of spans) {
+          const font = `${p.face.style} ${p.face.weight} 10px '${p.face.family}'`;
+          wanted.set(font, (wanted.get(font) ?? "") + p.char);
+        }
+        const failures: string[] = [];
+        await Promise.all(
+          [...wanted].map(([font, text]) =>
+            // A character no rule routes to this family matches no face and
+            // resolves empty — that is a verdict for the checks below, not an
+            // error. A rejection means a committed .woff2 did not arrive, which
+            // would make every verdict in this batch the fallback stack.
+            document.fonts.load(font, text).catch((e: unknown) => {
+              failures.push(`${font}: ${e}`);
+            })
+          )
+        );
+        return failures;
+      }, spans);
+      expect(
+        unloadable,
+        "a declared subset failed to load, so nothing below is a measurement of the brand faces"
+      ).toEqual([]);
+
       // Then wait for the frame that draws them: two rAFs, because the first
       // fires before the compositor has committed the one it belongs to.
       await page.evaluate(

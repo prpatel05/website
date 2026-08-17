@@ -191,6 +191,85 @@ test.describe("the site paints every character in the face it asked for", () => 
     ).toEqual([]);
   });
 
+  /**
+   * The probe waits for the subset it is about to measure, not for idleness.
+   *
+   * `unicode-range` means the probe's own spans are what fetches a subset, and
+   * the sentinel is what notices when the measurement beat the fetch. It did:
+   * `[mobile-chrome] no terminal command needs a glyph…` went red on a full
+   * suite while passing alone, reporting the sentinel `A` as Times in JetBrains
+   * Mono 400 italic (PRA-1114). The wait was `document.fonts.status ===
+   * "loaded"`, which is true whenever nothing is *currently* pending — the
+   * window before a freshly-inserted span's fetch starts as much as the window
+   * after it finishes.
+   *
+   * Holding the response widens the window the old wait could lose, from one run
+   * in N on a loaded suite to most runs in isolation. Italic is the face to hold
+   * because nothing on `/` is italic — `em` is the only italic in the site and it
+   * only occurs in post bodies — so this is also the face the real failure
+   * picked, and for the same reason.
+   *
+   * The delay only has to outlast the wait under test, and a fixed probe pays it
+   * either way, so a second is generous rather than tuned. The first two
+   * assertions are the anti-vacuity ones: if `/` ever starts painting italic, the
+   * subset is already in the font set, no request is made, and this would pass
+   * while holding nothing back.
+   *
+   * What holding it does *not* buy is determinism against the old wait, and the
+   * distinction is worth stating because the reflex is to read a mutation test as
+   * a proof. Reverting `paintedFrom` to `document.fonts.status` and running this
+   * five times per project: `chromium` 4/5 red, `mobile-chrome` 3/5 red, always
+   * with the sentinel as Times. Neither project is deterministic, because what is
+   * being raced is not the 1s delay — it is whether `waitForFunction`'s first
+   * poll happens before or after the span's fetch registers as pending. A test
+   * cannot control that from outside, so this amplifies the defect rather than
+   * pinning it, and a single green run of it against a reverted fix means
+   * nothing. Against the fix it is 8/8 green in both projects, which is the
+   * direction that has to be reliable: this guards `main`, and only the
+   * amplification has to survive a revert.
+   */
+  test("waits for the subset it is about to measure, not for the absence of pending work", async ({
+    page,
+  }) => {
+    const italic: Face = { family: "JetBrains Mono", weight: "400", style: "italic" };
+    const shorthand = "italic 400 10px 'JetBrains Mono'";
+
+    await page.goto("/");
+    await page.evaluate(() => document.fonts.ready);
+    expect(
+      await page.evaluate((font) => document.fonts.check(font), shorthand),
+      `${faceKey(italic)} is already in the font set at rest, so the probe below will not fetch ` +
+        `anything and the held response holds nothing. Pick a face the resting page does not paint.`
+    ).toBe(false);
+
+    // Every woff2 the page itself needed is loaded by now, so any request from
+    // here is one the probe's paint triggered. Routing them all rather than a
+    // filename keeps this from going quietly vacuous when a subset is renamed.
+    const fetched: string[] = [];
+    await page.route("**/*.woff2", async (route) => {
+      fetched.push(new URL(route.request().url()).pathname);
+      await new Promise((r) => setTimeout(r, 1000));
+      await route.continue();
+    });
+
+    const painted = await paintedFrom(page, [{ char: "é", face: italic }]);
+
+    expect(
+      fetched,
+      "the probe painted an italic character and fetched no subset for it, so nothing was held " +
+        "back and this test measured no race"
+    ).not.toEqual([]);
+    expect(painted.length, "one probe in, one verdict out").toBe(1);
+    expect(
+      painted
+        .filter((p) => !p.fromBrandFace)
+        .map((p) => describeFallback(p.char, p.face, p.fonts)),
+      `the subset was held for 1s and ${fetched.join(", ")} did arrive, so a fallback here means ` +
+        `the probe measured before waiting for the face — every verdict it reports is then the ` +
+        `system stack rather than a glyph gap`
+    ).toEqual([]);
+  });
+
   test("scans the posts that exist rather than a stale list", () => {
     const files = postFiles();
     expect(files.length).toBeGreaterThan(20);
