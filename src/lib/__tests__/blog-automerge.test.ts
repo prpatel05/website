@@ -61,12 +61,20 @@ else:
  *
  * fixture.mergeableSequence[pr] lets a PR report UNKNOWN and then settle, which
  * is what GitHub actually does while it builds the test merge commit.
+ *
+ * fixture.checks[pr] is the check-runs payload for that PR's head commit, or
+ * the sentinel "error" (the API call fails) or "malformed" (it returns
+ * unparseable bytes). Defaults to a single green `ci` run, so the tests that
+ * are about date and conflict logic keep merging without restating CI.
  */
 const GH_SHIM = `#!/usr/bin/env python3
-import sys, json, os, base64
+import sys, json, os, base64, subprocess
 
 argv = sys.argv[1:]
 fixture = json.load(open(os.environ["GH_FIXTURE"]))
+
+GREEN = {"total_count": 1,
+         "check_runs": [{"name": "ci", "status": "completed", "conclusion": "success"}]}
 
 def record(action):
     with open(os.environ["GH_ACTIONS"], "a") as fh:
@@ -107,14 +115,46 @@ elif argv[:2] == ["issue", "create"]:
     record({"issue": arg("--title"), "body": arg("--body")})
 
 elif argv[0] == "api":
-    # repos/{repo}/contents/src/data/blog-posts/{slug}.ts?ref={branch}
     path = argv[1]
-    branch = path.split("ref=")[1]
-    date_iso = fixture.get("files", {}).get(branch)
-    if date_iso is None:
-        sys.exit(1)  # missing data file
-    body = 'export const post = {\\n  dateISO: "%s",\\n};\\n' % date_iso
-    print(json.dumps({"content": base64.b64encode(body.encode()).decode()}))
+
+    if "/contents/" in path:
+        # repos/{repo}/contents/src/data/blog-posts/{slug}.ts?ref={branch}
+        branch = path.split("ref=")[1]
+        date_iso = fixture.get("files", {}).get(branch)
+        if date_iso is None:
+            sys.exit(1)  # missing data file
+        body = 'export const post = {\\n  dateISO: "%s",\\n};\\n' % date_iso
+        payload = {"content": base64.b64encode(body.encode()).decode()}
+
+    elif "/pulls/" in path:
+        # repos/{repo}/pulls/{number} -- the head sha the CI gate then looks up
+        payload = {"head": {"sha": "sha-" + path.rstrip("/").split("/")[-1]}}
+
+    elif "/check-runs" in path:
+        # repos/{repo}/commits/{sha}/check-runs -- sha encodes the PR number
+        number = path.split("/commits/")[1].split("/check-runs")[0].replace("sha-", "")
+        record({"checks": number})
+        spec = fixture.get("checks", {}).get(number, GREEN)
+        if spec == "error":
+            sys.exit(1)
+        if spec == "malformed":
+            print("{ this is not json")
+            sys.exit(0)
+        payload = spec
+
+    else:
+        sys.stderr.write("unstubbed gh api path: %s\\n" % path)
+        sys.exit(2)
+
+    out = json.dumps(payload)
+    # Honour --jq with the real jq, so the shim cannot quietly diverge from the
+    # filter the script actually passes.
+    if "--jq" in argv:
+        p = subprocess.run(["jq", "-r", arg("--jq")], input=out,
+                           capture_output=True, text=True)
+        sys.stdout.write(p.stdout)
+        sys.exit(p.returncode)
+    print(out)
 
 else:
     sys.stderr.write("unstubbed gh call: %s\\n" % " ".join(argv))
@@ -156,6 +196,7 @@ type Fixture = {
   mergeableSequence?: Record<string, string[]>;
   mergeResult?: Record<string, string>;
   existingIssues?: string[];
+  checks?: Record<string, unknown>;
 };
 
 type Run = {
@@ -165,6 +206,7 @@ type Run = {
   merges: string[];
   issues: string[];
   polls: number;
+  checkCalls: string[];
 };
 
 let runSeq = 0;
@@ -215,6 +257,7 @@ function run(fixture: Fixture, today = TODAY, bin = () => binDir): Run {
     merges: actions.filter((a) => a.merge).map((a) => a.merge),
     issues: actions.filter((a) => a.issue).map((a) => a.issue),
     polls: actions.filter((a) => a.poll).length,
+    checkCalls: actions.filter((a) => a.checks).map((a) => a.checks),
   };
 }
 
@@ -236,9 +279,13 @@ describe("blog auto-merge routine", () => {
     expect(r.status).toBe(0);
   });
 
-  it("merges a PR whose publish date is tomorrow", () => {
-    const r = run({ prs: [pr()], files: { [BRANCH]: "2026-07-10" } });
-    expect(r.merges).toEqual(["31"]);
+  // The routine used to merge a day early, so every post went live the evening
+  // before its own dateISO. A post is due on its dateISO and not before.
+  it("leaves a PR whose publish date is tomorrow until the morning of", () => {
+    const r = run({ prs: [pr()], files: { [BRANCH]: TOMORROW } });
+    expect(r.merges).toEqual([]);
+    expect(r.stdout).toContain("has not arrived yet");
+    expect(r.issues).toEqual([]);
     expect(r.status).toBe(0);
   });
 
@@ -306,13 +353,13 @@ describe("blog auto-merge routine", () => {
       expect(r.status).toBe(1);
     });
 
-    // The merge is only ever attempted on a post due today or tomorrow, so a
-    // failed merge is always a real failure. It used to exit 0 when the post
-    // was due tomorrow, because only an arrived publish date reddened the run.
-    it("fails the run when the merge fails on a post due tomorrow", () => {
+    // A merge is only ever attempted on a post that is already due, so every
+    // failed merge is a real failure -- including on a post being published
+    // late, which has already missed its date once.
+    it("fails the run when the merge fails on a post being published late", () => {
       const r = run({
         prs: [pr()],
-        files: { [BRANCH]: TOMORROW },
+        files: { [BRANCH]: "2026-07-05" },
         mergeResult: { "31": "fail" },
       });
       expect(r.merges).toEqual(["31"]);
@@ -348,6 +395,129 @@ describe("blog auto-merge routine", () => {
       expect(r.issues).toEqual([`Resolve blocked blog merge: ${BRANCH}`]);
       // Not yet a missed date, so the run stays green.
       expect(r.status).toBe(0);
+    });
+  });
+
+  // `main` is unprotected and `ci.yml` only runs `on: pull_request`, so nothing
+  // re-checks a commit on its way in. Merging on the publish date also removes
+  // the spare day in which a human used to catch a red branch, so this gate is
+  // the only thing between a broken post and a live site.
+  describe("CI gate", () => {
+    const checks = (runs: unknown[]) => ({ total_count: runs.length, check_runs: runs });
+    const CHECK = { name: "ci", status: "completed", conclusion: "success" };
+
+    it("merges when every check-run succeeded", () => {
+      const r = run({
+        prs: [pr()],
+        files: { [BRANCH]: TODAY },
+        checks: { "31": checks([CHECK]) },
+      });
+      expect(r.merges).toEqual(["31"]);
+      expect(r.stdout).toContain("CI verdict: GREEN");
+      expect(r.status).toBe(0);
+    });
+
+    it("merges when the commit has no check-runs at all", () => {
+      // A repo with no CI configured must not brick the publishing pipeline.
+      const r = run({ prs: [pr()], files: { [BRANCH]: TODAY }, checks: { "31": checks([]) } });
+      expect(r.merges).toEqual(["31"]);
+      expect(r.stdout).toContain("CI verdict: NONE");
+      expect(r.status).toBe(0);
+    });
+
+    it("counts neutral and skipped conclusions as green", () => {
+      const r = run({
+        prs: [pr()],
+        files: { [BRANCH]: TODAY },
+        checks: {
+          "31": checks([
+            CHECK,
+            { name: "optional", status: "completed", conclusion: "neutral" },
+            { name: "gated", status: "completed", conclusion: "skipped" },
+          ]),
+        },
+      });
+      expect(r.merges).toEqual(["31"]);
+      expect(r.status).toBe(0);
+    });
+
+    // This is the PRA-1107 class: a post whose own body trips a suite, caught
+    // because `ci` runs fresh the moment its PR is opened.
+    it.each(["failure", "timed_out", "action_required"])(
+      "never merges a post whose CI concluded %s",
+      (conclusion) => {
+        const r = run({
+          prs: [pr()],
+          files: { [BRANCH]: TODAY },
+          checks: { "31": checks([{ name: "ci", status: "completed", conclusion }]) },
+        });
+        expect(r.merges).toEqual([]);
+        expect(r.stdout).toContain("CI verdict is RED");
+        expect(r.issues).toEqual([`Resolve blocked blog merge: ${BRANCH}`]);
+        // The publish date has arrived and the post cannot go live: a miss.
+        expect(r.status).toBe(1);
+      },
+    );
+
+    it("never merges while a check-run is still running", () => {
+      const r = run({
+        prs: [pr()],
+        files: { [BRANCH]: TODAY },
+        checks: { "31": checks([{ name: "ci", status: "in_progress", conclusion: null }]) },
+      });
+      expect(r.merges).toEqual([]);
+      expect(r.stdout).toContain("CI verdict is PENDING");
+      expect(r.issues).toEqual([`Resolve blocked blog merge: ${BRANCH}`]);
+      expect(r.status).toBe(1);
+    });
+
+    it("treats a failure among still-running checks as red, not pending", () => {
+      const r = run({
+        prs: [pr()],
+        files: { [BRANCH]: TODAY },
+        checks: {
+          "31": checks([
+            { name: "ci", status: "completed", conclusion: "failure" },
+            { name: "e2e", status: "in_progress", conclusion: null },
+          ]),
+        },
+      });
+      expect(r.stdout).toContain("CI verdict is RED");
+      expect(r.merges).toEqual([]);
+    });
+
+    // Unknown is unsafe. `cancelled` and `stale` fall outside both sets, the
+    // API can fail outright, and a truncated page hides the run that is red.
+    it.each([
+      ["a conclusion outside both sets", checks([{ name: "ci", status: "completed", conclusion: "cancelled" }])],
+      ["an API failure", "error"],
+      ["an unparseable payload", "malformed"],
+      ["a truncated page", { total_count: 9, check_runs: [CHECK] }],
+    ])("never merges on %s", (_label, spec) => {
+      const r = run({ prs: [pr()], files: { [BRANCH]: TODAY }, checks: { "31": spec } });
+      expect(r.merges).toEqual([]);
+      expect(r.stdout).toContain("CI verdict is UNVERIFIED");
+      expect(r.issues).toEqual([`Resolve blocked blog merge: ${BRANCH}`]);
+      expect(r.status).toBe(1);
+    });
+
+    it("does not spend a CI call on a post that is not due yet", () => {
+      const r = run({ prs: [pr()], files: { [BRANCH]: "2026-07-28" } });
+      expect(r.checkCalls).toEqual([]);
+      expect(r.merges).toEqual([]);
+      expect(r.status).toBe(0);
+    });
+
+    it("gates each due PR independently", () => {
+      const second = "blog/trust-comes-from-the-trace";
+      const r = run({
+        prs: [pr(), pr({ number: 33, headRefName: second })],
+        files: { [BRANCH]: TODAY, [second]: TODAY },
+        checks: { "31": checks([{ name: "ci", status: "completed", conclusion: "failure" }]) },
+      });
+      expect(r.checkCalls.sort()).toEqual(["31", "33"]);
+      expect(r.merges).toEqual(["33"]);
+      expect(r.status).toBe(1);
     });
   });
 
@@ -388,7 +558,7 @@ describe("blog auto-merge routine", () => {
       TODAY,
       () => realDateBinDir,
     );
-    expect(r.stdout).toContain(`UTC date: ${TODAY} (tomorrow: 2026-07-10)`);
+    expect(r.stdout).toContain(`UTC date: ${TODAY} (merging posts due on or before ${TODAY})`);
     expect(r.merges).toEqual(["31"]);
     expect(r.status).toBe(0);
   });

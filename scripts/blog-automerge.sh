@@ -11,15 +11,12 @@ REPO="${GITHUB_REPOSITORY:-prpatel05/website}"
 # fills in the current time of day.
 if date -u -d 2026-01-01 +%s >/dev/null 2>&1; then
   iso_epoch()    { date -u -d "$1" +%s; }
-  iso_tomorrow() { date -u -d "$1 +1 day" +%F; }
 else
   iso_epoch()    { date -u -j -f "%Y-%m-%d %H:%M:%S" "$1 00:00:00" +%s; }
-  iso_tomorrow() { date -u -j -v+1d -f "%Y-%m-%d %H:%M:%S" "$1 00:00:00" +%F; }
 fi
 
 # AUTOMERGE_TODAY pins the clock so the routine's date branches are testable.
 TODAY="${AUTOMERGE_TODAY:-$(date -u +%F)}"
-TOMORROW="$(iso_tomorrow "$TODAY")"
 TODAY_EPOCH="$(iso_epoch "$TODAY")"
 
 # GitHub computes `mergeable` lazily and reports UNKNOWN until it has built the
@@ -51,8 +48,51 @@ resolve_mergeable() {
   printf '%s' "${mergeable:-UNKNOWN}"
 }
 
+# `mergeable` is GitHub's *conflict* state; it says nothing about CI. `main` is
+# unprotected (`protected: false`, `rulesets: []`) and `ci.yml` only runs
+# `on: pull_request`, so nothing re-checks a commit on its way in. Once this
+# routine merges on the publish date there is no longer a spare day in which a
+# human notices a red branch, which makes this gate the only thing standing
+# between a broken post and a live site.
+#
+# Deliberately NOT `commits/{sha}/status`: that legacy combined-status endpoint
+# reports `{"state":"pending","total_count":0}` for this repo's green PRs,
+# because CI here posts check-runs. A gate written against it would read every
+# healthy PR as pending and stall the queue forever.
+ci_verdict() {
+  local number="$1"
+  local sha check_runs verdict
+
+  sha="$(gh api "repos/$REPO/pulls/$number" --jq '.head.sha' 2>/dev/null || true)"
+  if [[ -z "$sha" ]]; then
+    printf 'UNVERIFIED'
+    return
+  fi
+
+  check_runs="$(gh api "repos/$REPO/commits/$sha/check-runs?per_page=100" 2>/dev/null || true)"
+  if [[ -z "$check_runs" ]]; then
+    printf 'UNVERIFIED'
+    return
+  fi
+
+  # Unknown is unsafe: anything that does not parse, or a page we can only see
+  # part of, resolves to UNVERIFIED rather than falling through to a merge.
+  verdict="$(jq -r '
+    if (.check_runs | type) != "array" then "UNVERIFIED"
+    elif ((.total_count // (.check_runs | length)) > (.check_runs | length)) then "UNVERIFIED"
+    elif (.check_runs | length) == 0 then "NONE"
+    elif any(.check_runs[]; .conclusion == "failure" or .conclusion == "timed_out" or .conclusion == "action_required") then "RED"
+    elif any(.check_runs[]; .status != "completed") then "PENDING"
+    elif all(.check_runs[]; .conclusion == "success" or .conclusion == "neutral" or .conclusion == "skipped") then "GREEN"
+    else "UNVERIFIED"
+    end
+  ' <<<"$check_runs" 2>/dev/null || true)"
+
+  printf '%s' "${verdict:-UNVERIFIED}"
+}
+
 echo "Checking open blog PRs for $REPO"
-echo "UTC date: $TODAY (tomorrow: $TOMORROW)"
+echo "UTC date: $TODAY (merging posts due on or before $TODAY)"
 
 create_social_promotion_issue() {
   local number="$1"
@@ -212,9 +252,12 @@ while IFS= read -r pr_json; do
     continue
   fi
 
-  if [[ "$date_iso" > "$TOMORROW" ]]; then
-    echo "  Skipping: publish date $date_iso is more than 1 day out."
-    skipped_prs+=("$number|$branch|date_too_far:$date_iso")
+  # A post publishes on its dateISO, so it merges on the morning of that date --
+  # not the day before. The old `> $TOMORROW` form put every post live a full
+  # day early, which is what this comparison exists to prevent.
+  if [[ "$date_iso" > "$TODAY" ]]; then
+    echo "  Skipping: publish date $date_iso has not arrived yet."
+    skipped_prs+=("$number|$branch|not_yet_due:$date_iso")
     continue
   fi
 
@@ -233,6 +276,20 @@ while IFS= read -r pr_json; do
   if [[ "$date_iso" < "$TODAY" ]]; then
     echo "  Publishing late: $date_iso is past due but within the $PUBLISH_GRACE_DAYS-day grace window."
   fi
+
+  # The date rules above decide whether it is *time* to merge; this decides
+  # whether it is *safe*. Checked last so a far-future PR costs no API calls,
+  # which means everything reaching here is already due -- so any non-green
+  # verdict is a publish date at risk today, and alarms rather than deferring
+  # quietly to a tomorrow that no longer exists.
+  verdict="$(ci_verdict "$number")"
+  if [[ "$verdict" != "GREEN" && "$verdict" != "NONE" ]]; then
+    echo "  Skipping: CI verdict is $verdict."
+    skipped_prs+=("$number|$branch|ci_${verdict}")
+    alarm_if_due "$number" "$branch" "$date_iso" "ci_${verdict}"
+    continue
+  fi
+  echo "  CI verdict: $verdict."
 
   echo "  Attempting merge for #$number (\"$title\")."
   if gh pr merge "$number" --repo "$REPO" --merge --delete-branch; then
@@ -260,7 +317,7 @@ if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
     echo "## Blog Auto-Merge Routine"
     echo ""
     echo "- UTC date: $TODAY"
-    echo "- Tomorrow: $TOMORROW"
+    echo "- Merging posts due on or before: $TODAY"
     echo ""
     echo "### Merged"
     if (( ${#merged_prs[@]} == 0 )); then

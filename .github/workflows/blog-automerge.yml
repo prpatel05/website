@@ -9,6 +9,10 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
+  # Naming any scope sets every unnamed one to `none`, so the CI gate's
+  # `commits/{sha}/check-runs` read has to be granted explicitly. Without it
+  # every PR reads as UNVERIFIED and nothing ever publishes.
+  checks: read
 
 jobs:
   automerge:
