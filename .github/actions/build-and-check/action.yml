@@ -1,0 +1,82 @@
+# Every check the repo runs, plus the production build, in one place.
+#
+# This exists because ci.yml (`on: pull_request`) and deploy.yml (`on: push` to
+# main) used to spell the same list out twice, and the two copies drifted:
+# `verify:hero` and `verify:portrait` were added to the PR list and never to the
+# push list. Direct pushes to main are part of the working style rather than an
+# accident — 2 of the 25 commits before this one landed that way — so the drift
+# was not theoretical. Both of those commits shipped to production without ever
+# running either verify script.
+#
+# So the two are no longer two lists. Adding a step here arms it on both paths;
+# there is nowhere to add one to only half of them.
+#
+# Note for the deploy path: this leaves a built dist/ in the workspace, which is
+# what actions/upload-pages-artifact uploads afterwards.
+name: Build and check
+description: Lint, unit tests, production build, image-request verifiers and Playwright — the same list for pull requests and for pushes to main.
+
+inputs:
+  cf-beacon-token:
+    description: >-
+      Cloudflare Web Analytics site token (public, cookieless beacon). Empty
+      leaves the beacon out of the build, so PR builds stay out of the dashboard
+      a human reads. See PRA-465.
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Bun
+      uses: oven-sh/setup-bun@v2
+    - name: Cache Bun dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.bun/install/cache
+        key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+        restore-keys: ${{ runner.os }}-bun-
+    - name: Install dependencies
+      shell: bash
+      run: bun install
+    - name: Lint
+      shell: bash
+      run: bun run lint
+    - name: Unit tests
+      shell: bash
+      run: bun run test
+    # Needed by the two verify scripts below as well as by Playwright: both
+    # drive a real chromium against the built dist/.
+    - name: Install Playwright browsers
+      shell: bash
+      run: bunx playwright install --with-deps chromium
+    - name: Build
+      shell: bash
+      run: bun run build
+      env:
+        VITE_CF_BEACON_TOKEN: ${{ inputs.cf-beacon-token }}
+    # Deploy-liveness token. The deploy step in deploy.yml can stop watching
+    # before the deployment lands, and for a commit that changes no page content
+    # (a test-only fix, say) nothing else in dist/ differs from the previous
+    # deploy — so there is no way to tell "this commit is live" from "the last
+    # one still is". Shipping the SHA itself gives every commit a distinguishing
+    # token, which the liveness check at the bottom of deploy.yml reads back off
+    # the live site — as `$GITHUB_SHA` there, the same variable written here, so
+    # the two cannot disagree about what to compare. Written here rather than
+    # inside `bun run build` so a local build never emits a misleading one.
+    #
+    # Unconditional on purpose. Gating this on "is this the deploy?" would leave
+    # the only step that writes it running for the first time in production; a
+    # pull request writes a stamp too and simply never uploads dist/.
+    - name: Stamp the build with its commit SHA
+      shell: bash
+      run: echo "$GITHUB_SHA" > dist/build-sha.txt
+    - name: Verify the post hero loads once
+      shell: bash
+      run: bun run verify:hero
+    - name: Verify the homepage portrait skips phones
+      shell: bash
+      run: bun run verify:portrait
+    - name: Playwright tests
+      shell: bash
+      run: bunx playwright test

@@ -29,39 +29,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
-      - name: Cache Bun dependencies
-        uses: actions/cache@v4
+      # The step list lives in the composite action, shared with ci.yml, so a
+      # check added for pull requests cannot miss direct pushes to main the way
+      # verify:hero and verify:portrait did (PRA-1108). It leaves the built
+      # dist/ that the upload step below ships.
+      #
+      # It also writes the dist/build-sha.txt that the liveness check at the
+      # bottom of this job reads back off the live site. Set repo variable
+      # CF_BEACON_TOKEN to activate the analytics beacon; unset = disabled
+      # (PRA-465).
+      - name: Build and check
+        uses: ./.github/actions/build-and-check
         with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
-          restore-keys: ${{ runner.os }}-bun-
-      - name: Install dependencies
-        run: bun install
-      - name: Lint
-        run: bun run lint
-      - name: Unit tests
-        run: bun run test
-      - name: Install Playwright browsers
-        run: bunx playwright install --with-deps chromium
-      - name: Build
-        run: |
-          bun run build
-          # Deploy-liveness token. The deploy step below can stop watching
-          # before the deployment lands, and for a commit that changes no page
-          # content (a test-only fix, say) nothing else in dist/ differs from
-          # the previous deploy — so there is no way to tell "this commit is
-          # live" from "the last one still is". Shipping the SHA itself gives
-          # every commit a distinguishing token. Written here rather than in
-          # `bun run build` so a local build never emits a misleading one.
-          echo "$GITHUB_SHA" > dist/build-sha.txt
-        env:
-          # Cloudflare Web Analytics site token (public, cookieless beacon).
-          # Set repo variable CF_BEACON_TOKEN to activate; unset = beacon disabled. See PRA-465.
-          VITE_CF_BEACON_TOKEN: ${{ vars.CF_BEACON_TOKEN }}
-      - name: Playwright tests
-        run: bunx playwright test
+          cf-beacon-token: ${{ vars.CF_BEACON_TOKEN }}
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
