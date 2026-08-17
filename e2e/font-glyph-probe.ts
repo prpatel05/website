@@ -74,28 +74,6 @@ export function declaredFaceList(): Face[] {
 }
 
 /**
- * Every codepoint some `unicode-range` routes to a brand face.
- *
- * This is the *claim* the declarations make, not the coverage — which is the
- * whole point of measuring. It is used only to scope the live sweep: a painted
- * character outside every range was never routed to us and no committed file
- * could fix it, so it is a different question from "the face we asked for does
- * not have this glyph".
- */
-export function declaredCodepoints(): Set<number> {
-  const set = new Set<number>();
-  for (const { range } of faceRules()) {
-    for (const part of range.split(",")) {
-      const [from, to] = part.trim().replace(/^U\+/i, "").split("-");
-      expect(from, `"${part}" should parse as a unicode-range item`).toMatch(/^[0-9a-f]+$/i);
-      for (let c = parseInt(from, 16); c <= parseInt(to ?? from, 16); c++) set.add(c);
-    }
-  }
-  expect(set.size, "fonts.css should declare some unicode-ranges").toBeGreaterThan(1000);
-  return set;
-}
-
-/**
  * Emoji are exempt, and not as a concession.
  *
  * No text font in any subset carries them — they come from the system emoji

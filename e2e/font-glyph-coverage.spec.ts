@@ -204,6 +204,14 @@ test.describe("the site paints every character in the face it asked for", () => 
     // recovering it from the key: U+00A0 is non-ASCII and is a space, so
     // anything that splits the key back apart loses exactly the characters that
     // are hardest to spot in the rendered page to begin with.
+    //
+    // One spelling, read and written through the same function. It was written
+    // out twice and the two drifted — a literal NUL on the write against a space
+    // on the read, which no diff shows and no green run reaches, because the
+    // read only happens for an offender. The separator is spelled as an escape
+    // for the same reason it broke: a control character typed literally is
+    // invisible in every tool that would otherwise catch it.
+    const keyOf = (char: string, face: string) => `${char}\u0000${face}`;
     const seen = new Map<string, { char: string; face: Face; where: Set<string> }>();
 
     const record = (runs: { text: string; face: string }[], where: string) => {
@@ -214,7 +222,7 @@ test.describe("the site paints every character in the face it asked for", () => 
         if (!faces.has(face)) continue;
         for (const ch of text) {
           if (ch.codePointAt(0)! < 0x80 || isEmoji(ch)) continue;
-          const key = `${ch} ${face}`;
+          const key = keyOf(ch, face);
           if (!seen.has(key))
             seen.set(key, { char: ch, face: faces.get(face)!, where: new Set() });
           seen.get(key)!.where.add(where);
@@ -262,7 +270,22 @@ test.describe("the site paints every character in the face it asked for", () => 
     );
 
     const where = (p: { char: string; face: Face }) =>
-      [...seen.get(`${p.char} ${faceKey(p.face)}`)!.where].sort().join(", ");
+      [...seen.get(keyOf(p.char, faceKey(p.face)))!.where].sort().join(", ");
+
+    // `where` runs only for an offender, so on a green run — every run so far —
+    // nothing reads a key back. That is how the write and the read drifted apart
+    // unnoticed: the reporting path of a check with nothing to report is dead
+    // code that still has to work on the one day it matters. Resolve every key
+    // now, while there is nothing to report, so a lookup that cannot find its
+    // own entry fails here and says so, instead of throwing a TypeError out of
+    // the line that was supposed to name the defect.
+    expect(
+      painted
+        .filter((p) => !seen.has(keyOf(p.char, faceKey(p.face))))
+        .map((p) => `${hex(p.char)} in ${faceKey(p.face)}`),
+      "every probed (character, face) came out of `seen`, so each must key back into it — if this " +
+        "is non-empty, `keyOf` disagrees with itself and the offender report below would crash"
+    ).toEqual([]);
 
     const offenders = painted
       .filter((p) => !p.fromBrandFace && !byDesign.has(p.char))
