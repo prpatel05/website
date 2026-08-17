@@ -709,9 +709,18 @@ describe("blog-posts data", () => {
   // is true only after substitution cannot be checked. `<https://the-url>`
   // renders as an anchor as written, and says the part that carries the
   // meaning: an autolink is a scheme in brackets, not brackets.
+  //
+  // The pattern is a tag production — a name, then anything up to the close —
+  // rather than "brackets around no whitespace", because an attribute carries
+  // a space and that spelling let every tag with one straight through. That is
+  // not hypothetical: `<del>` is now ruled out by name in the advice above, so
+  // the next reach for a strike is the tag that does it with CSS, and
+  // `<span style="text-decoration:line-through">` escapes exactly as `<del>`
+  // did — measured. Requiring a leading letter is what keeps the looser bound
+  // honest: it matches a tag, and not a `<` used as prose punctuation.
   it("gives advice that spells no angle-bracket form the renderer escapes", () => {
     const escaped = unsupported.flatMap(({ label, use }) =>
-      Array.from(use.matchAll(/<[^<>\s]+>/g))
+      Array.from(use.matchAll(/<\/?[A-Za-z][^<>]*>/g))
         .filter(([form]) => !/<a /.test(renderMarkdownToHtml(form)))
         .map(([form]) => `${label}: ${form} in "${use}" ships escaped`)
     );
