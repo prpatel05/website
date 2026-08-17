@@ -826,17 +826,19 @@ describe("blog-posts data", () => {
   // stripCode — but the parser declining to call a sample's tag an `html` node.
   it("flags a form if and only if rehype-raw would change what ships", () => {
     const forms = [
-      // The three rows the issue measured, plus the block form the stripCode
-      // table above already leans on as a case built on raw HTML escaping.
+      // The three rows the issue measured, then the same `br` inline in a
+      // paragraph rather than alone in a block, the `div` the stripCode table
+      // above already leans on as a case built on raw HTML escaping, and one
+      // more ordinary inline tag. The `span` carries an attribute, which is the
+      // form a tag pattern spelled as "brackets around no whitespace" misses.
       "The price was <del>40</del> 20.",
       '<span style="text-decoration:line-through">struck</span>',
       "<br />",
       "Line one.<br />Line two.",
       "<div>\nBODY\n</div>",
       "<kbd>Ctrl</kbd>",
-      // A raw anchor is the one tag whose element `components` does map, and it
-      // escapes like any other: the map is reached through markdown, not
-      // through the tag.
+      // The only tag here whose element `components` maps, and it escapes like
+      // any other: the map is reached through markdown, not through the tag.
       '<a href="https://example.com/">raw anchor</a>',
       // No tag name at all, so every tag pattern misses it and the reader is
       // shown a comment that was meant to be invisible.
