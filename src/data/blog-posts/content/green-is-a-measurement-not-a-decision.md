@@ -46,7 +46,7 @@ A snapshot cannot bless a system that keeps moving. Asking it to is how a measur
 
 ## Put a Decision After the Check
 
-[Last week](/blog/somebody-has-to-own-the-agent/) I wrote that somebody has to own the agent. The empty box on the org chart. That post is about the name. This one is about what that name is for.
+Last week I wrote that somebody has to own the agent. The empty box on the org chart. That post is about the name. This one is about what that name is for.
 
 An owner without a ship ritual is a name on a page. The suite will still end the meeting, and you will have assigned accountability for a decision nobody actually made.
 
