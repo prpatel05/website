@@ -98,7 +98,7 @@ const BlogPreview = () => {
                       {post.tags.slice(0, 2).map((tag) => (
                         <span
                           key={tag}
-                          className="font-mono text-[10px] text-primary/60 border border-primary/20 px-2 py-0.5"
+                          className="font-mono text-[10px] text-primary/60 print:text-primary border border-primary/20 px-2 py-0.5"
                         >
                           #{tag}
                         </span>

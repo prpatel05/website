@@ -65,7 +65,7 @@ const SKELETON_BLOCKS = [
  */
 const PostBodySkeleton = () => (
   <div className="font-mono text-sm">
-    <span className="text-primary/60 tracking-widest block mb-6">
+    <span className="text-primary/60 print:text-primary tracking-widest block mb-6">
       {"// loading"}
     </span>
     <div aria-hidden="true" className="animate-pulse space-y-8">
@@ -298,7 +298,7 @@ const BlogPost = () => {
               {post.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="font-mono text-[10px] text-primary/60 border border-primary/20 px-2 py-0.5"
+                  className="font-mono text-[10px] text-primary/60 print:text-primary border border-primary/20 px-2 py-0.5"
                 >
                   #{tag}
                 </span>
@@ -420,7 +420,7 @@ const BlogPost = () => {
           */}
           {unrecovered && (
             <div className="font-mono text-sm">
-              <span className="text-primary/60 tracking-widest block mb-4">
+              <span className="text-primary/60 print:text-primary tracking-widest block mb-4">
                 {"// error:body"}
               </span>
               <p className="text-muted-foreground mb-8">

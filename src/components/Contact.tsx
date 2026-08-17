@@ -119,8 +119,15 @@ const Contact = () => {
         </div>
       </m.div>
 
-      {/* Background decoration with parallax */}
+      {/* Background decoration with parallax. `aria-hidden` because it is a
+          watermark and nothing else: 3% alpha, `select-none`,
+          `pointer-events-none`, no meaning to lose. Without it a screen reader
+          reads out "/>" at the end of the contact section, and every contrast
+          audit has to carry an exemption for a glyph that is meant to be
+          invisible — `e2e/print-contrast.spec.ts` skips `aria-hidden` text for
+          exactly that reason. */}
       <m.div
+        aria-hidden="true"
         style={{ y: decorY }}
         className="absolute bottom-0 right-0 font-mono text-[10rem] lg:text-[18rem] font-bold text-primary/[0.03] leading-none select-none pointer-events-none"
       >

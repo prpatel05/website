@@ -19,7 +19,7 @@ describe("markdown rendered at build time", () => {
     // would lose the ▸ the design uses instead of a list marker.
     expect(html).toContain('<span class="text-primary shrink-0 mt-1.5">▸</span>');
     expect(html).toContain('<strong class="text-foreground font-semibold">');
-    expect(html).toContain('<em class="font-mono font-normal text-primary/80">');
+    expect(html).toContain('<em class="font-mono font-normal text-primary/80 print:text-primary">');
   });
 
   // Which face these classes resolve to is a browser question, and
@@ -50,7 +50,7 @@ describe("markdown rendered at build time", () => {
     // italic, the only italic face there is, rather than a synthesized oblique
     // of a family that ships none.
     expect(renderMarkdownToHtml("## Heading with *italic*")).toContain(
-      '<em class="font-mono font-normal text-primary/80">italic</em>'
+      '<em class="font-mono font-normal text-primary/80 print:text-primary">italic</em>'
     );
 
     // Nested emphasis: the inner `strong` states 400 rather than inheriting it.
