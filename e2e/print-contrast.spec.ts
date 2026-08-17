@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync } from "node:fs";
 
+import { renderMarkdownToHtml } from "../scripts/markdown-html.mjs";
 import { test, expect, type Page } from "./fixtures";
 
 /*
@@ -317,10 +318,10 @@ const REQUIRED_EDGES: Record<string, string[]> = {
 
 /*
  * `pre` is in the collector above and matches nothing on any route in `ROUTES`,
- * because no post in the published corpus opens a code fence — 0 fences across
- * 24 posts, checked. A rule that has never once run is a rule nobody should
- * trust, and there is no route to point it at while that stays true, so this is
- * the trip wire that arms it instead.
+ * because no post in the published corpus renders a code block — 0 across 24
+ * posts, checked. A rule that has never once run is a rule nobody should trust,
+ * and there is no route to point it at while that stays true, so this is the
+ * trip wire that arms it instead.
  *
  * It is not hypothetical: `blog/your-context-window-is-a-budget` is unmerged
  * and opens two fenced blocks, so the first published code sample is already
@@ -330,19 +331,35 @@ const REQUIRED_EDGES: Record<string, string[]> = {
  * (#159 enumerated `text-*`, #160 enumerated one toggle, PRA-1073 enumerated
  * two elements; each was right about the mechanism and too narrow about where
  * it applied).
+ *
+ * Which is why this asks the renderer instead of grepping for ``` — that
+ * grep is the same too-narrow enumeration one more time. CommonMark has three
+ * ways to reach a `pre`, and react-markdown emits one for all three: a backtick
+ * fence, a `~~~` fence, and a 4-space indented block. Driven through
+ * `renderMarkdownToHtml`, the two non-backtick forms paint the same unmeasured
+ * hairline and a ``` grep stays green on both. The renderer is the only thing
+ * that knows what a `pre` is, so it is what gets asked (PRA-1033).
  */
-test("print media: a published code fence has a route that measures its border", () => {
+test("print media: a published code block has a route that measures its border", () => {
   const dir = new URL("../src/data/blog-posts/content/", import.meta.url);
-  const fenced = readdirSync(dir)
-    .filter((name) => name.endsWith(".md"))
-    .filter((name) => /^```/m.test(readFileSync(new URL(name, dir), "utf8")));
+  const posts = readdirSync(dir).filter((name) => name.endsWith(".md"));
+
+  // A trip wire that reads nothing passes exactly like one that reads a clean
+  // corpus, so prove the corpus was actually there before trusting the verdict.
+  expect(posts.length).toBeGreaterThan(0);
+
+  const withCodeBlock = posts.filter((name) =>
+    renderMarkdownToHtml(readFileSync(new URL(name, dir), "utf8")).includes(
+      "<pre"
+    )
+  );
 
   expect(
-    fenced,
-    "a published post now opens a code fence, so `pre` paints a border on paper " +
-      "that nothing measures. Add one of these posts' routes to ROUTES above and " +
-      "give it a `pre border-top` entry in REQUIRED_EDGES, so the code block's " +
-      "hairline is checked on a page that actually renders one"
+    withCodeBlock,
+    "a published post now renders a code block, so `pre` paints a border on " +
+      "paper that nothing measures. Add one of these posts' routes to ROUTES " +
+      "above and give it a `pre border-top` entry in REQUIRED_EDGES, so the " +
+      "code block's hairline is checked on a page that actually renders one"
   ).toEqual([]);
 });
 
