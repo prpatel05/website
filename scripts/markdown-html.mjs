@@ -309,8 +309,17 @@ const components = {
     ),
 };
 
-export const renderMarkdownToHtml = (markdown) =>
-  renderToStaticMarkup(h(Markdown, { components }, markdown));
+// No `rehypePlugins` is the product configuration, and it is what makes a raw
+// HTML tag in a body escape to visible angle brackets rather than render
+// (PRA-1072). The parameter exists so the gate in `blog-posts.test.ts` can
+// render the same body through the same component map with `rehype-raw` on:
+// on the page the defect is invisible — the reader is shown `<del>40</del>`
+// for a tag and `5 < 10` for a typed less-than, and both are literal text — so
+// the only way to tell markup this renderer refused from punctuation the
+// author meant is to compare against a renderer that keeps it. Every product
+// caller passes nothing and gets the byte-identical output it did before.
+export const renderMarkdownToHtml = (markdown, rehypePlugins = []) =>
+  renderToStaticMarkup(h(Markdown, { components, rehypePlugins }, markdown));
 
 // Vite plugin: `import body from "./content/foo.md"` yields the rendered HTML
 // string. Registered for the build and for dev, so the two agree.
