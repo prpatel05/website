@@ -14,27 +14,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
-      - name: Cache Bun dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
-          restore-keys: ${{ runner.os }}-bun-
-      - name: Install dependencies
-        run: bun install
-      - name: Lint
-        run: bun run lint
-      - name: Unit tests
-        run: bun run test
-      - name: Install Playwright browsers
-        run: bunx playwright install --with-deps chromium
-      - name: Build
-        run: bun run build
-      - name: Verify the post hero loads once
-        run: bun run verify:hero
-      - name: Verify the homepage portrait skips phones
-        run: bun run verify:portrait
-      - name: Playwright tests
-        run: bunx playwright test
+      # The step list lives in the composite action so this workflow and
+      # deploy.yml cannot drift apart again. No beacon token here: a pull-request
+      # build stays out of the analytics dashboard a human reads.
+      - name: Build and check
+        uses: ./.github/actions/build-and-check
