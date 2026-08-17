@@ -594,16 +594,24 @@ test(`print media: inline code is still code on ${INLINE_CODE_ROUTE}`, async ({
       if (paint && contrast(paint, PAPER) >= NON_TEXT) cues.push(`border-${e.side}`);
     }
 
-    // The stylesheet's own escape hatch, mechanised. Nothing on this site takes
-    // it today — this branch is written to the policy sentence rather than to a
-    // measurement, and the first component that opts a fill in owes the text
-    // sweep above something this file does not currently do: composite its ink
-    // against *that fill* instead of against paper.
-    if (
-      c.printColorAdjust === "exact" &&
-      fill &&
-      contrast(fill, PAPER) > 1
-    ) {
+    // The stylesheet's own escape hatch, mechanised: opted in, and painting
+    // something that is not the sheet. Nothing on this site takes this branch
+    // today, so it is written to the policy sentence rather than to a
+    // measurement, and two things are deliberately left out of it.
+    //
+    // It is not held to `NON_TEXT`, and that is not an oversight to tidy up
+    // later. 1.4.11's 3:1 is the right instrument for an edge and the wrong one
+    // for a fill: the chip's screen fill is `bg-muted` on `--background`, which
+    // is 1.27:1 and completely legible as a chip. A contrast ratio measures text
+    // legibility, not whether a surface reads as a surface, so thresholding this
+    // at 3 would reject fills that work. The opt-in is the gate here — a
+    // developer has to write `print-color-adjust` on purpose — and the amount is
+    // theirs to own.
+    //
+    // And it does not check the ink on top. The first component that opts a fill
+    // in owes the text sweep above something this file does not currently do:
+    // composite its ink against *that fill* instead of against paper.
+    if (c.printColorAdjust === "exact" && fill && contrast(fill, PAPER) > 1) {
       cues.push("fill");
     }
 
