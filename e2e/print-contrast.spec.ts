@@ -194,6 +194,158 @@ for (const route of ROUTES) {
 }
 
 /*
+ * ## The same compositing bug, one property over
+ *
+ * The sweep above reads `color`, so PRA-1063 fixed `color`: every alpha-carrying
+ * `text-primary` on a printed page got a `print:text-primary` beside it to drop
+ * the alpha back off. Nothing
+ * looked at the *edges*, and an edge is drawn from the same tokens through the
+ * same alpha modifiers. `border-primary/40` resolves to
+ * `rgba(0, 102, 77, 0.4)` under the print `--primary`, and 40% of ink over
+ * paper is 1.95:1 — the blockquote's left rule and the post body's link
+ * underline, both measured at exactly that (PRA-1073).
+ *
+ * Those two are not decoration. The blockquote rule is the only thing that
+ * separates a quotation from the author's own prose (`scripts/markdown-html.mjs`
+ * says so at the `blockquote` entry: preflight zeroes the margin, and the `p`
+ * inside is the same component as any body paragraph). The link underline is
+ * the only non-colour link affordance on the page — WCAG 1.4.1 is why it is
+ * there at all. Lose either and the reader loses information the sheet is
+ * supposed to carry.
+ *
+ * ## Why this sweep is narrower than "every border"
+ *
+ * 1.4.11 asks for 3:1 from graphical objects *required to understand the
+ * content* and from the visual information *required to identify a UI
+ * component* — not from every painted line. Scoping to `a`/`button` boundaries,
+ * link underlines and the blockquote rule is that clause, mechanised.
+ *
+ * What it deliberately lets through, measured on this tree: the tag chip's
+ * `border-primary/20` box at 1.37:1 (the tag word inside it is ink and already
+ * passes the sweep above — the box adds nothing a reader needs), the portrait's
+ * `border-primary/20` frame at 1.37:1, and the hero's two `aria-hidden`
+ * ornament rings at 1.17:1 and 1.19:1. Naming them here so that "the gate is
+ * green" is never read as "nothing on the sheet is faint".
+ */
+type Edge = {
+  tag: string;
+  kind: string;
+  cls: string;
+  color: string;
+};
+
+const collectEdges = async (page: Page) =>
+  page.evaluate<Edge[]>(() => {
+    const out: Edge[] = [];
+
+    // Queried by selector rather than swept off every node, because the scope
+    // *is* semantic: which element it is decides whether its edge is load
+    // bearing. `a`/`button` are the UI components; `blockquote` is the one
+    // content element whose meaning lives entirely in its rule.
+    for (const el of document.querySelectorAll<HTMLElement>("a, button, blockquote")) {
+      const style = getComputedStyle(el);
+      if (style.display === "none" || style.visibility === "hidden") continue;
+      if (el.closest("[hidden]")) continue;
+      // A zero-area element paints no edge. Checked because paper has no
+      // viewport — an element scrolled far off screen still has a box, and
+      // still prints, so this must not be confused with an offscreen test.
+      const box = el.getBoundingClientRect();
+      if (box.width === 0 || box.height === 0) continue;
+
+      const cls = el.className.toString().slice(0, 70);
+
+      for (const side of ["Top", "Right", "Bottom", "Left"] as const) {
+        const width = parseFloat(style[`border${side}Width` as "borderTopWidth"]);
+        const line = style[`border${side}Style` as "borderTopStyle"];
+        if (!width || line === "none" || line === "hidden") continue;
+        out.push({
+          tag: el.tagName.toLowerCase(),
+          kind: `border-${side.toLowerCase()}`,
+          cls,
+          color: style[`border${side}Color` as "borderTopColor"],
+        });
+      }
+
+      // Read off the anchor itself and not off a descendant: an underline
+      // propagates down from the element that declares it, and a `strong`
+      // inside a link reports `text-decoration-line: none` while still being
+      // underlined by its parent.
+      if (style.textDecorationLine && style.textDecorationLine !== "none") {
+        out.push({
+          tag: el.tagName.toLowerCase(),
+          kind: "underline",
+          cls,
+          color: style.textDecorationColor,
+        });
+      }
+    }
+
+    return out;
+  });
+
+/*
+ * The carriers this gate exists for, per route. Asserted present before the
+ * ratios are checked, because every one of them is optional markup: a post
+ * with no `>` line renders no blockquote and no `[text](url)` renders no
+ * underline, so an edit to the sample post could leave this sweep collecting
+ * card borders alone and going green for a reason that has nothing to do with
+ * what broke. `/` and `/blog/` carry no underlined links at all, which is why
+ * the post is the only route that can name one.
+ */
+const REQUIRED_EDGES: Record<string, string[]> = {
+  "/blog/your-eval-suite-measures-the-wrong-thing/": [
+    "blockquote border-left",
+    "a underline",
+    "a border-left",
+  ],
+  "/blog/": ["a border-left"],
+  "/": ["a border-left"],
+};
+
+// 1.4.11, flat: non-text contrast has no large-text relaxation.
+const NON_TEXT = 3;
+
+for (const route of ROUTES) {
+  test(`print media: load-bearing edges on ${route} survive white paper`, async ({
+    page,
+  }) => {
+    await page.goto(route);
+    await page.waitForSelector("main");
+    await page.emulateMedia({ media: "print" });
+    // The same tween that makes the text sweep settle applies here — the card
+    // links carry `transition-all duration-500` on their border colour.
+    await page.waitForTimeout(1100);
+
+    const edges = await collectEdges(page);
+
+    const present = new Set(edges.map((e) => `${e.tag} ${e.kind}`));
+    for (const required of REQUIRED_EDGES[route]) {
+      expect(
+        [...present],
+        `no ${required} was collected on ${route} — this gate is measuring nothing it was written for`
+      ).toContain(required);
+    }
+
+    const failures = edges
+      .map((e) => {
+        const paint = inkOnPaper(e.color);
+        return { ...e, ratio: paint ? contrast(paint, PAPER) : Infinity };
+      })
+      .filter((e) => e.ratio < NON_TEXT)
+      .sort((a, b) => a.ratio - b.ratio);
+
+    expect(
+      [...new Set(
+        failures.map(
+          (f) => `${f.ratio.toFixed(2)}:1 (needs ${NON_TEXT}) ${f.tag} ${f.kind} ${f.color} — ${f.cls}`
+        )
+      )],
+      "borders and underlines below WCAG 1.4.11 once the print stylesheet drops the dark background"
+    ).toEqual([]);
+  });
+}
+
+/*
  * The subtitle's `text-shadow: 0 0 20px/40px hsl(280 100% 65% / .5)` is not a
  * background, so `printBackground: false` does not drop it — it printed as a
  * solid purple wash about 40k px in area with the subtitle at 1.15:1 *inside*
