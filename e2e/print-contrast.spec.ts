@@ -201,8 +201,9 @@ for (const route of ROUTES) {
  * check cannot see this: the glyph colour was fine against paper, and the thing
  * ruining it was the element's own shadow.
  */
-test("print media: decorative glows are not ink", async ({ page }) => {
-  await page.goto("/blog/your-eval-suite-measures-the-wrong-thing/");
+for (const route of ROUTES) {
+test(`print media: decorative glows are not ink on ${route}`, async ({ page }) => {
+  await page.goto(route);
   await page.waitForSelector("main");
   await page.emulateMedia({ media: "print" });
 
@@ -234,31 +235,84 @@ test("print media: decorative glows are not ink", async ({ page }) => {
 
   expect(glowing, "glow decorations still painting on paper").toEqual([]);
 });
+}
 
 /*
  * A `position: fixed` element paints on every sheet, not just the first. The
  * navbar put `← cd ~` and a rule across the top of all five pages of an
- * 8-minute post. This asserts the retirement rather than the absence of a
- * navbar, so it fails loudly if the selector in the print block ever stops
- * matching the markup.
+ * 8-minute post.
+ *
+ * Run across every route, and not just the post, because the first version of
+ * this ran on the post alone and passed while the home page's terminal toggle —
+ * `fixed bottom-6 right-6`, and still `display: flex` under print — printed on
+ * every sheet of the home page. A blog post does not render the terminal at
+ * all, so the assertion was pointed at a page the offender could not be on.
+ *
+ * The control below names each control it expects, per route, instead of
+ * counting them. A count is satisfied by the navbar on every route — so the
+ * home page's toggle could fail to mount and this would still go green on the
+ * navbar alone, passing for precisely the reason it was written to catch.
  */
-test("print media: fixed chrome does not repeat on every sheet", async ({
-  page,
-}) => {
-  await page.goto("/blog/your-eval-suite-measures-the-wrong-thing/");
-  const nav = page.locator('nav[aria-label="Main"]');
-  await expect(nav).toBeVisible();
-
-  await page.emulateMedia({ media: "print" });
-
-  const stillFixed = await page.evaluate(() =>
+const fixedElements = (page: Page) =>
+  page.evaluate(() =>
     [...document.querySelectorAll<HTMLElement>("*")]
       .filter((el) => {
         const style = getComputedStyle(el);
         return style.position === "fixed" && style.display !== "none";
       })
-      .map((el) => `${el.tagName.toLowerCase()}.${el.className.toString().slice(0, 50)}`)
+      .map(
+        (el) => `${el.tagName.toLowerCase()}.${el.className.toString().slice(0, 50)}`
+      )
   );
 
-  expect(stillFixed, "fixed elements repeat on every printed page").toEqual([]);
-});
+// Asserted through the same predicate the measurement uses, so the control
+// cannot be satisfied by an element the sweep would not have collected anyway.
+const isFixedNow = (page: Page, selector: string) =>
+  page.evaluate((sel) => {
+    const el = document.querySelector<HTMLElement>(sel);
+    if (!el) return false;
+    const style = getComputedStyle(el);
+    return style.position === "fixed" && style.display !== "none";
+  }, selector);
+
+const NAV = 'nav[aria-label="Main"]';
+// Only `/` renders `InteractiveTerminal` (`src/pages/Index.tsx`), so `/` is the
+// only route that can prove the toggle is retired on paper.
+const TERMINAL_TOGGLE = 'button[title="Open terminal (Ctrl+K)"]';
+
+const FIXED_CHROME: Record<string, string[]> = {
+  "/blog/your-eval-suite-measures-the-wrong-thing/": [NAV],
+  "/blog/": [NAV],
+  "/": [NAV, TERMINAL_TOGGLE],
+};
+
+for (const route of ROUTES) {
+  test(`print media: fixed chrome on ${route} does not repeat on every sheet`, async ({
+    page,
+  }) => {
+    await page.goto(route);
+    await page.waitForSelector("main");
+
+    // Awaited per selector rather than slept on: the toggle arrives through a
+    // framer entrance, and framer advances in frames, so a wall-clock wait is
+    // not a unit of animation time.
+    for (const selector of FIXED_CHROME[route]) {
+      await expect(
+        page.locator(selector),
+        `${selector} never mounted — this probe is not measuring what it thinks`
+      ).toBeVisible();
+      expect(
+        await isFixedNow(page, selector),
+        `${selector} is not fixed on screen — the control is vacuous here`
+      ).toBe(true);
+    }
+
+    await page.emulateMedia({ media: "print" });
+    await page.waitForTimeout(700);
+
+    expect(
+      await fixedElements(page),
+      "fixed elements repeat on every printed page"
+    ).toEqual([]);
+  });
+}

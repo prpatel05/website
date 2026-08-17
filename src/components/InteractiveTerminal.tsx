@@ -193,13 +193,23 @@ const InteractiveTerminal = () => {
 
   return (
     <>
-      {/* Toggle button */}
+      {/* Toggle button.
+
+          `print:hidden` because a `position: fixed` element paints on every
+          printed sheet, not just the first — and this one is a control that
+          opens a terminal, which paper cannot do. The navbar has the same
+          problem and is retired in the `@media print` block in
+          `src/index.css`; this one takes a variant instead, because the only
+          selector that would reach it from CSS is its `title` string. It went
+          unnoticed for a first pass because the route that prints — a blog
+          post — does not render the terminal at all, so the assertion looking
+          for it was pointed at a page it could not be on (PRA-1063). */}
       <AnimatePresence>
         {showButton && !open && (
           <m.button
             ref={toggleRef}
             onClick={() => setOpen(true)}
-            className="fixed bottom-6 right-6 z-50 w-12 h-12 bg-card border border-border flex items-center justify-center text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 group"
+            className="fixed bottom-6 right-6 z-50 w-12 h-12 bg-card border border-border flex items-center justify-center text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 group print:hidden"
             /*
               Through `entrance()` like every other first-paint animation on the
               site. This one was missed because the button is quick enough that
