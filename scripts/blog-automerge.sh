@@ -29,6 +29,22 @@ MERGEABLE_RETRY_SLEEP="${AUTOMERGE_MERGEABLE_RETRY_SLEEP:-2}"
 PUBLISH_GRACE_DAYS="${AUTOMERGE_PUBLISH_GRACE_DAYS:-7}"
 GRACE_SECONDS=$(( PUBLISH_GRACE_DAYS * 86400 ))
 
+# A dry run reads everything and writes nothing: no merge, no issue. It exists
+# because every other way of exercising this routine publishes a real post --
+# the one thing you cannot undo -- so until now nobody could run it to find out
+# whether it works. The test suite drives this script against a stubbed `gh`,
+# so it proves the logic and nothing at all about the real API or the token the
+# workflow runs as. The first dry run earned its keep immediately: it showed
+# the CI gate reads GREEN with `checks: none` as readily as with `checks: read`,
+# because this repo is public. See the note in blog-automerge.yml.
+#
+# `true` and `1` both count, because a workflow_dispatch boolean arrives as the
+# string "true".
+DRY_RUN=0
+case "${AUTOMERGE_DRY_RUN:-}" in
+  1 | true | TRUE | yes) DRY_RUN=1 ;;
+esac
+
 # Failures that must redden the run on the day they happen, rather than waiting
 # for the publish date to arrive. A merge is only ever attempted on a post that
 # is already due, and an alarm nobody can file is an alarm nobody will see.
@@ -61,19 +77,31 @@ resolve_mergeable() {
 # healthy PR as pending and stall the queue forever.
 ci_verdict() {
   local number="$1"
-  local sha check_runs verdict
+  local sha check_runs verdict err
 
-  sha="$(gh api "repos/$REPO/pulls/$number" --jq '.head.sha' 2>/dev/null || true)"
+  # Both reads used to discard stderr, so a 403 from a missing `checks: read`
+  # scope was indistinguishable from a network blip or a deleted PR -- every
+  # one of them just became UNVERIFIED. Fail-safe, but undiagnosable: the run
+  # would stall the queue without ever naming the scope that caused it. The
+  # verdict still goes to stdout and only to stdout; this goes to stderr, so
+  # the caller's `$(...)` is unaffected.
+  err="$(mktemp)"
+  sha="$(gh api "repos/$REPO/pulls/$number" --jq '.head.sha' 2>"$err" || true)"
   if [[ -z "$sha" ]]; then
+    echo "    CI gate: no head sha for #$number: $(tr '\n' ' ' <"$err")" >&2
+    rm -f "$err"
     printf 'UNVERIFIED'
     return
   fi
 
-  check_runs="$(gh api "repos/$REPO/commits/$sha/check-runs?per_page=100" 2>/dev/null || true)"
+  check_runs="$(gh api "repos/$REPO/commits/$sha/check-runs?per_page=100" 2>"$err" || true)"
   if [[ -z "$check_runs" ]]; then
+    echo "    CI gate: no check-runs for #$number ($sha): $(tr '\n' ' ' <"$err")" >&2
+    rm -f "$err"
     printf 'UNVERIFIED'
     return
   fi
+  rm -f "$err"
 
   # Unknown is unsafe: anything that does not parse, or a page we can only see
   # part of, resolves to UNVERIFIED rather than falling through to a merge.
@@ -93,6 +121,9 @@ ci_verdict() {
 
 echo "Checking open blog PRs for $REPO"
 echo "UTC date: $TODAY (merging posts due on or before $TODAY)"
+if (( DRY_RUN )); then
+  echo "DRY RUN: no PR will be merged and no issue will be created."
+fi
 
 create_social_promotion_issue() {
   local number="$1"
@@ -102,6 +133,11 @@ create_social_promotion_issue() {
   local slug="$5"
   local issue_title="Social promotion: $branch"
   local existing_issue_count
+
+  if (( DRY_RUN )); then
+    echo "    Dry run: would create social-promotion issue for $branch."
+    return
+  fi
 
   existing_issue_count="$(gh issue list --repo "$REPO" --search "$issue_title in:title" --state all --json title --jq 'length')"
 
@@ -128,6 +164,13 @@ create_blocked_merge_issue() {
   local reason="$4"
   local issue_title="Resolve blocked blog merge: $branch"
   local existing_issue_count
+
+  # Reachable in a dry run, unlike the social-promotion issue: alarm_if_due
+  # fires on a due PR that cannot merge, and no merge is needed to get here.
+  if (( DRY_RUN )); then
+    echo "    Dry run: would create blocked-merge issue for $branch ($reason)."
+    return
+  fi
 
   existing_issue_count="$(gh issue list --repo "$REPO" --search "$issue_title in:title" --state all --json title --jq 'length')"
   if [[ "$existing_issue_count" -gt 0 ]]; then
@@ -182,6 +225,7 @@ if [[ "$blog_count" -eq 0 ]]; then
 fi
 
 merged_prs=()
+would_merge_prs=()
 skipped_prs=()
 conflict_prs=()
 missed_publish_prs=()
@@ -258,6 +302,14 @@ while IFS= read -r pr_json; do
   if [[ "$date_iso" > "$TODAY" ]]; then
     echo "  Skipping: publish date $date_iso has not arrived yet."
     skipped_prs+=("$number|$branch|not_yet_due:$date_iso")
+    # The real run stops here to keep a far-future PR free of API calls. A dry
+    # run reads the gate anyway, because on most days nothing is due and a dry
+    # run that skipped every PR on the date would exercise the CI gate -- and
+    # so the `checks: read` scope -- exactly never, which is the state this
+    # whole mode exists to get out of. Informational: nothing branches on it.
+    if (( DRY_RUN )); then
+      echo "  Dry run: not due, but reading the CI gate anyway: $(ci_verdict "$number")."
+    fi
     continue
   fi
 
@@ -291,6 +343,12 @@ while IFS= read -r pr_json; do
   fi
   echo "  CI verdict: $verdict."
 
+  if (( DRY_RUN )); then
+    echo "  Dry run: would merge #$number (\"$title\")."
+    would_merge_prs+=("$number|$branch|$date_iso|$title")
+    continue
+  fi
+
   echo "  Attempting merge for #$number (\"$title\")."
   if gh pr merge "$number" --repo "$REPO" --merge --delete-branch; then
     echo "  Merged."
@@ -306,6 +364,9 @@ done < <(echo "$blog_prs" | jq -c '.[]')
 
 echo ""
 echo "=== Blog PR Auto-Merge Summary ==="
+if (( DRY_RUN )); then
+  echo "Would merge: ${#would_merge_prs[@]} (dry run -- nothing was merged)"
+fi
 echo "Merged: ${#merged_prs[@]}"
 echo "Skipped: ${#skipped_prs[@]}"
 echo "Blocked by conflict: ${#conflict_prs[@]}"
@@ -318,6 +379,19 @@ if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
     echo ""
     echo "- UTC date: $TODAY"
     echo "- Merging posts due on or before: $TODAY"
+    if (( DRY_RUN )); then
+      echo "- **Dry run**: nothing was merged and no issue was created."
+      echo ""
+      echo "### Would merge"
+      if (( ${#would_merge_prs[@]} == 0 )); then
+        echo "- None"
+      else
+        for item in "${would_merge_prs[@]}"; do
+          IFS='|' read -r number branch date title <<<"$item"
+          echo "- #$number (\`$branch\`, \`$date\`): $title"
+        done
+      fi
+    fi
     echo ""
     echo "### Merged"
     if (( ${#merged_prs[@]} == 0 )); then

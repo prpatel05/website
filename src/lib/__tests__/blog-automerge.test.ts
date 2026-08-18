@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { execFileSync } from "child_process";
+import { spawnSync } from "child_process";
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
@@ -202,6 +202,7 @@ type Fixture = {
 type Run = {
   status: number;
   stdout: string;
+  stderr: string;
   summary: string;
   merges: string[];
   issues: string[];
@@ -211,7 +212,12 @@ type Run = {
 
 let runSeq = 0;
 
-function run(fixture: Fixture, today = TODAY, bin = () => binDir): Run {
+function run(
+  fixture: Fixture,
+  today = TODAY,
+  bin = () => binDir,
+  extraEnv: Record<string, string> = {},
+): Run {
   const id = `run-${runSeq++}`;
   const fixturePath = join(workDir, `${id}.json`);
   const actionsPath = join(workDir, `${id}.actions`);
@@ -220,28 +226,28 @@ function run(fixture: Fixture, today = TODAY, bin = () => binDir): Run {
   writeFileSync(actionsPath, "");
   writeFileSync(summaryPath, "");
 
-  let status = 0;
-  let stdout = "";
-  try {
-    stdout = execFileSync("bash", [SCRIPT], {
-      encoding: "utf8",
-      env: {
-        ...process.env,
-        PATH: `${bin()}:${process.env.PATH}`,
-        GITHUB_REPOSITORY: REPO,
-        GH_FIXTURE: fixturePath,
-        GH_ACTIONS: actionsPath,
-        FAKE_TODAY: today,
-        AUTOMERGE_TODAY: today,
-        AUTOMERGE_MERGEABLE_RETRY_SLEEP: "0",
-        GITHUB_STEP_SUMMARY: summaryPath,
-      },
-    });
-  } catch (err) {
-    const e = err as { status: number; stdout: string };
-    status = e.status;
-    stdout = e.stdout ?? "";
-  }
+  // spawnSync rather than execFileSync: the CI gate's diagnostics go to stderr
+  // (stdout carries the verdict and must stay parseable), and execFileSync only
+  // surfaces stderr on a throw -- which would make the diagnostic assertable
+  // only on runs that happen to exit non-zero.
+  const proc = spawnSync("bash", [SCRIPT], {
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      PATH: `${bin()}:${process.env.PATH}`,
+      GITHUB_REPOSITORY: REPO,
+      GH_FIXTURE: fixturePath,
+      GH_ACTIONS: actionsPath,
+      FAKE_TODAY: today,
+      AUTOMERGE_TODAY: today,
+      AUTOMERGE_MERGEABLE_RETRY_SLEEP: "0",
+      GITHUB_STEP_SUMMARY: summaryPath,
+      ...extraEnv,
+    },
+  });
+  const status = proc.status ?? 0;
+  const stdout = proc.stdout ?? "";
+  const stderr = proc.stderr ?? "";
 
   const actions = existsSync(actionsPath)
     ? readFileSync(actionsPath, "utf8")
@@ -253,6 +259,7 @@ function run(fixture: Fixture, today = TODAY, bin = () => binDir): Run {
   return {
     status,
     stdout,
+    stderr,
     summary: readFileSync(summaryPath, "utf8"),
     merges: actions.filter((a) => a.merge).map((a) => a.merge),
     issues: actions.filter((a) => a.issue).map((a) => a.issue),
@@ -575,5 +582,65 @@ describe("blog auto-merge routine", () => {
     expect(r.merges).toEqual(["33"]);
     expect(r.issues).toContain(`Resolve blocked blog merge: ${BRANCH}`);
     expect(r.status).toBe(1);
+  });
+
+  // A dry run is the only way to run this routine without publishing a post,
+  // which makes it the only way to check the workflow's token against the real
+  // API before a publish date depends on it. Every assertion below is about
+  // that: it must read like the real run and write nothing.
+  describe("dry run", () => {
+    const dry = (fixture: Fixture, today = TODAY) =>
+      run(fixture, today, () => binDir, { AUTOMERGE_DRY_RUN: "true" });
+
+    it("merges nothing, and says what it would have merged", () => {
+      const r = dry({ prs: [pr()], files: { [BRANCH]: TODAY } });
+      expect(r.merges).toEqual([]);
+      expect(r.stdout).toContain(`Dry run: would merge #31`);
+      expect(r.summary).toContain("**Dry run**");
+      expect(r.summary).toContain(`#31 (\`${BRANCH}\`, \`${TODAY}\`)`);
+      expect(r.status).toBe(0);
+    });
+
+    // The blocked-merge issue is reachable without a merge, so it is the one
+    // write a dry run could still perform by accident.
+    it("files no blocked-merge issue for a due PR it cannot merge", () => {
+      const r = dry({ prs: [pr({ mergeable: "CONFLICTING" })], files: { [BRANCH]: TODAY } });
+      expect(r.issues).toEqual([]);
+      expect(r.stdout).toContain("Dry run: would create blocked-merge issue");
+      // Still red: a dry run that finds a missed publish date reports one.
+      expect(r.status).toBe(1);
+    });
+
+    // The counterpart to "does not spend a CI call on a post that is not due
+    // yet". The real run's thrift is what leaves `checks: read` unexercised on
+    // every day but a publish day, so the dry run deliberately pays that cost.
+    it("reads the CI gate even when nothing is due, to exercise `checks: read`", () => {
+      const r = dry({ prs: [pr()], files: { [BRANCH]: "2026-07-28" } });
+      expect(r.checkCalls).toEqual(["31"]);
+      expect(r.stdout).toContain("Dry run: not due, but reading the CI gate anyway: GREEN");
+      expect(r.merges).toEqual([]);
+      expect(r.status).toBe(0);
+    });
+
+    // `AUTOMERGE_DRY_RUN: ${{ inputs.dry_run }}` renders to the empty string on
+    // the `schedule` event, where there is no `inputs` context. If empty ever
+    // counted as dry, the daily cron would silently stop publishing.
+    it("treats the empty value the cron passes as a real run", () => {
+      const r = run({ prs: [pr()], files: { [BRANCH]: TODAY } }, TODAY, () => binDir, {
+        AUTOMERGE_DRY_RUN: "",
+      });
+      expect(r.merges).toEqual(["31"]);
+      expect(r.stdout).not.toContain("DRY RUN");
+      expect(r.status).toBe(0);
+    });
+  });
+
+  // UNVERIFIED is fail-safe but says nothing about which read failed or why, so
+  // a wrong `checks: read` scope would stall the queue anonymously.
+  it("names the failing CI-gate read on stderr, without polluting the verdict", () => {
+    const r = run({ prs: [pr()], files: { [BRANCH]: TODAY }, checks: { "31": "error" } });
+    expect(r.stderr).toContain("CI gate: no check-runs for #31");
+    expect(r.stdout).toContain("CI verdict is UNVERIFIED");
+    expect(r.merges).toEqual([]);
   });
 });

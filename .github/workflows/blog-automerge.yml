@@ -4,14 +4,30 @@ on:
   schedule:
     - cron: "0 12 * * *"
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Read everything, merge nothing. Reports what would merge, and runs the CI gate against the real API and token -- the only way to exercise this routine without publishing a post."
+        type: boolean
+        default: false
 
 permissions:
   contents: write
   pull-requests: write
   issues: write
-  # Naming any scope sets every unnamed one to `none`, so the CI gate's
-  # `commits/{sha}/check-runs` read has to be granted explicitly. Without it
-  # every PR reads as UNVERIFIED and nothing ever publishes.
+  # Naming any scope sets every unnamed one to `none`, so a scope the CI gate
+  # needs has to be granted explicitly.
+  #
+  # This one is currently inert, and is kept deliberately. `checks: read` was
+  # added for the gate's `commits/{sha}/check-runs` read, on the reasoning that
+  # without it every PR would read as UNVERIFIED and nothing would publish.
+  # That is not true while this repo is public: check-runs on a public repo are
+  # world-readable, and the scope does not gate what anonymous access already
+  # allows. Measured, not assumed -- a dry run on a branch with `checks: none`
+  # still returned GREEN for #102 and #173 (run 32077487937), against `read`'s
+  # GREEN on the same two PRs (run 32077423580).
+  #
+  # It stays because it is exactly right the day this repo goes private, and on
+  # that day the gate would otherwise start failing closed with no clue why.
   checks: read
 
 jobs:
@@ -24,4 +40,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          # Empty on `schedule`, where the `inputs` context does not exist. The
+          # script treats anything but 1/true as a real run, so the daily cron
+          # keeps merging for real and only a deliberate dispatch goes dry.
+          AUTOMERGE_DRY_RUN: ${{ inputs.dry_run }}
         run: bash scripts/blog-automerge.sh
