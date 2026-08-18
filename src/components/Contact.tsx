@@ -110,7 +110,7 @@ const Contact = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.3, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="grid grid-cols-3 sm:grid-cols-5 gap-3"
+            className="grid grid-cols-3 sm:grid-cols-6 gap-3"
           >
             {socials.map((s, i) => (
               <SocialLink key={s.name} social={s} index={i} />
