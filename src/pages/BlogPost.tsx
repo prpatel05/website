@@ -12,6 +12,7 @@ import NotFound from "./NotFound";
 import SEO from "@/components/SEO";
 import ReadingProgress from "@/components/ReadingProgress";
 import PostToc from "@/components/PostToc";
+import PostShare from "@/components/PostShare";
 import { canonicalUrl } from "@/lib/canonical-url";
 import { postDescription } from "@/lib/post-description";
 import { heroFor, HERO_SIZES } from "@/lib/hero";
@@ -460,11 +461,12 @@ const BlogPost = () => {
 
           {/*
             Footer. Held back while the body is in flight: this block is the
-            end of the article — a rule, the newer/older cards, the archive
-            link — and drawing an end under a post that has not started yet is
-            the half of the defect a skeleton alone does not fix. It rendered
-            directly beneath the hero, 952px down a 1203px document, so the
-            reader was offered the next post before this one had any words.
+            end of the article — a rule, the share/subscribe row, the
+            newer/older cards, the archive link — and drawing an end under a
+            post that has not started yet is the half of the defect a skeleton
+            alone does not fix. It rendered directly beneath the hero, 952px
+            down a 1203px document, so the reader was offered the next post
+            before this one had any words.
           */}
           {!pending && (
           <m.div
@@ -473,6 +475,7 @@ const BlogPost = () => {
             transition={{ delay: 0.6, duration: 0.5 }}
             className="mt-16 pt-8 border-t border-border"
           >
+            <PostShare slug={post.slug} title={post.title} />
             {(newer || older) && (
               <nav
                 aria-label="More posts"
