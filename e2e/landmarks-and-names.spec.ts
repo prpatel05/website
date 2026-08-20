@@ -16,7 +16,12 @@ test.describe("Navigation landmarks are all named", () => {
     const contents = page.getByRole("navigation", { name: "Contents" });
     const contentsCount = await contents.count();
     expect(contentsCount === 0 || contentsCount === 1).toBe(true);
-    await expect(page.getByRole("navigation")).toHaveCount(2 + contentsCount);
+    const series = page.getByRole("navigation", { name: "Agent reliability" });
+    const seriesCount = await series.count();
+    expect(seriesCount === 0 || seriesCount === 2).toBe(true);
+    await expect(page.getByRole("navigation")).toHaveCount(
+      2 + contentsCount + seriesCount
+    );
   });
 
   test("blog listing names its nav region", async ({ page }) => {

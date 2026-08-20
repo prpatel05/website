@@ -90,8 +90,30 @@ vi.mock("@/data/blog-posts/registry", async (importOriginal) => {
   const olderPost = { ...testPost, slug: "older-post", title: "Older Post Title" };
   const all = [newerPost, testPost, olderPost];
   const plainPost = { ...testPost, slug: "plain-post", title: "Plain Post Title" };
+  const seriesA = {
+    ...testPost,
+    slug: "series-a",
+    title: "Series A Title",
+    dateISO: "2026-06-01",
+    tags: ["agents", "reliability"],
+  };
+  const seriesB = {
+    ...testPost,
+    slug: "series-b",
+    title: "Series B Title",
+    dateISO: "2026-07-01",
+    tags: ["agents", "reliability"],
+  };
+  const seriesC = {
+    ...testPost,
+    slug: "series-c",
+    title: "Series C Title",
+    dateISO: "2026-08-01",
+    tags: ["agents", "reliability"],
+  };
+  const series = [seriesC, seriesB, seriesA];
   const plainContent = renderMarkdownToHtml("Just a paragraph with **bold**.\n");
-  const bySlug = [...all, plainPost];
+  const bySlug = [...all, plainPost, ...series];
   return {
     ...actual,
     getPostBySlug: (slug: string) => bySlug.find((p) => p.slug === slug),
@@ -99,7 +121,7 @@ vi.mock("@/data/blog-posts/registry", async (importOriginal) => {
       if (bodyChunk.held) await bodyChunk.wait();
       return slug === "plain-post" ? plainContent : testContent;
     },
-    posts: all,
+    posts: [...all, ...series],
   };
 });
 
@@ -301,10 +323,11 @@ describe("BlogPost", () => {
       ]);
     });
 
-    it("offers only a newer post on the oldest post", async () => {
+    it("offers a newer and older post on the oldest of the original trio", async () => {
       const { container } = await renderLoadedPost("older-post");
       expect(navLinks(container)).toEqual([
         ["/blog/test-post/", "newerTest Post Title"],
+        ["/blog/series-c/", "olderSeries C Title"],
       ]);
     });
 
@@ -543,6 +566,38 @@ describe("BlogPost", () => {
       expect(h2!.textContent).toBe("Introduction");
     });
   });
+  describe("series rail", () => {
+    const rails = () =>
+      screen.queryAllByRole("navigation", { name: "Agent reliability" });
+
+    it("does not render a series rail for a post outside the series", async () => {
+      renderBlogPost("test-post");
+      await screen.findByRole("heading", { name: "Introduction" });
+      expect(rails()).toEqual([]);
+      expect(screen.queryByText("// series")).toBeNull();
+    });
+
+    it("renders the rail only on a member post", async () => {
+      renderBlogPost("series-b");
+      await screen.findByRole("heading", { name: "Introduction" });
+      const found = rails();
+      expect(found).toHaveLength(2);
+      for (const rail of found) {
+        expect(rail).toHaveTextContent("// series");
+        expect(rail).toHaveTextContent("Agent reliability");
+        expect(rail).toHaveTextContent("2 of 3");
+      }
+      expect(screen.getAllByRole("link", { name: /previous/ })[0]).toHaveAttribute(
+        "href",
+        "/blog/series-a/"
+      );
+      expect(screen.getAllByRole("link", { name: /next/ })[0]).toHaveAttribute(
+        "href",
+        "/blog/series-c/"
+      );
+    });
+  });
+
   it("renders NotFound for unknown slug", () => {
     renderBlogPost("nonexistent-slug");
     // The BlogPost component returns <NotFound /> which shows the 404 page

@@ -14,6 +14,7 @@ import { TagChip } from "@/components/TagChip";
 import ReadingProgress from "@/components/ReadingProgress";
 import PostToc from "@/components/PostToc";
 import PostShare from "@/components/PostShare";
+import PostSeriesRail from "@/components/PostSeriesRail";
 import { canonicalUrl } from "@/lib/canonical-url";
 import { postDescription } from "@/lib/post-description";
 import { heroFor, HERO_SIZES } from "@/lib/hero";
@@ -27,6 +28,7 @@ import {
   recoverPostBody,
 } from "@/lib/post-body-recovery";
 import { tocFromHtml } from "@/lib/post-toc";
+import { seriesPosition } from "@/lib/blog-series";
 import { useActiveHeading } from "@/hooks/useActiveHeading";
 
 /**
@@ -176,6 +178,7 @@ const BlogPost = () => {
   const pending = !content && !unrecovered;
 
   const { newer, older } = getAdjacentPosts(posts, post.slug);
+  const series = seriesPosition(posts, post.slug);
 
   // Scrapers get the derived JPEG card, not the WebP master: LinkedIn's image
   // spec does not list WebP. `blogPostCardFor` returns null only for a hero
@@ -364,8 +367,17 @@ const BlogPost = () => {
             />
           </m.div>
 
+          {/*
+            Same rail as the footer instance. Up here it is the companion: you
+            can see you are in the arc before the TOC and the body. Membership
+            is metadata, so this one does not wait for the body chunk.
+          */}
+          {series && (
+            <PostSeriesRail position={series} placement="top" className="my-8" />
+          )}
+
           {toc.length > 0 && (
-            <aside className="my-8 xl:my-0 xl:col-start-2 xl:row-start-1 xl:row-span-4">
+            <aside className="my-8 xl:my-0 xl:col-start-2 xl:row-start-1 xl:row-span-5">
               <div className="xl:sticky xl:top-24">
                 <PostToc entries={toc} activeId={activeId} />
               </div>
@@ -473,6 +485,13 @@ const BlogPost = () => {
             className="mt-16 pt-8 border-t border-border"
           >
             <PostShare slug={post.slug} title={post.title} />
+            {series && (
+              <PostSeriesRail
+                position={series}
+                placement="footer"
+                className="mb-8 print:hidden"
+              />
+            )}
             {(newer || older) && (
               <nav
                 aria-label="More posts"
