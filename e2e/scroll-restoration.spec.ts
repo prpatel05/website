@@ -135,7 +135,7 @@ test.describe("scroll position across navigations", () => {
 
     // Scroll first: a PUSH from a scrolled page is the case that needs the
     // reset. Landing on a post already 9000px in is the defect this half owns.
-    const link = page.locator('a[href^="/blog/"]').last();
+    const link = page.locator("main article h2 a").last();
     await link.scrollIntoViewIfNeeded();
     expect(await scrollY(page)).toBeGreaterThan(200);
 
@@ -154,8 +154,8 @@ test.describe("scroll position across navigations", () => {
     // Reach the bottom, then leave from the second-to-last card. The target is
     // then strictly inside the document rather than equal to its maximum, so
     // "scroll to the bottom" is not a passing implementation.
-    await page.locator('a[href^="/blog/"]').last().scrollIntoViewIfNeeded();
-    const link = page.locator('a[href^="/blog/"]').nth(-2);
+    await page.locator("main article h2 a").last().scrollIntoViewIfNeeded();
+    const link = page.locator("main article h2 a").nth(-2);
 
     // Read the offset from inside the click rather than before it: Playwright
     // scrolls an element into view as part of its actionability checks, so a

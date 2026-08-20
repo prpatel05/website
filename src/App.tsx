@@ -77,7 +77,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
  * `PUSH` and `REPLACE` are the ones we own, and they still go to the top.
  */
 const ScrollToTop = () => {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const navigationType = useNavigationType();
   useEffect(() => {
     if (navigationType === "POP") {
@@ -85,9 +85,9 @@ const ScrollToTop = () => {
     }
     window.scrollTo(0, 0);
     // `navigationType` is deliberately not a dependency: it describes how we
-    // arrived at `pathname`, so it only carries meaning alongside one.
+    // arrived at `pathname`/`search`, so it only carries meaning alongside them.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname]);
+  }, [pathname, search]);
   return null;
 };
 

@@ -10,6 +10,7 @@ import {
 } from "@/data/blog-posts/registry";
 import NotFound from "./NotFound";
 import SEO from "@/components/SEO";
+import { TagChip } from "@/components/TagChip";
 import ReadingProgress from "@/components/ReadingProgress";
 import PostToc from "@/components/PostToc";
 import PostShare from "@/components/PostShare";
@@ -250,6 +251,7 @@ const BlogPost = () => {
         ogImageHeight={card?.height}
         ogType="article"
         articlePublishedTime={post.dateISO}
+        articleTags={post.tags}
         preloadImage={heroSrc}
         preloadImageSrcSet={hero?.srcSet}
         preloadImageSizes={hero ? HERO_SIZES : undefined}
@@ -308,12 +310,7 @@ const BlogPost = () => {
                 {post.readTime}
               </span>
               {post.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="font-mono text-[10px] text-primary/60 print:text-primary border border-primary/20 px-2 py-0.5"
-                >
-                  #{tag}
-                </span>
+                <TagChip key={tag} tag={tag} />
               ))}
             </div>
 

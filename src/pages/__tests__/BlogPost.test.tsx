@@ -132,9 +132,18 @@ describe("BlogPost", () => {
     renderBlogPost("test-post");
     expect(screen.getByText("Jan 1, 2026")).toBeInTheDocument();
     expect(screen.getByText("5 min read")).toBeInTheDocument();
-    expect(screen.getByText("#testing")).toBeInTheDocument();
-    expect(screen.getByText("#vitest")).toBeInTheDocument();
-    expect(screen.getByText("#react")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "#testing" })).toHaveAttribute(
+      "href",
+      "/blog/?tag=testing"
+    );
+    expect(screen.getByRole("link", { name: "#vitest" })).toHaveAttribute(
+      "href",
+      "/blog/?tag=vitest"
+    );
+    expect(screen.getByRole("link", { name: "#react" })).toHaveAttribute(
+      "href",
+      "/blog/?tag=react"
+    );
   });
 
   it("renders markdown headings", async () => {
@@ -344,6 +353,9 @@ describe("BlogPost", () => {
     expect(hrefs).toEqual([
       // The bare origin is the one path served without a redirect.
       "/",
+      "/blog/?tag=testing",
+      "/blog/?tag=vitest",
+      "/blog/?tag=react",
       "/blog/newer-post/",
       "/blog/older-post/",
       "/blog/",
@@ -606,6 +618,14 @@ describe("BlogPost", () => {
     it("names the author and the site on the card", () => {
       expect(meta("article:author")).toBe("Pratik Patel");
       expect(meta("og:site_name")).toBe("Pratik Patel");
+    });
+
+    it("emits article:tag for each post tag", () => {
+      const { container } = renderBlogPost("test-post");
+      const tags = Array.from(
+        container.querySelectorAll('meta[property="article:tag"]')
+      ).map((el) => el.getAttribute("content"));
+      expect(tags).toEqual(["testing", "vitest", "react"]);
     });
   });
 

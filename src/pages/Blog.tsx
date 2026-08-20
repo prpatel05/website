@@ -3,12 +3,15 @@ import { m } from "framer-motion";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { posts } from "@/data/blog-posts/registry";
 import SEO from "@/components/SEO";
+import { AllPostsChip, TagChip } from "@/components/TagChip";
 import { SITE_CARD } from "@/lib/social-cards";
 import { THUMBNAIL_SIZES, thumbnailFor } from "@/lib/blog-thumbnails";
+import { useArchiveTag } from "@/hooks/useArchiveTag";
 import { useEntrance } from "@/hooks/useEntrance";
 import { mainContentProps } from "@/lib/skip-target";
 import { BLOG_TITLE } from "@/lib/route-title";
 import { postDescription } from "@/lib/post-description";
+import { ARCHIVE_HREF, postsWithTag, uniqueTags } from "@/lib/blog-tags";
 
 const BLOG_DESCRIPTION =
   "Articles on engineering leadership, AI, career growth, and technical architecture by Pratik Patel, CTO & Chief Architect.";
@@ -43,8 +46,12 @@ const author = {
 const STAGGER_SECONDS = 0.1;
 const STAGGERED_CARDS = 5;
 
+const archiveTags = uniqueTags(posts);
+
 const Blog = () => {
   const entrance = useEntrance();
+  const activeTag = useArchiveTag();
+  const visible = postsWithTag(posts, activeTag);
   // The archive is the entry point crawlers reach before any individual post,
   // so it names every post here rather than leaving them to be discovered one
   // BlogPosting at a time.
@@ -133,8 +140,45 @@ const Blog = () => {
             </h1>
           </m.div>
 
+          <nav aria-label="Filter by tag" className="mb-10 print:hidden">
+            <span className="font-mono text-xs text-primary/60 print:text-primary tracking-widest block mb-3">
+              {"// filter"}
+            </span>
+            <ul className="flex flex-wrap gap-2">
+              <li>
+                <AllPostsChip active={activeTag == null} />
+              </li>
+              {archiveTags.map((tag) => (
+                <li key={tag}>
+                  <TagChip tag={tag} active={activeTag === tag} current={activeTag === tag} />
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          {activeTag != null && visible.length === 0 ? (
+            <div role="status" className="border border-border bg-card p-6 lg:p-8">
+              <span className="font-mono text-xs text-primary/60 print:text-primary tracking-widest block mb-2">
+                {"// empty"}
+              </span>
+              <p className="font-mono text-sm text-muted-foreground mb-4">
+                No posts tagged #{activeTag}.
+              </p>
+              <Link
+                to={ARCHIVE_HREF}
+                className="font-mono text-xs text-primary hover:text-foreground transition-colors inline-flex items-center min-h-6"
+              >
+                show all posts
+              </Link>
+            </div>
+          ) : (
           <div className="space-y-4">
-            {posts.map((post, i) => {
+            {activeTag != null && (
+              <p className="font-mono text-xs text-muted-foreground" aria-live="polite">
+                {visible.length} {visible.length === 1 ? "post" : "posts"} tagged #{activeTag}
+              </p>
+            )}
+            {visible.map((post, i) => {
               const thumb = thumbnailFor(post.image);
               const staggered = i < STAGGERED_CARDS;
 
@@ -144,11 +188,8 @@ const Blog = () => {
                   initial={staggered ? entrance({ opacity: 0, y: 20 }) : false}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: i * STAGGER_SECONDS }}
+                  className="group relative border border-border bg-card hover:border-primary/40 transition-all duration-500 p-6 lg:p-8"
                 >
-                  <Link
-                    to={`/blog/${post.slug}/`}
-                    className="group block border border-border bg-card hover:border-primary/40 transition-all duration-500 p-6 lg:p-8"
-                  >
                     <div className="flex flex-col md:flex-row md:items-center gap-6">
                       <div className="w-full md:w-32 h-32 md:h-24 border border-border overflow-hidden shrink-0">
                         {/*
@@ -199,13 +240,16 @@ const Blog = () => {
                           <span aria-hidden="true" className="text-border">|</span>
                           <span className="font-mono text-[10px] text-muted-foreground">{post.readTime}</span>
                           {post.tags.map((tag) => (
-                            <span key={tag} className="font-mono text-[10px] text-primary/60 print:text-primary border border-primary/20 px-2 py-0.5">
-                              #{tag}
-                            </span>
+                            <TagChip key={tag} tag={tag} active={activeTag === tag} />
                           ))}
                         </div>
                         <h2 className="font-display text-xl lg:text-2xl font-bold text-foreground group-hover:text-primary transition-colors">
-                          {post.title}
+                          <Link
+                            to={`/blog/${post.slug}/`}
+                            className="before:absolute before:inset-0 before:z-0"
+                          >
+                            {post.title}
+                          </Link>
                         </h2>
                         <p className="font-mono text-sm text-muted-foreground mt-1">{post.subtitle}</p>
                       </div>
@@ -213,11 +257,11 @@ const Blog = () => {
                         <ArrowUpRight className="w-4 h-4" />
                       </div>
                     </div>
-                  </Link>
                 </m.article>
               );
             })}
           </div>
+          )}
         </div>
       </main>
     </div>

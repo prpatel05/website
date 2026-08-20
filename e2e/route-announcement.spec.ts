@@ -126,9 +126,7 @@ test.describe("Route announcement", () => {
     await expect(page).toHaveTitle(BLOG_TITLE);
 
     const card = page.locator("article").first();
-    const link = card.locator("a");
-    // The card's `<a>` wraps the whole tile — date, tags, subtitle and all — so
-    // its own text is not the title. The `<h2>` is.
+    const link = card.locator("h2 a");
     const postTitle = (await card.locator("h2").innerText()).trim();
 
     await watchRegion(page);
