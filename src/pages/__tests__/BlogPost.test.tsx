@@ -308,6 +308,26 @@ describe("BlogPost", () => {
     });
   });
 
+  // Posts used to dead-end at newer/older + ls ../posts. The share/subscribe
+  // row is the distribution exit: copy the canonical URL, hand it to X or
+  // LinkedIn, or subscribe via RSS / Substack. URL construction is owned by
+  // share-urls.test.ts and PostShare.test.tsx; this is the "the page actually
+  // mounts the row with the footer" half.
+  describe("share and subscribe row", () => {
+    it("renders the row once the body is in", async () => {
+      renderBlogPost("test-post");
+      await screen.findByRole("heading", { name: "Introduction" });
+
+      expect(screen.getByText("// share")).toBeInTheDocument();
+      expect(screen.getByText("// subscribe")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "copy url" })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "share on x" })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "linkedin" })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "rss" })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "substack" })).toBeInTheDocument();
+    });
+  });
+
   // The href half of the same rule the structured-data tests below enforce.
   // A post page is the densest internal linking on the site — two adjacent-post
   // links plus the archive link — so a slashless href here sends a crawler
@@ -408,9 +428,10 @@ describe("BlogPost", () => {
       expect(screen.getByText("// loading")).toBeInTheDocument();
 
       // ...and the end of the article is not drawn under a post that has not
-      // started. Both halves: the neighbour cards and the closing links.
+      // started. Neighbour cards, closing links, and the share row.
       expect(container.querySelector('nav[aria-label="More posts"]')).toBeNull();
       expect(screen.queryByText("ls ../posts")).toBeNull();
+      expect(screen.queryByText("// share")).toBeNull();
     });
 
     it("hands the page over to the real body once the chunk lands", async () => {
@@ -432,6 +453,7 @@ describe("BlogPost", () => {
         container.querySelector('nav[aria-label="More posts"]')
       ).toBeTruthy();
       expect(screen.getByText("ls ../posts")).toBeInTheDocument();
+      expect(screen.getByText("// share")).toBeInTheDocument();
     });
 
     // The control: with the chunk arriving normally, the same journey never
@@ -460,6 +482,7 @@ describe("BlogPost", () => {
       expect(screen.getByText("// loading")).toBeInTheDocument();
       expect(container.querySelector('nav[aria-label="More posts"]')).toBeNull();
       expect(screen.queryByText("ls ../posts")).toBeNull();
+      expect(screen.queryByText("// share")).toBeNull();
 
       // ...and it still resolves into the post, so this is a wait and not a
       // build that suppressed the article on every first load.
