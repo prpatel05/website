@@ -89,12 +89,15 @@ vi.mock("@/data/blog-posts/registry", async (importOriginal) => {
   const newerPost = { ...testPost, slug: "newer-post", title: "Newer Post Title" };
   const olderPost = { ...testPost, slug: "older-post", title: "Older Post Title" };
   const all = [newerPost, testPost, olderPost];
+  const plainPost = { ...testPost, slug: "plain-post", title: "Plain Post Title" };
+  const plainContent = renderMarkdownToHtml("Just a paragraph with **bold**.\n");
+  const bySlug = [...all, plainPost];
   return {
     ...actual,
-    getPostBySlug: (slug: string) => all.find((p) => p.slug === slug),
-    loadPostContent: async () => {
+    getPostBySlug: (slug: string) => bySlug.find((p) => p.slug === slug),
+    loadPostContent: async (slug: string) => {
       if (bodyChunk.held) await bodyChunk.wait();
-      return testContent;
+      return slug === "plain-post" ? plainContent : testContent;
     },
     posts: all,
   };
@@ -136,8 +139,8 @@ describe("BlogPost", () => {
 
   it("renders markdown headings", async () => {
     renderBlogPost("test-post");
-    expect(await screen.findByText("Introduction")).toBeInTheDocument();
-    expect(screen.getByText("Sub-heading")).toBeInTheDocument();
+    await screen.findByRole("heading", { name: "Introduction" });
+    expect(screen.getByRole("heading", { name: "Sub-heading" })).toBeInTheDocument();
   });
 
   it("renders markdown bold text", async () => {
@@ -148,7 +151,7 @@ describe("BlogPost", () => {
 
   it("renders custom h2 with border-left styling", async () => {
     const { container } = renderBlogPost("test-post");
-    await screen.findByText("Introduction");
+    await screen.findByRole("heading", { name: "Introduction" });
     const h2 = container.querySelector("h2.border-l-2");
     expect(h2).toBeTruthy();
     expect(h2!.textContent).toBe("Introduction");
@@ -156,10 +159,10 @@ describe("BlogPost", () => {
 
   it("renders markdown list items with custom bullets", async () => {
     renderBlogPost("test-post");
-    expect(await screen.findByText("First item")).toBeInTheDocument();
+    await screen.findByText("First item");
     expect(screen.getByText("Second item")).toBeInTheDocument();
     // Check the ▸ bullet markers
-    const bullets = screen.getAllByText("▸");
+    const bullets = screen.getAllByText("▸").filter((el) => el.className.includes("mt-1.5"));
     expect(bullets.length).toBe(3);
   });
 
@@ -270,7 +273,7 @@ describe("BlogPost", () => {
      */
     const renderLoadedPost = async (slug: string) => {
       const view = renderBlogPost(slug);
-      await screen.findByText("Introduction");
+      await screen.findByRole("heading", { name: "Introduction" });
       return view;
     };
 
@@ -313,7 +316,7 @@ describe("BlogPost", () => {
     const { container } = renderBlogPost("test-post");
     // The closing links are part of the footer, which does not exist until the
     // body does. Without this the list below is just the nav's `cd ~`.
-    await screen.findByText("Introduction");
+    await screen.findByRole("heading", { name: "Introduction" });
     const hrefs = Array.from(container.querySelectorAll("a[href^='/']")).map(
       (a) => a.getAttribute("href")
     );
@@ -418,7 +421,7 @@ describe("BlogPost", () => {
       bodyChunk.held = false;
       bodyChunk.arrive();
 
-      expect(await screen.findByText("Introduction")).toBeInTheDocument();
+      await screen.findByRole("heading", { name: "Introduction" });
       // The placeholder goes, and everything it was holding back comes back —
       // a skeleton that outlives its body would be the same defect wearing a
       // different mask.
@@ -436,7 +439,7 @@ describe("BlogPost", () => {
     // permanently would pass the test above.
     it("shows no placeholder when the chunk is not held", async () => {
       await clickThroughToPost();
-      expect(await screen.findByText("Introduction")).toBeInTheDocument();
+      expect(await screen.findByRole("heading", { name: "Introduction" })).toBeInTheDocument();
       expect(screen.queryByText("// loading")).toBeNull();
     });
 
@@ -462,13 +465,49 @@ describe("BlogPost", () => {
       // build that suppressed the article on every first load.
       bodyChunk.held = false;
       bodyChunk.arrive();
-      expect(await screen.findByText("Introduction")).toBeInTheDocument();
+      await screen.findByRole("heading", { name: "Introduction" });
       await waitFor(() => {
         expect(container.querySelector('nav[aria-label="More posts"]')).toBeTruthy();
       });
     });
   });
 
+
+  describe("reading chrome", () => {
+    it("exposes a reading progressbar once the body is in", async () => {
+      renderBlogPost("test-post");
+      await screen.findByRole("heading", { name: "Introduction" });
+      const bar = screen.getByRole("progressbar", { name: "Reading progress" });
+      expect(bar).toHaveAttribute("aria-valuemin", "0");
+      expect(bar).toHaveAttribute("aria-valuemax", "100");
+    });
+
+    it("builds a contents list from H2s, not H3s", async () => {
+      renderBlogPost("test-post");
+      await screen.findByRole("heading", { name: "Introduction" });
+      const toc = screen.getByRole("navigation", { name: "Contents" });
+      expect(toc).toHaveTextContent("// contents");
+      expect(toc).toHaveTextContent("Introduction");
+      expect(toc).not.toHaveTextContent("Sub-heading");
+      const tocLink = toc.querySelector("a[href=\"#introduction\"]");
+      expect(tocLink).toBeTruthy();
+      expect(tocLink).toHaveTextContent("Introduction");
+    });
+
+    it("hides the contents list when the post has no H2s", async () => {
+      renderBlogPost("plain-post");
+      await screen.findByText(/Just a paragraph with/);
+      expect(screen.queryByRole("navigation", { name: "Contents" })).toBeNull();
+    });
+
+    it("puts a hash id on the rendered H2", async () => {
+      const { container } = renderBlogPost("test-post");
+      await screen.findByRole("heading", { name: "Introduction" });
+      const h2 = container.querySelector("h2#introduction");
+      expect(h2).toBeTruthy();
+      expect(h2!.textContent).toBe("Introduction");
+    });
+  });
   it("renders NotFound for unknown slug", () => {
     renderBlogPost("nonexistent-slug");
     // The BlogPost component returns <NotFound /> which shows the 404 page

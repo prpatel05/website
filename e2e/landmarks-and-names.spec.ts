@@ -4,16 +4,19 @@ import { discoverPostSlugs } from "../scripts/blog-posts.mjs";
 const firstPost = discoverPostSlugs().sort()[0];
 
 test.describe("Navigation landmarks are all named", () => {
-  // A post page carries two: the "cd ~" header bar and the newer/older pager.
-  // Landmark navigation listing one of them as an anonymous "navigation" gives
-  // no way to tell which is which without walking into it.
-  test("post page names both of its nav regions", async ({ page }) => {
+  // A post page carries the cd ~ header bar, the newer/older pager, and —
+  // when the post has H2s — a Contents jump list. Landmark navigation listing
+  // one of them as an anonymous navigation gives no way to tell which is
+  // which without walking into it.
+  test("post page names each of its nav regions", async ({ page }) => {
     await page.goto(`/blog/${firstPost}/`);
 
     await expect(page.getByRole("navigation", { name: "Main" })).toHaveCount(1);
     await expect(page.getByRole("navigation", { name: "More posts" })).toHaveCount(1);
-    // No third, unnamed one hiding behind the two matches above.
-    await expect(page.getByRole("navigation")).toHaveCount(2);
+    const contents = page.getByRole("navigation", { name: "Contents" });
+    const contentsCount = await contents.count();
+    expect(contentsCount === 0 || contentsCount === 1).toBe(true);
+    await expect(page.getByRole("navigation")).toHaveCount(2 + contentsCount);
   });
 
   test("blog listing names its nav region", async ({ page }) => {

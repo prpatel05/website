@@ -119,14 +119,16 @@ test.describe("Skip to main content", () => {
       const focusedId = await page.evaluate(() => document.activeElement?.id);
       expect(focusedId).toBe("main-content");
 
-      // The real assertion: the next Tab must NOT land inside the nav. Before the
-      // fix it landed on the navbar's first link, because the nav was inside main.
+      // The real assertion: the next Tab must NOT land inside the site nav.
+      // Before the fix it landed on the navbar's first link, because that nav
+      // was inside main. A post page now also has a Contents jump list *inside*
+      // main — that is the first control after skip, and it is the skip working.
       await page.keyboard.press("Tab");
-      const landedInNav = await page.evaluate(() => {
+      const landedInSiteNav = await page.evaluate(() => {
         const el = document.activeElement;
-        return !!el && !!el.closest("nav");
+        return !!el && !!el.closest('nav[aria-label="Main"]');
       });
-      expect(landedInNav).toBe(false);
+      expect(landedInSiteNav).toBe(false);
 
       // ...and it must be inside main, i.e. it skipped forward rather than nowhere.
       const landedInMain = await page.evaluate(() => {
