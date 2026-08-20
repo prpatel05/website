@@ -255,8 +255,8 @@ describe("heading ids and hash links", () => {
     const html = renderMarkdownToHtml("## Introduction\n");
     expect(html).toContain("href=\"#introduction\"");
     expect(html).toContain("heading-permalink");
-    const [, cls] = html.match(/<a class=\"([^\"]*)\" href=\"#introduction\"/) ??
-      html.match(/<a href=\"#introduction\" class=\"([^\"]*)\"/) ?? [];
+    const [, cls] = html.match(/<a class="([^"]*)" href="#introduction"/) ??
+      html.match(/<a href="#introduction" class="([^"]*)"/) ?? [];
     expect(cls).toBeDefined();
     expect(cls).toContain("text-inherit");
     expect(cls).toContain("no-underline");

@@ -43,7 +43,14 @@ const postsWhere = (matches: (html: string) => boolean) =>
 /** Slugs whose built body contains `tag`, read off the artifact under test. */
 const postsContaining = (tag: RegExp) => postsWhere((html) => tag.test(html));
 
-const orderedListPosts = postsContaining(/<ol[\s>]/);
+/** Ordered lists in the markdown body — the Contents jump list is also an <ol>. */
+const postsContainingInBody = (tag: RegExp) =>
+  postsWhere((html) => {
+    const start = html.indexOf("data-post-body");
+    return start >= 0 && tag.test(html.slice(start));
+  });
+
+const orderedListPosts = postsContainingInBody(/<ol[\s>]/);
 const blockquotePosts = postsContaining(/<blockquote[\s>]/);
 
 /**
@@ -76,7 +83,7 @@ test.describe("post bodies render the markdown that was written", () => {
     for (const slug of orderedListPosts) {
       await page.goto(`/blog/${slug}/`);
 
-      const list = page.locator("article ol").first();
+      const list = page.locator("[data-post-body] ol").first();
       const markers = await list.evaluate((ol) => {
         const items = [...ol.querySelectorAll(":scope > li")];
         return {

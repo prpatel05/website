@@ -212,7 +212,7 @@ test("every heading level a post can contain renders as a heading", async ({ pag
   // the check that would have caught PRA-1005 at the moment the map was written.
   const rendered = LEVELS.map(({ level, md }) => ({ level, html: renderMarkdownToHtml(md) }));
   expect(
-    rendered.filter((r) => !/^<h[1-6] class="/.test(r.html)).map((r) => `h${r.level}: ${r.html}`),
+    rendered.filter((r) => !/^<h[1-6][^>]*class="/.test(r.html)).map((r) => `h${r.level}: ${r.html}`),
     `these heading levels emitted a bare tag, so the renderer has no mapping for them. ` +
       `An unmapped heading still takes font-display from src/index.css but font-size and ` +
       `font-weight from Tailwind's preflight, i.e. the body's — an undeclared face at body ` +
