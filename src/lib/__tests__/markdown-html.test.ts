@@ -231,3 +231,41 @@ describe("markdown rendered at build time", () => {
     expect(blogPost).toContain("dangerouslySetInnerHTML");
   });
 });
+describe("heading ids and hash links", () => {
+  it("gives H2s and H3s stable slug ids", () => {
+    const html = renderMarkdownToHtml("## What the 16% Is\n\n### Nested detail\n");
+    expect(html).toContain("id=\"what-the-16-is\"");
+    expect(html).toContain("id=\"nested-detail\"");
+  });
+
+  it("treats a markdown h1 as an h2 with an id", () => {
+    const html = renderMarkdownToHtml("# Top body heading\n");
+    expect(html).toContain("<h2 ");
+    expect(html).toContain("id=\"top-body-heading\"");
+    expect(html).not.toContain("<h1");
+  });
+
+  it("disambiguates two headings that slug the same way", () => {
+    const html = renderMarkdownToHtml("## Why\n\n## Why\n");
+    expect(html).toContain("id=\"why\"");
+    expect(html).toContain("id=\"why-1\"");
+  });
+
+  it("wraps heading text in a hash link without the body-link styles", () => {
+    const html = renderMarkdownToHtml("## Introduction\n");
+    expect(html).toContain("href=\"#introduction\"");
+    expect(html).toContain("heading-permalink");
+    const [, cls] = html.match(/<a class=\"([^\"]*)\" href=\"#introduction\"/) ??
+      html.match(/<a href=\"#introduction\" class=\"([^\"]*)\"/) ?? [];
+    expect(cls).toBeDefined();
+    expect(cls).toContain("text-inherit");
+    expect(cls).toContain("no-underline");
+    expect(cls).not.toContain("text-primary");
+  });
+
+  it("leaves h4 and below without ids", () => {
+    const html = renderMarkdownToHtml("#### Deep\n");
+    expect(html).toContain("<h4");
+    expect(html).not.toMatch(/<h4[^>]*id=/);
+  });
+});

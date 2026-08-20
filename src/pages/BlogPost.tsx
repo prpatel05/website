@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { m } from "framer-motion";
 import { ArrowLeft, ArrowRight, Clock, Calendar } from "lucide-react";
@@ -10,6 +10,8 @@ import {
 } from "@/data/blog-posts/registry";
 import NotFound from "./NotFound";
 import SEO from "@/components/SEO";
+import ReadingProgress from "@/components/ReadingProgress";
+import PostToc from "@/components/PostToc";
 import { canonicalUrl } from "@/lib/canonical-url";
 import { postDescription } from "@/lib/post-description";
 import { heroFor, HERO_SIZES } from "@/lib/hero";
@@ -22,6 +24,8 @@ import {
   clearPostBodyRecovery,
   recoverPostBody,
 } from "@/lib/post-body-recovery";
+import { tocFromHtml } from "@/lib/post-toc";
+import { useActiveHeading } from "@/hooks/useActiveHeading";
 
 /**
  * The shape of the placeholder: a heading bar and a few line bars per section,
@@ -93,6 +97,10 @@ const BlogPost = () => {
   const [content, setContent] = useState(prerendered);
   const [unrecovered, setUnrecovered] = useState(false);
   const entrance = useEntrance();
+  const articleRef = useRef<HTMLElement>(null);
+  const toc = useMemo(() => tocFromHtml(content), [content]);
+  const headingIds = useMemo(() => toc.map((entry) => entry.id), [toc]);
+  const activeId = useActiveHeading(headingIds);
 
   useEffect(() => {
     if (!post) return;
@@ -259,9 +267,12 @@ const BlogPost = () => {
         </div>
       </nav>
 
+      <ReadingProgress target={articleRef} enabled={Boolean(content)} />
+
       <main {...mainContentProps}>
-        <article className="pt-28 pb-24">
-          <div className="container max-w-3xl">
+        <article ref={articleRef} className="pt-28 pb-24">
+          {/* One TOC in the DOM: in flow under the hero on small screens, a sticky rail from xl. The article column stays max-w-3xl; only the wrapper grows to make room for the rail. */}
+          <div className={toc.length > 0 ? "container max-w-3xl xl:max-w-[64rem] xl:grid xl:grid-cols-[minmax(0,48rem)_14rem] xl:gap-x-10" : "container max-w-3xl"}>
           {/* Meta */}
           <m.div
             /*
@@ -354,6 +365,14 @@ const BlogPost = () => {
               className="w-full aspect-video object-cover"
             />
           </m.div>
+
+          {toc.length > 0 && (
+            <aside className="my-8 xl:my-0 xl:col-start-2 xl:row-start-1 xl:row-span-4">
+              <div className="xl:sticky xl:top-24">
+                <PostToc entries={toc} activeId={activeId} />
+              </div>
+            </aside>
+          )}
 
           {/* Content */}
           <m.div

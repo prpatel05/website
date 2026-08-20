@@ -1,6 +1,7 @@
 import { Children, cloneElement, createElement as h, isValidElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import Markdown from "react-markdown";
+import { createSlugs, textOf } from "./heading-slug.mjs";
 
 // react-markdown v10 hands a component only `node` and `children`; the
 // `ordered`/`index`/`inline` props older versions passed are gone. So a `li`
@@ -39,25 +40,32 @@ const withProps = (children, propsFor) =>
 // because Tailwind's scanner reads this file as text: a class assembled at
 // runtime (`text-${size}`) is never emitted into the stylesheet, and the markup
 // would reference a rule that does not exist.
-const heading = (tag, className) => ({ children }) =>
-  h(
+const heading = (tag, className, slugs) => ({ children }) => {
+  const inner = withProps(children, () => ({ inHeading: true }));
+  if (!slugs) return h(tag, { className }, inner);
+  const id = slugs.next(textOf(children));
+  // The heading is the hash link. Wrapping the text keeps textContent as
+  // the authors words and does not paint the markdown a styles, which
+  // would underline and recolour a heading. text-inherit no-underline is a
+  // no-op on the face; the id is the feature.
+  return h(
     tag,
-    { className },
-    // `inHeading` tells the emphasis mappings below that they are painting on
-    // Space Grotesk 700 — the only display face declared — so a `strong` here
-    // must match that weight rather than hard-set its own. See the `strong`
-    // comment for why this is a prop and not a descendant selector. Every level
-    // below is `font-display font-bold`, so every level needs this: without it
-    // `#### Heading with **bold**` resolves `strong`'s prose weight of 600
-    // against the display family and lands on `Space Grotesk|600|normal`, which
-    // is the PRA-1004 defect reintroduced one level down.
-    withProps(children, () => ({ inHeading: true }))
+    { id, className },
+    h(
+      "a",
+      {
+        href: "#" + id,
+        className: "heading-permalink text-inherit no-underline",
+      },
+      inner
+    )
   );
+};
 
 const H2_CLASS =
   "font-display text-2xl lg:text-3xl font-bold text-foreground mt-12 mb-6 border-l-2 border-primary pl-4";
 
-const components = {
+const componentsFor = (slugs) => ({
   // A post page spends its `<h1>` on the title (`src/pages/BlogPost.tsx`), which
   // renders above and outside this body. A `#` in the markdown is the author
   // asking for the top *body* level, and on this page that level is `h2` — so
@@ -70,11 +78,12 @@ const components = {
   // 190 `##`/`###` headings the 24 existing posts already use and break the
   // outline they have; the author's *relative* levels are the part worth
   // preserving, and `h1` is special only because the page has already spent it.
-  h1: heading("h2", H2_CLASS),
-  h2: heading("h2", H2_CLASS),
+  h1: heading("h2", H2_CLASS, slugs),
+  h2: heading("h2", H2_CLASS, slugs),
   h3: heading(
     "h3",
-    "font-display text-xl font-bold text-foreground mt-10 mb-4"
+    "font-display text-xl font-bold text-foreground mt-10 mb-4",
+    slugs
   ),
   // `h4`-`h6` continue the ramp down from `h3`'s `text-xl`, in the same
   // vocabulary — display face, bold, `text-foreground` — with the top margin
@@ -333,7 +342,7 @@ const components = {
       },
       withProps(children, () => ({ inHeading, inEm }))
     ),
-};
+});
 
 // No `rehypePlugins` is the product configuration, and it is what makes a raw
 // HTML tag in a body escape to visible angle brackets rather than render
@@ -345,7 +354,7 @@ const components = {
 // author meant is to compare against a renderer that keeps it. Every product
 // caller passes nothing and gets the byte-identical output it did before.
 export const renderMarkdownToHtml = (markdown, rehypePlugins = []) =>
-  renderToStaticMarkup(h(Markdown, { components, rehypePlugins }, markdown));
+  renderToStaticMarkup(h(Markdown, { components: componentsFor(createSlugs()), rehypePlugins }, markdown));
 
 // Vite plugin: `import body from "./content/foo.md"` yields the rendered HTML
 // string. Registered for the build and for dev, so the two agree.
