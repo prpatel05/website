@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
@@ -67,9 +67,9 @@ vi.mock("@/data/blog-posts/registry", async (importOriginal) => {
   return { ...actual, posts: testPosts };
 });
 
-function renderBlog() {
+function renderBlog(path = "/blog/") {
   return render(
-    <MemoryRouter initialEntries={["/blog"]}>
+    <MemoryRouter initialEntries={[path]}>
       <Blog />
     </MemoryRouter>
   );
@@ -122,11 +122,20 @@ describe("Blog archive", () => {
       (a) => a.getAttribute("href")
     );
 
-    expect(hrefs).toEqual([
-      // The bare origin is the one path served without a redirect.
-      "/",
-      ...testPosts.map((post) => `/blog/${post.slug}/`),
-    ]);
+    expect(hrefs).toContain("/");
+    expect(hrefs).toContain("/blog/");
+    for (const post of testPosts) {
+      expect(hrefs).toContain(`/blog/${post.slug}/`);
+      for (const tag of post.tags) {
+        expect(hrefs).toContain(`/blog/?tag=${tag}`);
+      }
+    }
+    for (const href of hrefs) {
+      const path = href.split("?")[0];
+      if (path !== "/") {
+        expect(path.endsWith("/")).toBe(true);
+      }
+    }
   });
 
   // Guard for the defect: the archive was the only page on the site emitting no
@@ -270,5 +279,46 @@ describe("Blog archive", () => {
     expect(meta("og:type")).toBe("website");
     expect(meta("article:published_time")).toBeUndefined();
     expect(meta("article:author")).toBeUndefined();
+  });
+
+  it("derives filter chips from the posts rather than a hardcoded list", () => {
+    renderBlog();
+    const filter = screen.getByRole("navigation", { name: "Filter by tag" });
+    expect(filter).toHaveTextContent("#agents");
+    expect(filter).toHaveTextContent("#testing");
+    expect(filter).toHaveTextContent("#vitest");
+    expect(filter).not.toHaveTextContent("#not-a-tag");
+  });
+
+  it("filters the archive when the URL carries ?tag=", async () => {
+    renderBlog("/blog/?tag=agents");
+    await waitFor(() => {
+      expect(screen.getByText("Second Post")).toBeInTheDocument();
+      expect(screen.queryByText("First Post")).not.toBeInTheDocument();
+    });
+    const filter = screen.getByRole("navigation", { name: "Filter by tag" });
+    expect(filter.querySelector('[aria-current="page"]')?.textContent).toBe("#agents");
+  });
+
+  it("shows an empty state and a clear link for an unknown tag", async () => {
+    renderBlog("/blog/?tag=not-a-tag");
+    await waitFor(() => {
+      expect(screen.getByText("No posts tagged #not-a-tag.")).toBeInTheDocument();
+    });
+    expect(screen.queryByText("Second Post")).not.toBeInTheDocument();
+    expect(screen.queryByText("First Post")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "show all posts" })).toHaveAttribute(
+      "href",
+      "/blog/"
+    );
+  });
+
+  it("turns archive chips into shareable filter links", () => {
+    renderBlog();
+    const chips = screen.getAllByRole("link", { name: "#agents" });
+    expect(chips.length).toBeGreaterThan(0);
+    for (const chip of chips) {
+      expect(chip).toHaveAttribute("href", "/blog/?tag=agents");
+    }
   });
 });

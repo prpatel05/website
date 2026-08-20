@@ -27,6 +27,7 @@ interface SEOProps {
    * cannot disagree about which day a post belongs to.
    */
   articlePublishedTime?: string;
+  articleTags?: string[];
   /**
    * Same-origin path of the image that paints as LCP. Preloading it from the
    * head lets the scanner start the fetch before the parser reaches the <img>.
@@ -56,6 +57,7 @@ const SEO = ({
   ogImageHeight,
   ogType = "website",
   articlePublishedTime,
+  articleTags,
   preloadImage,
   preloadImageSrcSet,
   preloadImageSizes,
@@ -106,6 +108,10 @@ const SEO = ({
       {ogType === "article" && (
         <meta property="article:author" content={SITE_NAME} />
       )}
+      {ogType === "article" &&
+        articleTags?.map((tag) => (
+          <meta key={tag} property="article:tag" content={tag} />
+        ))}
       {ogImage && <meta property="og:image" content={ogImage} />}
       {ogImage && <meta property="og:image:alt" content={imageAlt} />}
       {ogImage && ogImageWidth && (

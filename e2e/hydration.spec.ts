@@ -194,7 +194,7 @@ test.describe("the prerendered page survives hydration", () => {
     // route that has no prerendered markup to read. Here the post chunk *is*
     // the only source of the body.
     await page.goto("/blog/");
-    await page.locator("main article a").first().click();
+    await page.locator("main article h2 a").first().click();
     await page.waitForURL("**/blog/*/");
 
     await expect(page.locator("article p").first()).toBeVisible();
@@ -224,7 +224,7 @@ test.describe("the prerendered page survives hydration", () => {
     page,
   }) => {
     await page.goto("/blog/");
-    await page.locator("main article a").first().click();
+    await page.locator("main article h2 a").first().click();
     await page.waitForURL("**/blog/*/");
     await expect(page.locator("article p").first()).toBeVisible();
 

@@ -14,7 +14,7 @@ test.describe("Blog listing and post navigation", () => {
     await expect(page.getByText("archive")).toBeVisible();
 
     // Verify all blog posts are listed
-    const postLinks = page.locator('a[href^="/blog/"]');
+    const postLinks = page.locator("main article h2 a");
     await expect(postLinks).toHaveCount(postSlugs.length);
 
     // Every discovered post is reachable from the listing, so a post the

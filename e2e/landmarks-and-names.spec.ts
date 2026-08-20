@@ -22,7 +22,8 @@ test.describe("Navigation landmarks are all named", () => {
   test("blog listing names its nav region", async ({ page }) => {
     await page.goto("/blog/");
     await expect(page.getByRole("navigation", { name: "Main" })).toHaveCount(1);
-    await expect(page.getByRole("navigation")).toHaveCount(1);
+    await expect(page.getByRole("navigation", { name: "Filter by tag" })).toHaveCount(1);
+    await expect(page.getByRole("navigation")).toHaveCount(2);
   });
 
   test("homepage names its nav region", async ({ page }) => {
@@ -33,22 +34,20 @@ test.describe("Navigation landmarks are all named", () => {
 });
 
 test.describe("Decorative separators stay out of accessible names", () => {
-  // Each card's meta row sits inside the whole-card <Link>, so every glyph in it
-  // is concatenated into the link's accessible name. The "|" between date and
-  // read time renders at 1.35:1 on card — a sighted reader never sees it, but a
-  // screen reader read it out: "2026.08 | 7 min | #ai | ...".
+  // The "|" between date and read time used to sit inside a whole-card link,
+  // so a screen reader read "2026.08 | 7 min | #ai | ...". Title links are
+  // now the card hit-target; keep the pipe out of their accessible name.
   test("blog listing card links do not announce the pipe", async ({ page }) => {
     await page.goto("/blog/");
 
-    const cards = page.locator('a[href^="/blog/"]');
+    // Title links only: tag chips are sibling links on `/blog/?tag=`, and the
+    // stretched card hit-target is the heading so the pipe sits outside it.
+    const cards = page.locator("main article h2 a");
     const count = await cards.count();
     expect(count).toBeGreaterThan(0);
 
     for (let i = 0; i < count; i++) {
       const card = cards.nth(i);
-      // Control: the meta row is still part of the name, so a pass cannot come
-      // from the name having collapsed to just the title.
-      await expect(card).toHaveAccessibleName(/min/);
       await expect(card).not.toHaveAccessibleName(/\|/);
     }
   });

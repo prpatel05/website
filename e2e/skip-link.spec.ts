@@ -154,7 +154,7 @@ test.describe("Skip to main content", () => {
    */
   const CLIENT_NAVIGATIONS = [
     { name: "/blog/ -> /", from: "/blog/", click: "text=cd ~", url: "/" },
-    { name: "/blog/ -> a post", from: "/blog/", click: "article a", url: /\/blog\/.+/ },
+    { name: "/blog/ -> a post", from: "/blog/", click: "article h2 a", url: /\/blog\/.+/ },
     { name: "/ -> /blog/", from: "/", click: 'a[href="/blog/"]', url: "/blog/" },
   ];
 
