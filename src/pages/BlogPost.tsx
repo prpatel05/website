@@ -29,6 +29,8 @@ import {
 } from "@/lib/post-body-recovery";
 import { tocFromHtml } from "@/lib/post-toc";
 import { seriesPosition } from "@/lib/blog-series";
+import { personRef } from "@/lib/person-jsonld";
+import { wordCountFromHtml } from "@/lib/word-count";
 import { useActiveHeading } from "@/hooks/useActiveHeading";
 
 /**
@@ -195,6 +197,9 @@ const BlogPost = () => {
   const hero = heroFor(post.image);
   const heroSrc = hero?.src ?? post.image;
 
+  const postUrl = canonicalUrl(`https://pratik.pa.tel/blog/${post.slug}`);
+  const words = wordCountFromHtml(content);
+
   const blogPostJsonLd = [
     {
       "@context": "https://schema.org",
@@ -202,18 +207,24 @@ const BlogPost = () => {
       headline: post.title,
       description: postDescription(post),
       datePublished: post.dateISO,
-      image: ogImage,
-      url: canonicalUrl(`https://pratik.pa.tel/blog/${post.slug}`),
-      author: {
-        "@type": "Person",
-        name: "Pratik Patel",
-        url: "https://pratik.pa.tel",
+      dateModified: post.dateISO,
+      mainEntityOfPage: {
+        "@type": "WebPage",
+        "@id": postUrl,
       },
-      publisher: {
-        "@type": "Person",
-        name: "Pratik Patel",
-        url: "https://pratik.pa.tel",
-      },
+      wordCount: words,
+      inLanguage: "en",
+      image: card
+        ? {
+            "@type": "ImageObject",
+            url: ogImage,
+            width: card.width,
+            height: card.height,
+          }
+        : ogImage,
+      url: postUrl,
+      author: personRef,
+      publisher: personRef,
       keywords: post.tags.join(", "),
     },
     {

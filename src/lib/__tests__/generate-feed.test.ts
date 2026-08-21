@@ -15,14 +15,20 @@ import { join } from "path";
 // The temp dir lives inside the repo so that `import ts from "typescript"` in
 // blog-posts.mjs still resolves via node_modules lookup walking up the tree.
 const ROOT = process.cwd();
-const SCRIPTS = ["generate-feed.mjs", "blog-posts.mjs"];
+const SCRIPTS = [
+  "generate-feed.mjs",
+  "blog-posts.mjs",
+  "markdown-html.mjs",
+  "heading-slug.mjs",
+];
 
 function post(
   slug: string,
   title: string,
   dateISO: string,
   subtitle: string,
-  description?: string
+  description?: string,
+  tags: string[] = ["ai"]
 ) {
   return `import { BlogPost } from "./types";
 export const p: BlogPost = {
@@ -32,7 +38,7 @@ export const p: BlogPost = {
 ${description === undefined ? "" : `  description: ${JSON.stringify(description)},\n`}  date: "2026.07",
   dateISO: ${JSON.stringify(dateISO)},
   readTime: "5 min",
-  tags: ["ai"],
+  tags: ${JSON.stringify(tags)},
   image: "/images/x.webp",
   content: \`body\`,
 };
@@ -60,7 +66,14 @@ beforeAll(() => {
   );
   writeFileSync(
     join(postsDir, "newer.ts"),
-    post("newer-post", "Newer & Bolder", "2026-07-14", 'Quotes "and" ampersands & such.')
+    post(
+      "newer-post",
+      "Newer & Bolder",
+      "2026-07-14",
+      'Quotes "and" ampersands & such.',
+      undefined,
+      ["ai", "leadership"]
+    )
   );
   // blog-automerge.sh merges a post on the morning of its dateISO, so a post
   // dated FEED_TODAY is live on the site and belongs in the feed -- the cutoff
@@ -94,6 +107,16 @@ beforeAll(() => {
       "And Why It Matters",
       "A description written to stand on its own in a feed reader."
     )
+  );
+
+  mkdirSync(join(postsDir, "content"), { recursive: true });
+  writeFileSync(
+    join(postsDir, "content", "older-post.md"),
+    "The older post opens with a real paragraph.\n\n## Why\n\nMore body after the heading.\n"
+  );
+  writeFileSync(
+    join(postsDir, "content", "newer-post.md"),
+    "A newer first paragraph for readers who want more than the dek.\n"
   );
 
   execFileSync("node", ["scripts/generate-feed.mjs"], {
@@ -179,5 +202,31 @@ describe("generate-feed", () => {
     expect(feed).toContain(
       '<atom:link href="https://pratik.pa.tel/rss.xml" rel="self" type="application/rss+xml" />'
     );
+  });
+
+  it("emits a category per post tag", () => {
+    const newer = /<item>[\s\S]*?Newer[\s\S]*?<\/item>/.exec(feed)?.[0];
+    expect(newer).toContain("<category>ai</category>");
+    expect(newer).toContain("<category>leadership</category>");
+    // A post that still has the default single tag.
+    expect(feed).toContain("<category>ai</category>");
+  });
+
+  it("names the author in the feed voice", () => {
+    expect(feed).toContain("<dc:creator>Pratik Patel</dc:creator>");
+    expect((feed.match(/<dc:creator>/g) ?? []).length).toBe(4);
+  });
+
+  it("gives readers the post body, not only the dek", () => {
+    expect(feed).toContain("<content:encoded>");
+    expect(feed).toContain("The older post opens with a real paragraph.");
+    expect(feed).toContain("A newer first paragraph for readers who want more than the dek.");
+    // A published post with no markdown file still appears; it just has no
+    // encoded body. Categories and author still ride on it.
+    const today = /<item>[\s\S]*?Today Post[\s\S]*?<\/item>/.exec(feed)?.[0];
+    expect(today).toBeTruthy();
+    expect(today).not.toContain("<content:encoded>");
+    expect(today).toContain("<dc:creator>Pratik Patel</dc:creator>");
+    expect(today).toContain("<category>ai</category>");
   });
 });

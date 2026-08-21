@@ -207,6 +207,21 @@ describe("Blog archive", () => {
     expect(crumbs.itemListElement.map((c: { name: string }) => c.name)).toEqual(["Home", "Blog"]);
   });
 
+  it("dates and languages each listed BlogPosting", () => {
+    const { container } = renderBlog();
+    const blog = blogJsonLd(container).find((n) => n["@type"] === "Blog");
+
+    expect(blog.blogPost.length).toBe(testPosts.length);
+    for (const posting of blog.blogPost) {
+      expect(posting.dateModified).toBe(posting.datePublished);
+      expect(posting.inLanguage).toBe("en");
+      expect(posting.mainEntityOfPage).toEqual({
+        "@type": "WebPage",
+        "@id": posting.url,
+      });
+    }
+  });
+
   // The card paints a 128x96 box. Pointing it at the 1200x670 hero shipped
   // roughly 200x the pixels it displays — about 1.0MB across the archive — so
   // it has to ask for the thumbnail the build emits instead.

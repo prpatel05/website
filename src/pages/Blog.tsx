@@ -12,15 +12,10 @@ import { mainContentProps } from "@/lib/skip-target";
 import { BLOG_TITLE } from "@/lib/route-title";
 import { postDescription } from "@/lib/post-description";
 import { ARCHIVE_HREF, postsWithTag, uniqueTags } from "@/lib/blog-tags";
+import { personRef } from "@/lib/person-jsonld";
 
 const BLOG_DESCRIPTION =
   "Articles on engineering leadership, AI, career growth, and technical architecture by Pratik Patel, CTO & Chief Architect.";
-
-const author = {
-  "@type": "Person",
-  name: "Pratik Patel",
-  url: "https://pratik.pa.tel",
-};
 
 /**
  * How many cards get the entrance cascade. The rest mount already readable.
@@ -65,20 +60,29 @@ const Blog = () => {
       // structured-data URL that redirects is the same defect #45 fixes for
       // canonical/og:url. The bare origin is served directly, so it stays bare.
       url: "https://pratik.pa.tel/blog/",
-      author,
-      publisher: author,
-      blogPost: posts.map((post) => ({
-        "@type": "BlogPosting",
-        headline: post.title,
-        description: postDescription(post),
-        datePublished: post.dateISO,
-        url: `https://pratik.pa.tel/blog/${post.slug}/`,
-        image: post.image.startsWith("/")
-          ? `https://pratik.pa.tel${post.image}`
-          : post.image,
-        author,
-        keywords: post.tags.join(", "),
-      })),
+      author: personRef,
+      publisher: personRef,
+      blogPost: posts.map((post) => {
+        const url = `https://pratik.pa.tel/blog/${post.slug}/`;
+        return {
+          "@type": "BlogPosting",
+          headline: post.title,
+          description: postDescription(post),
+          datePublished: post.dateISO,
+          dateModified: post.dateISO,
+          mainEntityOfPage: {
+            "@type": "WebPage",
+            "@id": url,
+          },
+          inLanguage: "en",
+          url,
+          image: post.image.startsWith("/")
+            ? `https://pratik.pa.tel${post.image}`
+            : post.image,
+          author: personRef,
+          keywords: post.tags.join(", "),
+        };
+      }),
     },
     {
       "@context": "https://schema.org",

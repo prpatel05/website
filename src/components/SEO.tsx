@@ -127,6 +127,7 @@ const SEO = ({
       {ogImage && <meta name="twitter:image" content={ogImage} />}
       {ogImage && <meta name="twitter:image:alt" content={imageAlt} />}
       <meta name="twitter:site" content="@prpatel05" />
+      <meta name="twitter:creator" content="@prpatel05" />
 
       {jsonLd && (
         <script type="application/ld+json">
