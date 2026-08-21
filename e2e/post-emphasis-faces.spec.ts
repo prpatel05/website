@@ -21,12 +21,12 @@ import { collectFaces, declaredFaces, ours } from "./font-face-probe";
  *
  * ## What was broken
  *
- * `fonts.css` declares five faces. Four of them are JetBrains Mono (400 normal,
- * 400 italic, 600 normal, 700 normal) and exactly one is Space Grotesk: 700
- * normal. So a heading — `font-display`, `font-bold` — has *no* second face to
- * move to. Any emphasis that changed its weight or its style landed on a face
- * that does not exist, and the browser silently snapped to a neighbouring
- * weight or synthesized an oblique. Measured on `fb2f7d3`:
+ * `fonts.css` declares five faces. Three of them are JetBrains Mono (400 normal,
+ * 400 italic, 700 normal) and two are Space Grotesk (400 and 700, both normal).
+ * A heading — `font-display`, `font-bold` — is already on the only display
+ * bold there is, and there is still no display italic. Any emphasis that
+ * changed its style landed on a face that does not exist, and the browser
+ * silently snapped or synthesized an oblique. Measured on `fb2f7d3`:
  *
  *   `## Heading with **bold**`   -> Space Grotesk|600|normal   (strong hard-set 600)
  *   `## Heading with *italic*`   -> Space Grotesk|700|italic   (no such italic exists)
@@ -258,13 +258,20 @@ test("every heading level a post can contain renders as a heading", async ({ pag
     "a markdown h1 should be demoted to h2; the post title owns the page's only h1"
   ).toEqual(["h2", "h2", "h3", "h4", "h5", "h6"]);
 
+  expect(measured.prose.family, "body copy should be the display face").toBe(
+    "Space Grotesk"
+  );
+  expect(measured.prose.weight, "body copy should be the regular display face").toBe(
+    400
+  );
+
   const failures: string[] = [];
   for (const row of measured.headings) {
-    // Family and weight are what put the text on a declared face; size and
-    // margin are what make it legible as a heading. The original defect broke
-    // all four at once, and any one of them alone is still a defect.
-    if (row.family === measured.prose.family)
-      failures.push(`${row.tag}: same family as prose (${row.family})`);
+    // Weight and size are what make a heading outrank prose now that both sit
+    // in Space Grotesk. The original defect broke family, weight, size and
+    // margin at once, and any one of them alone is still a defect.
+    if (row.family !== "Space Grotesk")
+      failures.push(`${row.tag}: family ${row.family}, expected Space Grotesk`);
     if (row.weight !== 700) failures.push(`${row.tag}: weight ${row.weight}, expected 700`);
     if (row.size < measured.prose.size)
       failures.push(`${row.tag}: ${row.size}px, smaller than the ${measured.prose.size}px prose`);
@@ -274,7 +281,7 @@ test("every heading level a post can contain renders as a heading", async ({ pag
   // The ramp itself: each level must be no larger than the one above it. `h1`
   // and `h2` share a size by construction, hence `<=` and not `<` — the size
   // axis also runs out at `h6`, which sits at the body's own size and is
-  // separated from the prose by family, weight and colour instead.
+  // separated from the prose by weight and colour instead.
   for (let i = 1; i < measured.headings.length; i++) {
     const [prev, cur] = [measured.headings[i - 1], measured.headings[i]];
     if (cur.size > prev.size)

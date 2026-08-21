@@ -104,7 +104,7 @@ describe("font loading", () => {
    * deliberate act being asked for.
    *
    * Values are Google's own, byte-for-byte, for
-   * `css2?family=JetBrains+Mono:ital,wght@0,400;0,600;0,700;1,400&family=Space+Grotesk:wght@700`.
+   * `css2?family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&family=Space+Grotesk:wght@400;700`.
    */
   const SUBSETS = {
     latin:

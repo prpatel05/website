@@ -28,12 +28,12 @@ const withProps = (children, propsFor) =>
 // it emits a bare tag, and two rules then meet: `src/index.css` puts every
 // `h1..h6` in `var(--font-display)`, while Tailwind's preflight sets
 // `h1..h6 { font-size: inherit; font-weight: inherit }`. So an unmapped heading
-// took Space Grotesk at weight 400 by inheritance from the body, and `fonts.css`
-// declares exactly one Space Grotesk face: 700 normal. Measured on `2f2bc06`,
-// `#### Heading` painted `Space Grotesk|400|normal` — undeclared, so the browser
-// snapped or synthesized — at `font-size: 14px` with `margin: 0`, i.e. the body's
-// own metrics. The heading was therefore invisible *as* a heading and wrong in
-// the face at the same time, with no emphasis involved and nothing going red
+// took Space Grotesk at weight 400 by inheritance from the body. That face is
+// declared now (the reading column uses it), but an unmapped heading still
+// inherits the body's size and weight and has no margins — invisible *as* a
+// heading. Measured on `2f2bc06` that was also an undeclared 400, at
+// `font-size: 14px` with `margin: 0`. The heading was therefore invisible *as*
+// a heading and, then, wrong in the face at the same time, with nothing going red
 // (PRA-1005). `e2e/post-emphasis-faces.spec.ts` now drives all six levels.
 //
 // `className` is spelled out per level rather than composed from a scale array
@@ -98,11 +98,11 @@ const componentsFor = (slugs) => ({
     "h5",
     "font-display text-base font-bold text-foreground mt-6 mb-2"
   ),
-  h6: heading("h6", "font-display text-sm font-bold text-foreground mt-4 mb-2"),
+  h6: heading("h6", "font-display text-base font-bold text-foreground mt-4 mb-2"),
   p: ({ children }) =>
     h(
       "p",
-      { className: "text-muted-foreground leading-relaxed my-4" },
+      { className: "text-muted-foreground leading-7 my-4" },
       children
     ),
   ul: ({ children }) => h("ul", { className: "space-y-2 my-6 ml-4" }, children),
@@ -136,7 +136,7 @@ const componentsFor = (slugs) => ({
   li: ({ children, ordinal }) =>
     h(
       "li",
-      { className: "flex gap-3 text-muted-foreground leading-relaxed" },
+      { className: "flex gap-3 text-muted-foreground leading-7" },
       ordinal === undefined
         ? h("span", { className: "text-primary shrink-0 mt-1.5" }, "▸")
         : h(
@@ -163,10 +163,10 @@ const componentsFor = (slugs) => ({
       { className: "my-6 border-l-2 border-primary/40 print:border-primary pl-6" },
       children
     ),
-  // The body font is already JetBrains Mono, so `code`'s one inherited default
-  // buys nothing — family, size and colour all match the prose around it. The
-  // chip below is what makes it read as code, which in turn is why `pre` needs
-  // an entry: a fenced block must not inherit the inline treatment.
+  // Body copy is Space Grotesk, so `code` has to pin JetBrains Mono or a
+  // token inherits the reading face and stops reading as code. The chip is
+  // the other cue (and the only one paper keeps once the fill drops). `pre`
+  // still needs its own entry: a fenced block must not inherit the inline chip.
   //
   // `overflow-x-auto` is what makes the block safe to overflow, and also what
   // makes it a scrollable region — one a keyboard user could neither reach nor
@@ -186,7 +186,7 @@ const componentsFor = (slugs) => ({
       "pre",
       {
         className:
-          "my-6 overflow-x-auto rounded-lg border border-border bg-card p-4",
+          "font-mono text-sm my-6 overflow-x-auto rounded-lg border border-border bg-card p-4",
         tabIndex: 0,
         role: "group",
         "aria-label": "Code sample",
@@ -229,24 +229,24 @@ const componentsFor = (slugs) => ({
   // an edge there would be a second cue for something already unambiguous.
   code: ({ children, fenced }) =>
     fenced
-      ? h("code", { className: "text-muted-foreground" }, children)
+      ? h("code", { className: "font-mono text-muted-foreground" }, children)
       : h(
           "code",
           {
             className:
-              "rounded bg-muted px-1.5 py-0.5 text-foreground print:border print:border-border",
+              "font-mono rounded bg-muted px-1.5 py-0.5 text-foreground print:border print:border-border",
           },
           children
         ),
   // Emphasis has to land on a face `src/styles/fonts.css` actually declares,
   // and the declared set is narrow enough that the naive mappings could not:
-  // four JetBrains Mono faces (400 normal, 400 italic, 600 normal, 700 normal)
-  // and exactly one Space Grotesk — 700 normal. A heading is `font-display` at
-  // `font-bold`, so it is already *on* the only display face there is, and any
-  // emphasis that moved its weight or its style fell off the set. The browser
-  // then snaps to a neighbouring weight or synthesizes an oblique, and the type
-  // degrades with nothing going red (PRA-1004). `e2e/post-emphasis-faces.spec.ts`
-  // is the gate; the four originally-measured failures are listed there.
+  // three JetBrains Mono faces (400 normal, 400 italic, 700 normal) and two
+  // Space Grotesk (400 and 700, both normal). A heading is `font-display` at
+  // `font-bold`, so it is already *on* the only display bold there is, and there
+  // is still no display italic. Emphasis that moved its style fell off the set.
+  // The browser then snaps or synthesizes an oblique, and the type degrades
+  // with nothing going red (PRA-1004). `e2e/post-emphasis-faces.spec.ts` is the
+  // gate; the four originally-measured failures are listed there.
   //
   // Declaring the missing faces is the obvious fix and it is blocked: the same
   // spec family asserts every *declared* face is painted somewhere, because an
@@ -261,9 +261,9 @@ const componentsFor = (slugs) => ({
   // would have resolved that case to an undeclared Space Grotesk 700 italic.
   // `withProps` is already how this file tells a child what its parent knows.
   //
-  // `strong` keeps 600 in ordinary prose: that mapping is the only thing in the
-  // whole product painting `JetBrains Mono|600|normal`, so dropping it would
-  // orphan a declared face and fail the parity check from the other direction.
+  // `strong` in ordinary prose matches the display face at 700 — the one
+  // Space Grotesk bold that exists — rather than 600, which is undeclared in
+  // that family. Colour is unchanged; weight is the emphasis.
   strong: ({ children, inHeading, inEm }) =>
     h(
       "strong",
@@ -287,15 +287,16 @@ const componentsFor = (slugs) => ({
           ? "text-foreground font-normal"
           : inHeading
             ? "text-primary font-bold"
-            : "text-foreground font-semibold",
+            : "text-foreground font-bold",
       },
       children
     ),
   // `font-mono font-normal` pins emphasis to `JetBrains Mono|400|italic`, the
-  // one italic face that exists. In prose both are no-ops — the body is already
-  // mono at 400 — and in a heading they are the whole point: without them the
-  // heading's Space Grotesk 700 inherits into the `em` and the browser
-  // synthesizes an oblique of a family that ships none.
+  // one italic face that exists. In a heading they are the whole point: without
+  // them the heading's Space Grotesk 700 inherits into the `em` and the browser
+  // synthesizes an oblique of a family that ships none. In prose they are now
+  // the same honest mixed-family cost: body copy is Space Grotesk, which has
+  // no italic, so emphasis keeps the family the rest of the site is set in.
   //
   // The visible cost is a mixed-family heading, and it is the honest one. There
   // is no Space Grotesk italic to reach for, so the alternatives were mono

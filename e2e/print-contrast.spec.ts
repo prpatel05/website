@@ -330,7 +330,7 @@ const collectEdges = async (page: Page) =>
     // the two content elements whose meaning lives entirely in their edge.
     //
     // `pre` earns its place by the same argument as `blockquote`, one property
-    // over: the body font is already JetBrains Mono (`src/index.css`), and
+    // over: body copy is Space Grotesk and a fence pins JetBrains Mono, and
     // `bg-card` is white on paper like every other fill, so once the fill drops
     // the hairline is the only thing left saying "this is a code sample and not
     // prose". It is here rather than in the exempt list below because the
@@ -535,9 +535,9 @@ for (const route of ROUTES) {
  * anyway unless the reader ticks "Background graphics".
  *
  * Inline `code` was marked that way and nothing else. `scripts/markdown-html.mjs`
- * says so at its `code` entry — the body font is already JetBrains Mono, so
- * family, size and colour already match the prose, and "the chip is what makes
- * it read as code". On paper both halves of the chip went: the fill became the
+ * says so at its `code` entry — body copy is Space Grotesk, so family is a
+ * screen cue, and "the chip is what makes it read as code" once that is gone.
+ * On paper both halves of the chip went: the fill became the
  * paper at 1.00:1, and the saturated mint `--foreground` became the same
  * achromatic ink as everything else. What was left was a 1.75:1 step between two
  * greys, on `/blog/the-handoff-is-where-agents-break/`, where `constraints` and

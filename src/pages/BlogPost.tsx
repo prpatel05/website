@@ -401,6 +401,10 @@ const BlogPost = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4, duration: 0.6 }}
             /*
+              The reading column is Space Grotesk (`font-display`) at `text-base`
+              / `leading-7`, not the site's JetBrains Mono chrome. Code, `em`,
+              and every rail around this wrapper pin `font-mono` themselves.
+
               `overflow-wrap` is inherited, so one declaration here is the whole
               body's wrapping policy: a long unbreakable token — a bare URL, a
               fully-qualified name, an error code — breaks rather than pushing
@@ -435,7 +439,7 @@ const BlogPost = () => {
               and after. Arbitrary property because Tailwind 3 ships no
               `anywhere` utility.
             */
-            className="font-mono text-sm [overflow-wrap:anywhere]"
+            className="font-display text-base leading-7 [overflow-wrap:anywhere]"
             // Read back by `prerenderedBody` on first load, so hydration finds
             // the body already in state instead of replacing this subtree.
             {...{ [POST_BODY_ATTR]: post.slug }}
