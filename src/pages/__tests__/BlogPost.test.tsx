@@ -712,5 +712,42 @@ describe("BlogPost", () => {
         "https://pratik.pa.tel/blog/test-post/",
       ]);
     });
+
+    it("fills the crawler fields on BlogPosting once the body is in", async () => {
+      const { container } = renderBlogPost("test-post");
+      await screen.findByRole("heading", { name: "Introduction" });
+      const scripts = container.querySelectorAll(
+        'script[type="application/ld+json"]'
+      );
+      const nodes = Array.from(scripts).flatMap((s) =>
+        JSON.parse(s.textContent ?? "")
+      );
+      const posting = nodes.find((n) => n["@type"] === "BlogPosting");
+
+      expect(posting.dateModified).toBe("2026-01-01");
+      expect(posting.dateModified).toBe(posting.datePublished);
+      expect(posting.mainEntityOfPage).toEqual({
+        "@type": "WebPage",
+        "@id": "https://pratik.pa.tel/blog/test-post/",
+      });
+      expect(posting.inLanguage).toBe("en");
+      expect(posting.wordCount).toBeGreaterThan(0);
+      expect(posting.image).toEqual({
+        "@type": "ImageObject",
+        url: "https://pratik.pa.tel/images/social/test.jpg",
+        width: BLOG_POST_CARD.width,
+        height: BLOG_POST_CARD.height,
+      });
+      expect(posting.author.sameAs).toContain("https://prpatel05.substack.com");
+    });
+  });
+
+  it("names the author as twitter:creator", () => {
+    const { container } = renderBlogPost("test-post");
+    expect(
+      container
+        .querySelector('meta[name="twitter:creator"]')
+        ?.getAttribute("content")
+    ).toBe("@prpatel05");
   });
 });

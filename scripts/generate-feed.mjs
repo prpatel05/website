@@ -1,7 +1,8 @@
 import { writeFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
-import { discoverPosts, postDescription } from "./blog-posts.mjs";
+import { discoverPosts, postDescription, postBodyMarkdown } from "./blog-posts.mjs";
+import { renderMarkdownToHtml } from "./markdown-html.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DIST = join(__dirname, "..", "dist");
@@ -66,6 +67,32 @@ function isPublished(post, cutoff) {
   return post.dateISO <= cutoff;
 }
 
+// CDATA cannot contain the closer, so split any accidental `]]>` the way the
+// XML spec requires rather than letting the item truncate.
+function cdata(value) {
+  return value.replaceAll("]]>", "]]]]><![CDATA[>");
+}
+
+function itemXml(post) {
+  const tags = Array.isArray(post.tags) ? post.tags : [];
+  const categories = tags
+    .map((tag) => `      <category>${escapeXml(tag)}</category>`)
+    .join("\n");
+  const markdown = postBodyMarkdown(post.slug);
+  const encoded = markdown
+    ? `      <content:encoded><![CDATA[${cdata(renderMarkdownToHtml(markdown))}]]></content:encoded>`
+    : "";
+
+  return `    <item>
+      <title>${escapeXml(post.title)}</title>
+      <link>${postUrl(post.slug)}</link>
+      <guid isPermaLink="true">${postUrl(post.slug)}</guid>
+      <description>${escapeXml(postDescription(post))}</description>
+      <dc:creator>${escapeXml(AUTHOR)}</dc:creator>${categories ? `\n${categories}` : ""}${encoded ? `\n${encoded}` : ""}
+      <pubDate>${toRfc822(post.dateISO)}</pubDate>
+    </item>`;
+}
+
 function generateFeed(today) {
   const cutoff = publishCutoff(today);
   const allPosts = discoverPosts();
@@ -76,17 +103,7 @@ function generateFeed(today) {
     console.log(`Feed: withholding ${withheld} future-dated post(s)`);
   }
 
-  const items = posts
-    .map(
-      (post) => `    <item>
-      <title>${escapeXml(post.title)}</title>
-      <link>${postUrl(post.slug)}</link>
-      <guid isPermaLink="true">${postUrl(post.slug)}</guid>
-      <description>${escapeXml(postDescription(post))}</description>
-      <pubDate>${toRfc822(post.dateISO)}</pubDate>
-    </item>`
-    )
-    .join("\n");
+  const items = posts.map(itemXml).join("\n");
 
   // The build date, not the newest post's date: a post published a day early
   // would otherwise put a future timestamp on the channel, which validators
@@ -94,7 +111,7 @@ function generateFeed(today) {
   const lastBuildDate = toRfc822(today);
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/">
   <channel>
     <title>${escapeXml(TITLE)}</title>
     <link>${SITE_URL}/blog/</link>

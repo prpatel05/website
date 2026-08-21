@@ -5,67 +5,15 @@ import BlogPreview from "@/components/BlogPreview";
 import Contact from "@/components/Contact";
 import InteractiveTerminal from "@/components/InteractiveTerminal";
 import SEO from "@/components/SEO";
+import { personJsonLd } from "@/lib/person-jsonld";
 import { SITE_CARD } from "@/lib/social-cards";
 import { mainContentProps } from "@/lib/skip-target";
 import { HOME_TITLE } from "@/lib/route-title";
-
-// The portrait, used for the Person JSON-LD where a headshot is what's wanted.
-const HEADSHOT_URL = "https://pratik.pa.tel/images/headshot.png";
 
 // The share card is SITE_CARD, in @/lib/social-cards — distinct from the
 // headshot because og:image is consumed as a 1.91:1 banner, and the 556x556
 // portrait fell under the 1200x630 that LinkedIn and Facebook require to
 // render the large card instead of a small thumbnail.
-
-const personJsonLd = [
-  {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    name: "Pratik Patel",
-    url: "https://pratik.pa.tel",
-  },
-  {
-    "@context": "https://schema.org",
-    "@type": "Person",
-    name: "Pratik Patel",
-    url: "https://pratik.pa.tel",
-    image: HEADSHOT_URL,
-    jobTitle: "CTO & Chief Architect",
-    description:
-      "Technology executive and hands-on architect with 11+ years building and scaling engineering organizations. Three-time company builder with a successful acquisition.",
-    worksFor: {
-      "@type": "Organization",
-      name: "Tarobase (poof.new)",
-    },
-    knowsAbout: [
-      "Artificial Intelligence",
-      "Cloud Computing",
-      "Web3",
-      "TypeScript",
-      "React",
-      "Node.js",
-      "AWS",
-      "Python",
-      "Go",
-      "Blockchain",
-      "Engineering Leadership",
-      "Startup Building",
-    ],
-    sameAs: [
-      "https://www.linkedin.com/in/prpatel05/",
-      "https://github.com/prpatel05",
-      "https://medium.com/@prpatel05",
-      "https://x.com/prpatel05",
-      "https://dev.to/prpatel05",
-    ],
-    address: {
-      "@type": "PostalAddress",
-      addressLocality: "Washington",
-      addressRegion: "DC",
-      addressCountry: "US",
-    },
-  },
-];
 
 const Index = () => {
   return (
