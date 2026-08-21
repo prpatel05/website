@@ -13,12 +13,12 @@ describe("markdown rendered at build time", () => {
 
     expect(html).toContain("border-l-2 border-primary pl-4");
     expect(html).toContain("font-display text-xl font-bold");
-    expect(html).toContain("text-muted-foreground leading-relaxed my-4");
+    expect(html).toContain("text-muted-foreground leading-7 my-4");
     expect(html).toContain("space-y-2 my-6 ml-4");
     // Each bullet is a flex row with the marker in its own span; a plain <li>
     // would lose the ▸ the design uses instead of a list marker.
     expect(html).toContain('<span class="text-primary shrink-0 mt-1.5">▸</span>');
-    expect(html).toContain('<strong class="text-foreground font-semibold">');
+    expect(html).toContain('<strong class="text-foreground font-bold">');
     expect(html).toContain('<em class="font-mono font-normal text-primary/80 print:text-primary">');
   });
 
@@ -29,8 +29,8 @@ describe("markdown rendered at build time", () => {
   // because a class string proves nothing about the cascade and the browser
   // test cannot say *why* a form resolved the way it did.
   //
-  // fonts.css declares one Space Grotesk face (700 normal) and no italic
-  // outside JetBrains Mono 400, so emphasis in a heading has nowhere to move
+  // fonts.css declares Space Grotesk at 400 and 700, and no italic outside
+  // JetBrains Mono 400, so emphasis in a heading still has nowhere to move
   // to; PRA-1004 measured four forms painting faces that do not exist.
   it("keeps emphasis on a declared face wherever it lands", () => {
     // In a heading, `strong` matches the heading's 700 instead of hard-setting
@@ -43,7 +43,7 @@ describe("markdown rendered at build time", () => {
       '<strong class="text-primary font-bold">bold</strong>'
     );
     expect(renderMarkdownToHtml("A paragraph with **bold**.")).toContain(
-      '<strong class="text-foreground font-semibold">bold</strong>'
+      '<strong class="text-foreground font-bold">bold</strong>'
     );
 
     // `em` pins family and weight so italic always lands on JetBrains Mono 400
@@ -134,13 +134,12 @@ describe("markdown rendered at build time", () => {
     expect(html).toMatch(/<blockquote class="[^"]*border-l-2[^"]*pl-6[^"]*">/);
   });
 
-  // The site's body font is already JetBrains Mono, so an unstyled <code>
-  // inherits everything that could have distinguished it: family, size and
-  // colour all match the paragraph around it.
+  // Body copy is Space Grotesk, so an unstyled <code> would inherit the
+  // reading face. The chip is one cue; pinning JetBrains Mono is the other.
   it("gives inline code a treatment the body font does not already have", () => {
     const html = renderMarkdownToHtml("Set `constraints` first.\n");
 
-    expect(html).toMatch(/<code class="[^"]*bg-muted[^"]*">constraints<\/code>/);
+    expect(html).toMatch(/<code class="[^"]*font-mono[^"]*bg-muted[^"]*">constraints<\/code>/);
   });
 
   // The line above is the *screen* cue, and it is a fill — the one kind of cue
@@ -210,7 +209,7 @@ describe("markdown rendered at build time", () => {
     const md = plugin.transform("Hello **world**.\n", "/posts/a.md");
     expect(md.code).toMatch(/^export default "/);
     expect(JSON.parse(md.code.slice("export default ".length, -1))).toContain(
-      "<strong class=\"text-foreground font-semibold\">world</strong>"
+      "<strong class=\"text-foreground font-bold\">world</strong>"
     );
 
     expect(plugin.transform("const a = 1;", "/src/a.ts")).toBeNull();
@@ -229,6 +228,15 @@ describe("markdown rendered at build time", () => {
     // imported by anything the browser loads.
     expect(blogPost).not.toContain("react-markdown");
     expect(blogPost).toContain("dangerouslySetInnerHTML");
+  });
+
+  it("sets the reading column in the display face, not mono", () => {
+    // The wrapper is the one place the reading face is chosen. Chrome around
+    // it (nav, meta, TOC, share, footer) stays mono by its own classes.
+    expect(blogPost).toContain(
+      'className="font-display text-base leading-7 [overflow-wrap:anywhere]"'
+    );
+    expect(blogPost).toContain("[overflow-wrap:anywhere]");
   });
 });
 describe("heading ids and hash links", () => {

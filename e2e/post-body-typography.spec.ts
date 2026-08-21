@@ -15,8 +15,8 @@ import { test, expect } from "./fixtures";
  *   - `<blockquote>` lost its margin, and the `p` inside it is the same
  *     component as any body paragraph — so four quotations from a research
  *     paper were pixel-identical to the author's own prose.
- *   - `<code>` inherited a monospace font the whole site already uses, leaving
- *     it with no property at all that body text did not share.
+ *   - `<code>` would inherit the reading face (Space Grotesk) and look like
+ *     prose. The chip plus an explicit `font-mono` are what keep it code.
  *
  * Everything here reads computed style rather than className, because the
  * failure this guards against is a rule that does not exist. This renderer
@@ -167,17 +167,24 @@ test.describe("post bodies render the markdown that was written", () => {
         const para = code.closest("p")!;
         const c = getComputedStyle(code);
         const p = getComputedStyle(para);
+        const family = (s: CSSStyleDeclaration) => s.fontFamily.split(",")[0].replace(/["']/g, "").trim();
         return {
-          // The body font is already JetBrains Mono, so this is the reason the
-          // element needed a treatment of its own at all.
-          fontFamilyMatchesProse: c.fontFamily === p.fontFamily,
+          // Body copy is Space Grotesk; code stays JetBrains Mono. The chip is
+          // the other cue, and the one paper still needs once the fill drops.
+          codeFamily: family(c),
+          proseFamily: family(p),
           background: c.backgroundColor,
           proseBackground: p.backgroundColor,
           paddingLeft: parseFloat(c.paddingLeft),
         };
       });
 
-      expect(measured.fontFamilyMatchesProse).toBe(true);
+      expect(measured.proseFamily, `${slug}: body copy should be Space Grotesk`).toBe(
+        "Space Grotesk"
+      );
+      expect(measured.codeFamily, `${slug}: inline code should stay JetBrains Mono`).toBe(
+        "JetBrains Mono"
+      );
       expect(measured.background, `${slug}: code chip is not painted`).not.toBe(
         measured.proseBackground
       );
@@ -185,5 +192,58 @@ test.describe("post bodies render the markdown that was written", () => {
       // px-1.5, the other class with no user in src/.
       expect(measured.paddingLeft, `${slug}: px-1.5 did not compile`).toBeGreaterThan(0);
     }
+  });
+
+  test("body copy is the display face; chrome stays mono", async ({ page }) => {
+    // One long post with a TOC, a quotation, and the usual chrome. Series is
+    // a second hop: this slug is not in the reliability rail.
+    await page.goto("/blog/the-entry-level-job-is-the-canary/");
+    await page.locator("[data-post-body] p").first().waitFor();
+
+    const onCanary = await page.evaluate(() => {
+      const family = (el) =>
+        el ? getComputedStyle(el).fontFamily.split(",")[0].replace(/["']/g, "").trim() : "";
+      const first = (sel) => document.querySelector(sel);
+      return {
+        paragraph: family(first("[data-post-body] p")),
+        h2: family(first("[data-post-body] h2")),
+        quote: family(first("[data-post-body] blockquote p") || first("[data-post-body] blockquote")),
+        list: family(first("[data-post-body] li")),
+        nav: family(first('nav[aria-label="Main"] a')),
+        toc: family(first('nav[aria-label="Contents"]')),
+        dek: family(first("article h1 + p")),
+        share: family(
+          [...document.querySelectorAll("p")].find((p) => p.textContent === "// share")
+        ),
+        footer: family(
+          [...document.querySelectorAll("span")].find((s) =>
+            (s.textContent ?? "").includes("PRATIK PATEL")
+          )
+        ),
+        tag: family(first("article a[href*='tag=']")),
+      };
+    });
+
+    expect(onCanary.paragraph, "body paragraph").toBe("Space Grotesk");
+    expect(onCanary.h2, "body h2").toBe("Space Grotesk");
+    expect(onCanary.quote, "blockquote").toBe("Space Grotesk");
+    if (onCanary.list) expect(onCanary.list, "list item").toBe("Space Grotesk");
+
+    expect(onCanary.nav, "cd ~").toBe("JetBrains Mono");
+    expect(onCanary.toc, "// contents").toBe("JetBrains Mono");
+    expect(onCanary.dek, "dek stays accent mono").toBe("JetBrains Mono");
+    expect(onCanary.share, "// share").toBe("JetBrains Mono");
+    expect(onCanary.footer, "copyright").toBe("JetBrains Mono");
+    expect(onCanary.tag, "tag chip").toBe("JetBrains Mono");
+
+    await page.goto("/blog/give-your-agent-an-undo-button/");
+    await page.getByRole("navigation", { name: "Agent reliability" }).first().waitFor();
+    const series = await page
+      .getByRole("navigation", { name: "Agent reliability" })
+      .first()
+      .evaluate((el) =>
+        getComputedStyle(el).fontFamily.split(",")[0].replace(/["']/g, "").trim()
+      );
+    expect(series, "// series").toBe("JetBrains Mono");
   });
 });
