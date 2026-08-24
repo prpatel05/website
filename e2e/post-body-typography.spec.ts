@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { test, expect } from "./fixtures";
 
@@ -36,7 +36,12 @@ const DIST = fileURLToPath(new URL("../dist/blog", import.meta.url));
 /** Slugs whose built body satisfies `matches`, read off the artifact under test. */
 const postsWhere = (matches: (html: string) => boolean) =>
   readdirSync(DIST, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
+    // Nested hubs (e.g. `series/agent-reliability/`) create directories with
+    // no post `index.html` of their own — skip those so discovery stays posts.
+    .filter(
+      (entry) =>
+        entry.isDirectory() && existsSync(`${DIST}/${entry.name}/index.html`)
+    )
     .map((entry) => entry.name)
     .filter((slug) => matches(readFileSync(`${DIST}/${slug}/index.html`, "utf8")));
 

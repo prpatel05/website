@@ -4,6 +4,7 @@ import {
   BLOG_TITLE,
   HOME_TITLE,
   NOT_FOUND_TITLE,
+  SERIES_TITLE,
   postTitle,
   routeTitle,
 } from "../route-title";
@@ -14,9 +15,11 @@ import {
  * are on a page they are not.
  */
 describe("routeTitle", () => {
-  it("names the two static routes", () => {
+  it("names the static routes", () => {
     expect(routeTitle("/")).toBe(HOME_TITLE);
     expect(routeTitle("/blog")).toBe(BLOG_TITLE);
+    expect(routeTitle("/blog/series/agent-reliability")).toBe(SERIES_TITLE);
+    expect(routeTitle("/blog/series/agent-reliability/")).toBe(SERIES_TITLE);
   });
 
   it("names a post from the registry", () => {

@@ -1,5 +1,6 @@
 import { matchPath } from "react-router-dom";
 import { getPostBySlug } from "@/data/blog-posts/registry";
+import { SERIES_NAME, SERIES_PATH } from "@/lib/blog-series";
 import { POST_PATH } from "@/routes";
 
 /**
@@ -27,6 +28,7 @@ const SITE_NAME = "Pratik Patel";
 
 export const HOME_TITLE = `${SITE_NAME} — CTO & Chief Architect`;
 export const BLOG_TITLE = `Blog — ${SITE_NAME}`;
+export const SERIES_TITLE = `${SERIES_NAME} — ${SITE_NAME}`;
 export const NOT_FOUND_TITLE = `404 — Page Not Found | ${SITE_NAME}`;
 
 export const postTitle = (title: string): string => `${title} — ${SITE_NAME}`;
@@ -46,6 +48,7 @@ export const postTitle = (title: string): string => `${title} — ${SITE_NAME}`;
 export const routeTitle = (pathname: string): string => {
   if (matchPath("/", pathname)) return HOME_TITLE;
   if (matchPath("/blog", pathname)) return BLOG_TITLE;
+  if (matchPath(SERIES_PATH, pathname)) return SERIES_TITLE;
 
   const match = matchPath(POST_PATH, pathname);
   const post = match?.params.slug ? getPostBySlug(match.params.slug) : undefined;

@@ -17,6 +17,10 @@ const DIST = join(__dirname, "..", "dist");
 const ROUTES = [
   "/",
   "/blog",
+  // Hub for the agent-reliability arc. Nested under /blog/series/ so it does
+  // not collide with a post slug, and listed before the per-post routes only
+  // for readability — order here is write order, not match order.
+  "/blog/series/agent-reliability",
   ...discoverPostSlugs().map((slug) => `/blog/${slug}`),
   // Matches the app's `path="*"` route. Written to dist/404.html, which is the
   // file GitHub Pages serves — with a real 404 status — for any URL that has no
@@ -142,7 +146,10 @@ async function prerender() {
     // otherwise ship as valid-looking HTML.
     await page.waitForLoadState("networkidle");
 
-    if (route.startsWith("/blog/")) {
+    // Post bodies only. `/blog/series/...` is a CollectionPage with no
+    // `<article>` of paragraphs, and `/blog` itself is already excluded by the
+    // single-segment pattern.
+    if (/^\/blog\/[^/]+$/.test(route)) {
       await waitForPostBody(page, route);
     }
 

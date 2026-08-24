@@ -12,6 +12,14 @@ const STATIC_ROUTES = [
   // form of every directory route, and a sitemap full of redirects is reported
   // as "page with redirect — not indexed".
   { loc: "https://pratik.pa.tel/blog/", changefreq: "weekly", priority: "0.8" },
+  // Series hub: membership is tag-derived, so the page gains a URL when a
+  // weekly post ships with both tags. `weekly` matches that cadence; priority
+  // sits with individual posts rather than the archive.
+  {
+    loc: "https://pratik.pa.tel/blog/series/agent-reliability/",
+    changefreq: "weekly",
+    priority: "0.7",
+  },
 ];
 
 // Discover blog posts from the dist/blog directory
@@ -64,7 +72,13 @@ function discoverBlogPosts() {
   if (!existsSync(blogDir)) return [];
 
   return readdirSync(blogDir, { withFileTypes: true })
-    .filter((d) => d.isDirectory())
+    // A nested hub like `blog/series/agent-reliability/` creates a `series/`
+    // directory with no index of its own. Listing every directory would emit
+    // `https://pratik.pa.tel/blog/series/` — a 404. Only real post pages have
+    // an `index.html` immediately under their slug.
+    .filter(
+      (d) => d.isDirectory() && existsSync(join(blogDir, d.name, "index.html"))
+    )
     .map((d) => ({
       loc: `https://pratik.pa.tel/blog/${d.name}/`,
       // `yearly` tells crawlers not to bother recrawling for a year, which is

@@ -64,7 +64,7 @@ import { htmlRoutesFromSitemap } from "./sitemap-routes";
 const routes = htmlRoutesFromSitemap();
 
 /** Any post will do — the rule under test is the renderer's, not this post's. */
-const POST = routes.find((r) => r.startsWith("/blog/") && r.endsWith("/") && r !== "/blog/")!;
+const POST = routes.find((r) => /^\/blog\/(?!series\/)[^/]+\/$/.test(r))!;
 
 /**
  * 72 characters with no break opportunity: no hyphen, no space, no case change

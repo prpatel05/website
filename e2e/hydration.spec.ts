@@ -26,6 +26,7 @@ const [firstPost] = discoverPostSlugs();
 const ROUTES = [
   { name: "homepage", path: "/" },
   { name: "blog index", path: "/blog/" },
+  { name: "series hub", path: "/blog/series/agent-reliability/" },
   { name: "post page", path: `/blog/${firstPost}/` },
 ];
 

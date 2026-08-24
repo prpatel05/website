@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { SeriesPosition } from "@/lib/blog-series";
+import { SERIES_HREF } from "@/lib/blog-series";
 import { cn } from "@/lib/utils";
 
 type PostSeriesRailProps = {
@@ -42,7 +43,12 @@ const PostSeriesRail = ({ position, className, placement }: PostSeriesRailProps)
           {"// series"}
         </p>
         <p className="text-muted-foreground">
-          <span className="text-foreground">{name}</span>
+          <Link
+            to={SERIES_HREF}
+            className="inline-flex items-center min-h-6 text-foreground transition-colors hover:text-primary"
+          >
+            {name}
+          </Link>
           <span aria-hidden="true" className="mx-2 text-border">
             |
           </span>

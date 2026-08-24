@@ -80,6 +80,7 @@ describe("generate-sitemap", () => {
     expect([...locs].sort()).toEqual([
       "https://pratik.pa.tel/",
       "https://pratik.pa.tel/blog/",
+      "https://pratik.pa.tel/blog/series/agent-reliability/",
       "https://pratik.pa.tel/blog/ship-it-yourself/",
       "https://pratik.pa.tel/blog/taste-is-your-moat/",
     ]);
@@ -96,8 +97,10 @@ describe("generate-sitemap", () => {
 
     expect(Object.fromEntries(entries)).toEqual({
       // Homepage and archive both list posts, so they move with the newest one.
+      // The series hub is static and follows the same newest-post lastmod.
       "https://pratik.pa.tel/": "2026-06-11",
       "https://pratik.pa.tel/blog/": "2026-06-11",
+      "https://pratik.pa.tel/blog/series/agent-reliability/": "2026-06-11",
       "https://pratik.pa.tel/blog/ship-it-yourself/": "2026-06-11",
       "https://pratik.pa.tel/blog/taste-is-your-moat/": "2026-05-04",
     });
@@ -135,11 +138,38 @@ describe("generate-sitemap", () => {
     expect([...locs].sort()).toEqual([
       "https://pratik.pa.tel/",
       "https://pratik.pa.tel/blog/",
+      "https://pratik.pa.tel/blog/series/agent-reliability/",
       "https://pratik.pa.tel/blog/ship-it-yourself.md",
       "https://pratik.pa.tel/blog/ship-it-yourself/",
       "https://pratik.pa.tel/blog/taste-is-your-moat.md",
       "https://pratik.pa.tel/blog/taste-is-your-moat/",
     ]);
+  });
+
+  it("does not invent a /blog/series/ URL from a nested hub directory", () => {
+    const dir = mkdtempSync(join(tmpdir(), "sitemap-series-"));
+    created.push(dir);
+    mkdirSync(join(dir, "scripts"));
+    copyFileSync(SCRIPT, join(dir, "scripts/generate-sitemap.mjs"));
+    mkdirSync(join(dir, "dist/blog/taste-is-your-moat"), { recursive: true });
+    writeFileSync(
+      join(dir, "dist/blog/taste-is-your-moat/index.html"),
+      `<meta property="article:published_time" content="2026-05-04T12:00:00.000Z" data-rh="true">`
+    );
+    // Nested hub layout the prerender writes — no index.html under series/.
+    mkdirSync(join(dir, "dist/blog/series/agent-reliability"), { recursive: true });
+    writeFileSync(
+      join(dir, "dist/blog/series/agent-reliability/index.html"),
+      "<html><title>hub</title></html>"
+    );
+
+    execFileSync("node", ["scripts/generate-sitemap.mjs"], { cwd: dir });
+    const xml = readFileSync(join(dir, "dist/sitemap.xml"), "utf-8");
+    const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+
+    expect(locs).toContain("https://pratik.pa.tel/blog/series/agent-reliability/");
+    expect(locs).not.toContain("https://pratik.pa.tel/blog/series/");
+    expect(locs).toContain("https://pratik.pa.tel/blog/taste-is-your-moat/");
   });
 
   // scripts/blog-automerge.sh publishes a post the day before the date it
@@ -163,9 +193,10 @@ describe("generate-sitemap", () => {
 
     it("clamps the post and the two static routes to the build date", () => {
       expect(lastmods(runSitemap(PUBLISH_DAY, TODAY))).toEqual({
-        // Would have read 2026-06-12 — tomorrow — on all three.
+        // Would have read 2026-06-12 — tomorrow — on the static routes + newest post.
         "https://pratik.pa.tel/": TODAY,
         "https://pratik.pa.tel/blog/": TODAY,
+        "https://pratik.pa.tel/blog/series/agent-reliability/": TODAY,
         "https://pratik.pa.tel/blog/ship-it-yourself/": TODAY,
         // Already in the past, so it passes through untouched.
         "https://pratik.pa.tel/blog/taste-is-your-moat/": "2026-05-04",
@@ -190,8 +221,10 @@ describe("generate-sitemap", () => {
         .sort();
 
       expect(weekly).toEqual([
-        // /blog/ is `weekly` by definition; the newest post joins it.
+        // /blog/ and the series hub are `weekly` by definition; the newest
+        // post joins them.
         "https://pratik.pa.tel/blog/",
+        "https://pratik.pa.tel/blog/series/agent-reliability/",
         "https://pratik.pa.tel/blog/ship-it-yourself/",
       ]);
     });
