@@ -67,7 +67,7 @@ const routes = htmlRoutesFromSitemap();
  * and a criterion that currently passes everywhere does not earn +73% on every
  * push. The narrow width, where the failures would actually be, keeps every post.
  */
-const WIDE_ROUTES = ["/", "/blog/", routes.find((r) => r.startsWith("/blog/") && r.endsWith("/") && r !== "/blog/")!];
+const WIDE_ROUTES = ["/", "/blog/", routes.find((r) => /^\/blog\/(?!series\/)[^/]+\/$/.test(r))!];
 
 /** The exact values named in SC 1.4.12. */
 const SPACING_CSS = `

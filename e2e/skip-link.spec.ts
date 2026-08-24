@@ -10,7 +10,7 @@ import { test, expect } from "./fixtures";
  * because the markup is what was wrong while looking right.
  */
 
-const ROUTES = ["/", "/blog/", "/blog/agents-fail-quietly/"];
+const ROUTES = ["/", "/blog/", "/blog/series/agent-reliability/", "/blog/agents-fail-quietly/"];
 
 /**
  * Every point of `selector`'s own rect at which `selector` is the topmost paint.

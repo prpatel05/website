@@ -12,6 +12,7 @@ import { mainContentProps } from "@/lib/skip-target";
 import { BLOG_TITLE } from "@/lib/route-title";
 import { postDescription } from "@/lib/post-description";
 import { ARCHIVE_HREF, postsWithTag, uniqueTags } from "@/lib/blog-tags";
+import { SERIES_HREF, SERIES_NAME } from "@/lib/blog-series";
 import { personRef } from "@/lib/person-jsonld";
 
 const BLOG_DESCRIPTION =
@@ -144,7 +145,7 @@ const Blog = () => {
             </h1>
           </m.div>
 
-          <nav aria-label="Filter by tag" className="mb-10 print:hidden">
+          <nav aria-label="Filter by tag" className="mb-6 print:hidden">
             <span className="font-mono text-xs text-primary/60 print:text-primary tracking-widest block mb-3">
               {"// filter"}
             </span>
@@ -159,6 +160,20 @@ const Blog = () => {
               ))}
             </ul>
           </nav>
+
+          {/*
+            Discreet hub entry — not a filter chip, not a redesign. A reader who
+            already knows the arc can jump the archive; everyone else still
+            finds it from a member post's series rail.
+          */}
+          <p className="mb-10 print:hidden">
+            <Link
+              to={SERIES_HREF}
+              className="font-mono text-xs text-primary/60 print:text-primary tracking-widest hover:text-primary transition-colors inline-flex items-center min-h-6"
+            >
+              {"// series"} · {SERIES_NAME}
+            </Link>
+          </p>
 
           {activeTag != null && visible.length === 0 ? (
             <div role="status" className="border border-border bg-card p-6 lg:p-8">

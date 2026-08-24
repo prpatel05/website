@@ -36,6 +36,12 @@ test.describe("Navigation landmarks are all named", () => {
     await expect(page.getByRole("navigation", { name: "Main" })).toHaveCount(1);
     await expect(page.getByRole("navigation")).toHaveCount(1);
   });
+
+  test("series hub names its nav region", async ({ page }) => {
+    await page.goto("/blog/series/agent-reliability/");
+    await expect(page.getByRole("navigation", { name: "Main" })).toHaveCount(1);
+    await expect(page.getByRole("navigation")).toHaveCount(1);
+  });
 });
 
 test.describe("Decorative separators stay out of accessible names", () => {

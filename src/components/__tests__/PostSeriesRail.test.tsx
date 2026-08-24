@@ -49,6 +49,10 @@ describe("PostSeriesRail", () => {
       "href",
       "/blog/series-c/"
     );
+    expect(screen.getByRole("link", { name: "Agent reliability" })).toHaveAttribute(
+      "href",
+      "/blog/series/agent-reliability/"
+    );
     expect(screen.queryByRole("link", { name: /Series B Title/ })).toBeNull();
     expect(screen.getByText("Series B Title").closest("[aria-current='page']")).toBeTruthy();
   });

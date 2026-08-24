@@ -595,6 +595,9 @@ describe("BlogPost", () => {
         "href",
         "/blog/series-c/"
       );
+      expect(
+        screen.getAllByRole("link", { name: "Agent reliability" })[0]
+      ).toHaveAttribute("href", "/blog/series/agent-reliability/");
     });
   });
 

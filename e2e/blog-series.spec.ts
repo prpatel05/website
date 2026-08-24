@@ -93,3 +93,51 @@ test.describe("agent reliability series rail", () => {
     await expect(footer).toBeHidden();
   });
 });
+
+test.describe("agent reliability series hub", () => {
+  const HUB = "/blog/series/agent-reliability/";
+
+  test("lists members oldest-first and opens a post", async ({ page }) => {
+    await page.goto(HUB);
+
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      "Agent reliability"
+    );
+    await expect(page.getByText(/\d+ posts · oldest first/)).toBeVisible();
+
+    const titles = page.locator("main ol h2 a");
+    await expect(titles).toHaveCount(7);
+    await expect(titles.first()).toHaveText("Agents Fail Quietly");
+    await expect(titles.last()).toHaveText(
+      "Your Eval Suite Measures the Wrong Thing"
+    );
+
+    await titles.nth(1).click();
+    await expect(page).toHaveURL("/blog/give-your-agent-an-undo-button/");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      "Give Your Agent an Undo Button"
+    );
+    await expect(seriesRail(page).first()).toContainText("2 of 7");
+  });
+
+  test("series name on the rail links to the hub", async ({ page }) => {
+    await page.goto(MEMBER);
+    const hub = seriesRail(page)
+      .first()
+      .getByRole("link", { name: "Agent reliability" });
+    await expect(hub).toHaveAttribute("href", HUB);
+    await hub.click();
+    await expect(page).toHaveURL(HUB);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      "Agent reliability"
+    );
+  });
+
+  test("archive entry reaches the hub", async ({ page }) => {
+    await page.goto("/blog/");
+    await page
+      .getByRole("link", { name: /series · Agent reliability/i })
+      .click();
+    await expect(page).toHaveURL(HUB);
+  });
+});

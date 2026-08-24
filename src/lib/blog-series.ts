@@ -14,6 +14,20 @@ import type { BlogPost } from "@/data/blog-posts/types";
 export const SERIES_NAME = "Agent reliability";
 export const SERIES_TAGS = ["agents", "reliability"] as const;
 
+/**
+ * Hub for the arc. Trailing slash is load-bearing on GitHub Pages; keep the
+ * bare path for `<Route path>` and the slashed form for every link/canonical.
+ */
+export const SERIES_PATH = "/blog/series/agent-reliability";
+export const SERIES_HREF = `${SERIES_PATH}/`;
+
+/**
+ * Shared by the hub page, its `<title>`/`meta`, and JSON-LD. Claimy on purpose:
+ * this is the reliability half of agent work, not a soft "best practices" list.
+ */
+export const SERIES_DESCRIPTION =
+  "Most agent demos stop at \"it worked once.\" This series is the other half: permissions, undo, traces, handoffs, evals — the reliability work you do before autonomy is safe to ship.";
+
 export type SeriesTagged = Pick<BlogPost, "slug" | "title" | "dateISO" | "tags">;
 
 export type SeriesPosition<T extends SeriesTagged = SeriesTagged> = {

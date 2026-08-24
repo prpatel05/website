@@ -296,6 +296,16 @@ describe("Blog archive", () => {
     expect(meta("article:author")).toBeUndefined();
   });
 
+  it("links the series hub from a discreet archive entry", () => {
+    renderBlog();
+    const entry = screen.getByRole("link", { name: /series · Agent reliability/i });
+    expect(entry).toHaveAttribute("href", "/blog/series/agent-reliability/");
+    // Kept outside the filter landmark on purpose — it is not a tag chip.
+    expect(
+      screen.getByRole("navigation", { name: "Filter by tag" })
+    ).not.toContainElement(entry);
+  });
+
   it("derives filter chips from the posts rather than a hardcoded list", () => {
     renderBlog();
     const filter = screen.getByRole("navigation", { name: "Filter by tag" });
