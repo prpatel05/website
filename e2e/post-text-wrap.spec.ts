@@ -1,6 +1,5 @@
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { test, expect } from "./fixtures";
+import { htmlRoutesFromSitemap } from "./sitemap-routes";
 
 /**
  * Post-derived text must wrap rather than push the page sideways, on every
@@ -62,14 +61,10 @@ import { test, expect } from "./fixtures";
  * reading (<=256px) and an unwrapped one (432-1334px, measured) is never close.
  */
 
-const SITEMAP = fileURLToPath(new URL("../dist/sitemap.xml", import.meta.url));
-
-const routes = [...readFileSync(SITEMAP, "utf8").matchAll(/<loc>([^<]+)<\/loc>/g)].map(
-  ([, loc]) => new URL(loc).pathname
-);
+const routes = htmlRoutesFromSitemap();
 
 /** Any post will do — the rule under test is the renderer's, not this post's. */
-const POST = routes.find((r) => r.startsWith("/blog/") && r !== "/blog/")!;
+const POST = routes.find((r) => r.startsWith("/blog/") && r.endsWith("/") && r !== "/blog/")!;
 
 /**
  * 72 characters with no break opportunity: no hyphen, no space, no case change

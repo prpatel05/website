@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/generate-images.mjs && vite",
-    "build": "node scripts/generate-images.mjs && vite build && node scripts/prerender.mjs && node scripts/generate-sitemap.mjs && node scripts/generate-feed.mjs && node scripts/generate-build-stamp.mjs",
+    "build": "node scripts/generate-images.mjs && vite build && node scripts/prerender.mjs && node scripts/generate-llms.mjs && node scripts/generate-sitemap.mjs && node scripts/generate-feed.mjs && node scripts/generate-build-stamp.mjs",
     "build:dev": "node scripts/generate-images.mjs && vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",

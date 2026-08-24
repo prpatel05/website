@@ -1,6 +1,5 @@
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { test, expect, type Page } from "./fixtures";
+import { htmlRoutesFromSitemap } from "./sitemap-routes";
 
 /**
  * Nothing on a phone should scroll sideways.
@@ -23,11 +22,7 @@ import { test, expect, type Page } from "./fixtures";
  * of pages that happened to exist when it was written.
  */
 
-const SITEMAP = fileURLToPath(new URL("../dist/sitemap.xml", import.meta.url));
-
-const routes = [...readFileSync(SITEMAP, "utf8").matchAll(/<loc>([^<]+)<\/loc>/g)].map(
-  ([, loc]) => new URL(loc).pathname
-);
+const routes = htmlRoutesFromSitemap();
 
 /**
  * The horizontal overflow, plus enough about the widest offenders to name the

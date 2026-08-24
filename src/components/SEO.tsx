@@ -45,6 +45,12 @@ interface SEOProps {
   preloadImageSrcSet?: string;
   preloadImageSizes?: string;
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
+  /**
+   * Absolute or site-relative URL of a text/markdown alternate of this page.
+   * Blog posts ship `/blog/<slug>.md` next to the HTML route so citation tools
+   * can fetch the source without scraping the prerendered document.
+   */
+  markdownAlternate?: string;
 }
 
 const SEO = ({
@@ -62,6 +68,7 @@ const SEO = ({
   preloadImageSrcSet,
   preloadImageSizes,
   jsonLd,
+  markdownAlternate,
 }: SEOProps) => {
   const imageAlt = ogImageAlt ?? title;
   const href = canonicalUrl(canonical);
@@ -71,6 +78,18 @@ const SEO = ({
       <title>{title}</title>
       <meta name="description" content={description} />
       <link rel="canonical" href={href} />
+      {markdownAlternate && (
+        <link
+          rel="alternate"
+          type="text/markdown"
+          href={
+            markdownAlternate.startsWith("http")
+              ? markdownAlternate
+              : `https://pratik.pa.tel${markdownAlternate}`
+          }
+          title="Markdown"
+        />
+      )}
       {/*
         The srcset pair is spread rather than passed straight through:
         react-helmet-async writes every prop it is handed with setAttribute,

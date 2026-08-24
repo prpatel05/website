@@ -1,5 +1,4 @@
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { htmlRoutesFromSitemap } from "./sitemap-routes";
 import { test, expect, type Page,
   openMobileMenu,
 } from "./fixtures";
@@ -35,11 +34,7 @@ import { test, expect, type Page,
 /** WCAG 2.2 SC 2.5.8 Target Size (Minimum), level AA. */
 const MIN_TARGET_PX = 24;
 
-const SITEMAP = fileURLToPath(new URL("../dist/sitemap.xml", import.meta.url));
-
-const routes = [...readFileSync(SITEMAP, "utf8").matchAll(/<loc>([^<]+)<\/loc>/g)].map(
-  ([, loc]) => new URL(loc).pathname
-);
+const routes = htmlRoutesFromSitemap();
 
 /**
  * Standalone controls smaller than the floor, with enough detail to name the

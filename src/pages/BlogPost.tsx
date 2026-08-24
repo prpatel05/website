@@ -259,6 +259,7 @@ const BlogPost = () => {
         title={postTitle(post.title)}
         description={postDescription(post)}
         canonical={`https://pratik.pa.tel/blog/${post.slug}`}
+        markdownAlternate={`https://pratik.pa.tel/blog/${post.slug}.md`}
         ogImage={ogImage}
         ogImageAlt={post.title}
         ogImageWidth={card?.width}
