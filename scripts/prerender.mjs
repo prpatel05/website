@@ -48,6 +48,7 @@ function startServer(shell) {
     ".webmanifest": "application/manifest+json",
     ".xml": "application/xml",
     ".txt": "text/plain",
+    ".md": "text/markdown",
   };
 
   const sendShell = (res) => {

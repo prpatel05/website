@@ -81,8 +81,29 @@ function discoverBlogPosts() {
     }));
 }
 
+// Markdown aliases written by scripts/generate-llms.mjs. These are files, not
+// directories: a trailing slash would 404 on GitHub Pages, so the <loc> keeps
+// the .md suffix and no slash. Lower priority than the HTML canonical.
+function discoverMarkdownAliases() {
+  const blogDir = join(DIST, "blog");
+  if (!existsSync(blogDir)) return [];
+
+  return readdirSync(blogDir, { withFileTypes: true })
+    .filter((d) => d.isFile() && d.name.endsWith(".md"))
+    .map((d) => {
+      const slug = d.name.slice(0, -".md".length);
+      return {
+        loc: `https://pratik.pa.tel/blog/${d.name}`,
+        changefreq: "monthly",
+        priority: "0.4",
+        published: publishedDate(slug),
+      };
+    });
+}
+
 function generateSitemap(today) {
   const blogPosts = discoverBlogPosts();
+  const markdownAliases = discoverMarkdownAliases();
   // The homepage lists the five newest posts and /blog/ lists all of them, so
   // both change exactly when the newest post does.
   const newest = blogPosts
@@ -91,10 +112,14 @@ function generateSitemap(today) {
     .sort()
     .pop();
   // The most recent post is the one still gathering links and social shares, so
-  // it earns the tightest recrawl hint.
+  // it earns the tightest recrawl hint. Markdown aliases stay monthly — they
+  // are citation mirrors, not the page gathering shares.
   for (const post of blogPosts) {
     if (newest && post.published === newest) post.changefreq = "weekly";
     post.lastmod = clampToBuildDate(post.published, today);
+  }
+  for (const alias of markdownAliases) {
+    alias.lastmod = clampToBuildDate(alias.published, today);
   }
   const allRoutes = [
     ...STATIC_ROUTES.map((r) => ({
@@ -102,6 +127,7 @@ function generateSitemap(today) {
       lastmod: clampToBuildDate(newest ?? null, today),
     })),
     ...blogPosts,
+    ...markdownAliases,
   ];
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>

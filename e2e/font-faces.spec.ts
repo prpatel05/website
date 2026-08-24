@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { test, expect,
   openMobileMenu,
 } from "./fixtures";
 import { collectFaces, declaredFaces, FONTS_CSS, ours } from "./font-face-probe";
+import { htmlRoutesFromSitemap } from "./sitemap-routes";
 
 /**
  * Every (family, weight, style) the site paints is one `src/styles/fonts.css`
@@ -38,11 +38,7 @@ import { collectFaces, declaredFaces, FONTS_CSS, ours } from "./font-face-probe"
  * the same blind spot `a11y-axe.spec.ts` and `target-size.spec.ts` call out.
  */
 
-const SITEMAP = fileURLToPath(new URL("../dist/sitemap.xml", import.meta.url));
-
-const routes = [...readFileSync(SITEMAP, "utf8").matchAll(/<loc>([^<]+)<\/loc>/g)].map(
-  ([, loc]) => new URL(loc).pathname
-);
+const routes = htmlRoutesFromSitemap();
 
 // `declaredFaces` (what fonts.css declares) and `collectFaces` (what a document
 // paints) live in `./font-face-probe` because `post-emphasis-faces.spec.ts`

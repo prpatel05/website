@@ -1,8 +1,7 @@
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import AxeBuilder from "@axe-core/playwright";
 import { renderMarkdownToHtml } from "../scripts/markdown-html.mjs";
 import { unmeasuredContrastNodes } from "./axe-unmeasured";
+import { htmlRoutesFromSitemap } from "./sitemap-routes";
 import { test, expect,
   openMobileMenu,
   openTerminalByClick,
@@ -38,11 +37,7 @@ import { test, expect,
  * that advice this site actually cares about, by hand and on purpose.
  */
 
-const SITEMAP = fileURLToPath(new URL("../dist/sitemap.xml", import.meta.url));
-
-const routes = [...readFileSync(SITEMAP, "utf8").matchAll(/<loc>([^<]+)<\/loc>/g)].map(
-  ([, loc]) => new URL(loc).pathname
-);
+const routes = htmlRoutesFromSitemap();
 
 const WCAG_AA = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
 

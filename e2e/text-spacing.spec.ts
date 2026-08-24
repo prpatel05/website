@@ -1,6 +1,5 @@
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { test, expect, type Page, openMobileMenu, openTerminalByClick } from "./fixtures";
+import { htmlRoutesFromSitemap } from "./sitemap-routes";
 
 /**
  * A reader may respace our text, and must not lose anything by doing it.
@@ -54,16 +53,7 @@ import { test, expect, type Page, openMobileMenu, openTerminalByClick } from "./
  * inside a `position: fixed` subtree with nothing scrollable between.
  */
 
-const SITEMAP = fileURLToPath(new URL("../dist/sitemap.xml", import.meta.url));
-
-/**
- * Routes come from the built sitemap, so a new post is covered the day it lands.
- * Per-post coverage earns its cost at the narrow width: an unusually long word or
- * a wide code line interacts with the override differently on every post.
- */
-const routes = [...readFileSync(SITEMAP, "utf8").matchAll(/<loc>([^<]+)<\/loc>/g)].map(
-  ([, loc]) => new URL(loc).pathname
-);
+const routes = htmlRoutesFromSitemap();
 
 /**
  * At the wide width the posts stop being distinct from one another — they are one
@@ -77,7 +67,7 @@ const routes = [...readFileSync(SITEMAP, "utf8").matchAll(/<loc>([^<]+)<\/loc>/g
  * and a criterion that currently passes everywhere does not earn +73% on every
  * push. The narrow width, where the failures would actually be, keeps every post.
  */
-const WIDE_ROUTES = ["/", "/blog/", routes.find((r) => r.startsWith("/blog/") && r !== "/blog/")!];
+const WIDE_ROUTES = ["/", "/blog/", routes.find((r) => r.startsWith("/blog/") && r.endsWith("/") && r !== "/blog/")!];
 
 /** The exact values named in SC 1.4.12. */
 const SPACING_CSS = `

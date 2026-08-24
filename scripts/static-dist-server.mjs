@@ -23,6 +23,8 @@ const TYPES = {
   svg: "image/svg+xml",
   xml: "application/xml",
   json: "application/json",
+  txt: "text/plain",
+  md: "text/markdown",
 };
 
 /** Starts the server on a free port. Resolves to `{ base, close }`. */

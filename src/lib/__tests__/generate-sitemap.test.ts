@@ -105,9 +105,41 @@ describe("generate-sitemap", () => {
 
   it("emits no URL that GitHub Pages would redirect", () => {
     const locs = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
-    const redirecting = locs.filter((loc) => !loc.endsWith("/"));
+    // Directory routes need a trailing slash. File aliases (.md) must not have
+    // one — a slash after a file path 404s on GitHub Pages.
+    const redirecting = locs.filter(
+      (loc) => !loc.endsWith("/") && !loc.endsWith(".md")
+    );
 
     expect(redirecting).toEqual([]);
+  });
+
+  it("lists markdown aliases when generate-llms wrote them into dist", () => {
+    const dir = mkdtempSync(join(tmpdir(), "sitemap-md-"));
+    created.push(dir);
+    mkdirSync(join(dir, "scripts"));
+    copyFileSync(SCRIPT, join(dir, "scripts/generate-sitemap.mjs"));
+    for (const { slug, date } of POSTS) {
+      mkdirSync(join(dir, "dist/blog", slug), { recursive: true });
+      writeFileSync(
+        join(dir, "dist/blog", slug, "index.html"),
+        `<meta property="article:published_time" content="${date}T12:00:00.000Z" data-rh="true">`
+      );
+      writeFileSync(join(dir, "dist/blog", `${slug}.md`), `# ${slug}\n`);
+    }
+
+    execFileSync("node", ["scripts/generate-sitemap.mjs"], { cwd: dir });
+    const xml = readFileSync(join(dir, "dist/sitemap.xml"), "utf-8");
+    const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+
+    expect([...locs].sort()).toEqual([
+      "https://pratik.pa.tel/",
+      "https://pratik.pa.tel/blog/",
+      "https://pratik.pa.tel/blog/ship-it-yourself.md",
+      "https://pratik.pa.tel/blog/ship-it-yourself/",
+      "https://pratik.pa.tel/blog/taste-is-your-moat.md",
+      "https://pratik.pa.tel/blog/taste-is-your-moat/",
+    ]);
   });
 
   // scripts/blog-automerge.sh publishes a post the day before the date it

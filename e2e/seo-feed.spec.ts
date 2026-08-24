@@ -65,4 +65,48 @@ test.describe("crawler metadata", () => {
       })
     );
   });
+
+  test("llms.txt indexes published posts with markdown aliases", async ({
+    request,
+  }) => {
+    const response = await request.get("/llms.txt");
+    expect(response.ok()).toBe(true);
+    const body = await response.text();
+
+    expect(body.startsWith("# Pratik Patel")).toBe(true);
+    expect(body).toContain("## Posts");
+    expect(body).toMatch(
+      /\[Ship It Yourself[^\]]*\]\(https:\/\/pratik\.pa\.tel\/blog\/ship-it-yourself\.md\)/
+    );
+  });
+
+  test("a post markdown alias serves the source with front matter", async ({
+    request,
+  }) => {
+    const response = await request.get("/blog/ship-it-yourself.md");
+    expect(response.ok()).toBe(true);
+    const body = await response.text();
+
+    expect(body.startsWith("---")).toBe(true);
+    expect(body).toContain('title: "Ship It Yourself');
+    expect(body).toContain(
+      'canonical: "https://pratik.pa.tel/blog/ship-it-yourself/"'
+    );
+    // More than front matter: the post body made it into the export.
+    expect(body.length).toBeGreaterThan(400);
+    expect(body).toContain("Five years ago");
+  });
+
+  test("post HTML declares a text/markdown alternate", async ({ request }) => {
+    const response = await request.get("/blog/ship-it-yourself/");
+    expect(response.ok()).toBe(true);
+    const html = await response.text();
+
+    expect(html).toContain('rel="alternate"');
+    expect(html).toContain('type="text/markdown"');
+    expect(html).toContain(
+      'href="https://pratik.pa.tel/blog/ship-it-yourself.md"'
+    );
+  });
+
 });

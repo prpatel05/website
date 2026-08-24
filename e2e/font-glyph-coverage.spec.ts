@@ -1,7 +1,6 @@
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { test, expect, openMobileMenu } from "./fixtures";
 import { declaredFaces } from "./font-face-probe";
+import { htmlRoutesFromSitemap } from "./sitemap-routes";
 import {
   collectOurText,
   declaredFaceList,
@@ -61,11 +60,7 @@ import {
  * themselves.
  */
 
-const SITEMAP = fileURLToPath(new URL("../dist/sitemap.xml", import.meta.url));
-
-const routes = [...readFileSync(SITEMAP, "utf8").matchAll(/<loc>([^<]+)<\/loc>/g)].map(
-  ([, loc]) => new URL(loc).pathname
-);
+const routes = htmlRoutesFromSitemap();
 
 const FACES = declaredFaceList();
 const FAMILIES = [...new Set([...declaredFaces()].map((f) => f.split("|")[0]))];
