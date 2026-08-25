@@ -114,6 +114,13 @@ elif argv[:2] == ["issue", "list"]:
 elif argv[:2] == ["issue", "create"]:
     record({"issue": arg("--title"), "body": arg("--body")})
 
+elif argv[:2] == ["workflow", "run"]:
+    # gh workflow run "Deploy static content to Pages" --repo ... --ref main
+    record({"workflow": argv[2], "ref": arg("--ref"), "repo": arg("--repo")})
+    if fixture.get("workflowRunResult", "ok") != "ok":
+        sys.stderr.write("workflow run failed\\n")
+        sys.exit(1)
+
 elif argv[0] == "api":
     path = argv[1]
 
@@ -197,6 +204,7 @@ type Fixture = {
   mergeResult?: Record<string, string>;
   existingIssues?: string[];
   checks?: Record<string, unknown>;
+  workflowRunResult?: string;
 };
 
 type Run = {
@@ -208,6 +216,7 @@ type Run = {
   issues: string[];
   polls: number;
   checkCalls: string[];
+  dispatches: Array<{ workflow: string; ref: string; repo: string }>;
 };
 
 let runSeq = 0;
@@ -265,6 +274,9 @@ function run(
     issues: actions.filter((a) => a.issue).map((a) => a.issue),
     polls: actions.filter((a) => a.poll).length,
     checkCalls: actions.filter((a) => a.checks).map((a) => a.checks),
+    dispatches: actions
+      .filter((a) => a.workflow)
+      .map((a) => ({ workflow: a.workflow, ref: a.ref, repo: a.repo })),
   };
 }
 
@@ -584,6 +596,69 @@ describe("blog auto-merge routine", () => {
     expect(r.status).toBe(1);
   });
 
+  // GITHUB_TOKEN push events do not start other workflows, so a successful
+  // merge used to leave the live site on the previous SHA (#102, 2026-08-25).
+  // The documented exception is workflow_dispatch, which GITHUB_TOKEN *can*
+  // trigger. One call after the last successful merge is enough.
+  describe("deploy dispatch after a real merge", () => {
+    const DEPLOY = {
+      workflow: "Deploy static content to Pages",
+      ref: "main",
+      repo: REPO,
+    };
+
+    it("dispatches deploy on main after a successful merge", () => {
+      const r = run({ prs: [pr()], files: { [BRANCH]: TODAY } });
+      expect(r.merges).toEqual(["31"]);
+      expect(r.dispatches).toEqual([DEPLOY]);
+      expect(r.status).toBe(0);
+    });
+
+    it("dispatches once when several PRs merge in the same run", () => {
+      const second = "blog/trust-comes-from-the-trace";
+      const r = run({
+        prs: [pr(), pr({ number: 33, headRefName: second })],
+        files: { [BRANCH]: TODAY, [second]: TODAY },
+      });
+      expect(r.merges).toEqual(["31", "33"]);
+      expect(r.dispatches).toEqual([DEPLOY]);
+      expect(r.status).toBe(0);
+    });
+
+    it("does not dispatch when the merge command fails", () => {
+      const r = run({
+        prs: [pr()],
+        files: { [BRANCH]: TODAY },
+        mergeResult: { "31": "fail" },
+      });
+      expect(r.merges).toEqual(["31"]);
+      expect(r.dispatches).toEqual([]);
+      expect(r.status).toBe(1);
+    });
+
+    it("fails the run when the dispatch itself fails", () => {
+      const r = run({
+        prs: [pr()],
+        files: { [BRANCH]: TODAY },
+        workflowRunResult: "fail",
+      });
+      expect(r.merges).toEqual(["31"]);
+      expect(r.dispatches).toEqual([DEPLOY]);
+      expect(r.stdout).toContain("Failed to dispatch deploy workflow");
+      expect(r.status).toBe(1);
+    });
+
+    it("does not dispatch on a dry run that would have merged", () => {
+      const r = run({ prs: [pr()], files: { [BRANCH]: TODAY } }, TODAY, () => binDir, {
+        AUTOMERGE_DRY_RUN: "true",
+      });
+      expect(r.merges).toEqual([]);
+      expect(r.dispatches).toEqual([]);
+      expect(r.stdout).toContain("Dry run: would merge #31");
+      expect(r.status).toBe(0);
+    });
+  });
+
   // A dry run is the only way to run this routine without publishing a post,
   // which makes it the only way to check the workflow's token against the real
   // API before a publish date depends on it. Every assertion below is about
@@ -595,6 +670,7 @@ describe("blog auto-merge routine", () => {
     it("merges nothing, and says what it would have merged", () => {
       const r = dry({ prs: [pr()], files: { [BRANCH]: TODAY } });
       expect(r.merges).toEqual([]);
+      expect(r.dispatches).toEqual([]);
       expect(r.stdout).toContain(`Dry run: would merge #31`);
       expect(r.summary).toContain("**Dry run**");
       expect(r.summary).toContain(`#31 (\`${BRANCH}\`, \`${TODAY}\`)`);

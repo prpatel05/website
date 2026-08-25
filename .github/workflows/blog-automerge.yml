@@ -29,6 +29,11 @@ permissions:
   # It stays because it is exactly right the day this repo goes private, and on
   # that day the gate would otherwise start failing closed with no clue why.
   checks: read
+  # GITHUB_TOKEN push events do not start other workflows, so a merge from this
+  # routine never triggers deploy.yml on its own. `gh workflow run` uses
+  # workflow_dispatch, which GITHUB_TOKEN *can* start -- but only with this
+  # scope. Without it the #102 miss (merged, never deployed) happens again.
+  actions: write
 
 jobs:
   automerge:

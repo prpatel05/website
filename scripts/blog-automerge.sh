@@ -29,14 +29,15 @@ MERGEABLE_RETRY_SLEEP="${AUTOMERGE_MERGEABLE_RETRY_SLEEP:-2}"
 PUBLISH_GRACE_DAYS="${AUTOMERGE_PUBLISH_GRACE_DAYS:-7}"
 GRACE_SECONDS=$(( PUBLISH_GRACE_DAYS * 86400 ))
 
-# A dry run reads everything and writes nothing: no merge, no issue. It exists
-# because every other way of exercising this routine publishes a real post --
-# the one thing you cannot undo -- so until now nobody could run it to find out
-# whether it works. The test suite drives this script against a stubbed `gh`,
-# so it proves the logic and nothing at all about the real API or the token the
-# workflow runs as. The first dry run earned its keep immediately: it showed
-# the CI gate reads GREEN with `checks: none` as readily as with `checks: read`,
-# because this repo is public. See the note in blog-automerge.yml.
+# A dry run reads everything and writes nothing: no merge, no issue, no deploy
+# dispatch. It exists because every other way of exercising this routine
+# publishes a real post -- the one thing you cannot undo -- so until now nobody
+# could run it to find out whether it works. The test suite drives this script
+# against a stubbed `gh`, so it proves the logic and nothing at all about the
+# real API or the token the workflow runs as. The first dry run earned its keep
+# immediately: it showed the CI gate reads GREEN with `checks: none` as readily
+# as with `checks: read`, because this repo is public. See the note in
+# blog-automerge.yml.
 #
 # `true` and `1` both count, because a workflow_dispatch boolean arrives as the
 # string "true".
@@ -122,7 +123,7 @@ ci_verdict() {
 echo "Checking open blog PRs for $REPO"
 echo "UTC date: $TODAY (merging posts due on or before $TODAY)"
 if (( DRY_RUN )); then
-  echo "DRY RUN: no PR will be merged and no issue will be created."
+  echo "DRY RUN: no PR will be merged, no issue will be created, and deploy will not be dispatched."
 fi
 
 create_social_promotion_issue() {
@@ -361,6 +362,22 @@ while IFS= read -r pr_json; do
     alarm_if_due "$number" "$branch" "$date_iso" "merge_failed"
   fi
 done < <(echo "$blog_prs" | jq -c '.[]')
+
+# GITHUB_TOKEN push events do not start other workflows -- that is why #102
+# merged onto main on 2026-08-25 and the live site stayed on the previous SHA.
+# `workflow_dispatch` is the documented exception: GITHUB_TOKEN *can* trigger
+# it. One dispatch after the last successful merge is enough; Pages deploys
+# whatever is on main. Dry-run never populates merged_prs, so it cannot reach
+# this call.
+if (( ${#merged_prs[@]} > 0 )); then
+  echo "Dispatching deploy workflow so the merge reaches Pages."
+  if gh workflow run "Deploy static content to Pages" --repo "$REPO" --ref main; then
+    echo "Dispatched deploy workflow on main."
+  else
+    echo "Failed to dispatch deploy workflow."
+    hard_failures+=("-|deploy|deploy_dispatch_failed")
+  fi
+fi
 
 echo ""
 echo "=== Blog PR Auto-Merge Summary ==="
