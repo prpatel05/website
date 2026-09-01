@@ -26,7 +26,7 @@ test.describe("agent reliability series rail", () => {
     await expect(rails.first()).toBeVisible();
     await expect(rails.first()).toContainText("// series");
     await expect(rails.first()).toContainText("Agent reliability");
-    await expect(rails.first()).toContainText("2 of 7");
+    await expect(rails.first()).toContainText("2 of 8");
     await expect(rails.first().getByText("current")).toBeVisible();
     await expect(
       rails.first().getByRole("link", { name: /previous/ })
@@ -38,7 +38,7 @@ test.describe("agent reliability series rail", () => {
 
   test("previous and next walk the series, not the archive", async ({ page }) => {
     await page.goto(FIRST);
-    await expect(seriesRail(page).first()).toContainText("1 of 7");
+    await expect(seriesRail(page).first()).toContainText("1 of 8");
     await seriesRail(page).first().getByRole("link", { name: /next/ }).click();
     await expect(page).toHaveURL(SECOND);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
@@ -106,7 +106,7 @@ test.describe("agent reliability series hub", () => {
     await expect(page.getByText(/\d+ posts · oldest first/)).toBeVisible();
 
     const titles = page.locator("main ol h2 a");
-    await expect(titles).toHaveCount(7);
+    await expect(titles).toHaveCount(8);
     await expect(titles.first()).toHaveText("Agents Fail Quietly");
     await expect(titles.last()).toHaveText(
       "Your Eval Suite Measures the Wrong Thing"
@@ -117,7 +117,7 @@ test.describe("agent reliability series hub", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
       "Give Your Agent an Undo Button"
     );
-    await expect(seriesRail(page).first()).toContainText("2 of 7");
+    await expect(seriesRail(page).first()).toContainText("2 of 8");
   });
 
   test("series name on the rail links to the hub", async ({ page }) => {
