@@ -9,6 +9,22 @@ bun install
 bun run dev
 ```
 
+## End-to-end tests
+
+```bash
+bun run build      # the suite tests dist/, so it has to exist first
+bun run test:e2e
+```
+
+Playwright serves `dist/` on a port derived from the path of the worktree it is
+run from, not a fixed one, so two checkouts of this repo can run the suite at
+the same time without landing on the same server. It reuses a server already
+listening on that port (outside CI), and checks `dist/build-stamp.json` against
+the copy the server hands back before running anything — if they disagree, the
+run stops rather than reporting results for someone else's build.
+
+Set `PLAYWRIGHT_PREVIEW_PORT` to move a run off its derived port.
+
 ## Deployment
 
 The site is automatically deployed to GitHub Pages on every push to `main` via GitHub Actions.

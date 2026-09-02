@@ -12,6 +12,14 @@ const STATIC_ROUTES = [
   // form of every directory route, and a sitemap full of redirects is reported
   // as "page with redirect — not indexed".
   { loc: "https://pratik.pa.tel/blog/", changefreq: "weekly", priority: "0.8" },
+  // Series hub: membership is tag-derived, so the page gains a URL when a
+  // weekly post ships with both tags. `weekly` matches that cadence; priority
+  // sits with individual posts rather than the archive.
+  {
+    loc: "https://pratik.pa.tel/blog/series/agent-reliability/",
+    changefreq: "weekly",
+    priority: "0.7",
+  },
 ];
 
 // Discover blog posts from the dist/blog directory
@@ -32,32 +40,108 @@ function publishedDate(slug) {
   return match ? match[1] : null;
 }
 
+// scripts/blog-automerge.sh merges a queued post on the morning of its dateISO
+// (PRA-1123), so on the deploy that publishes it `article:published_time` is
+// today and this clamp passes the value through untouched. It used to merge the
+// day *before* the displayed date, which made a future `article:published_time`
+// the routine case on every publish-day deploy rather than an anomaly.
+//
+// The clamp stays, because the hazard was never tied to that schedule: any post
+// reaching `main` ahead of its own date -- a hand merge, a backfill -- carries a
+// future date with it, and a page cannot have been last modified tomorrow.
+//
+// A future <lastmod> is the documented trigger for a crawler discarding the
+// value — and not just on that one URL: Google treats an unreliable date as a
+// reason to stop trusting <lastmod> across the whole sitemap, which is the
+// entire signal this file exists to send. Worse, `newest` is copied onto / and
+// /blog/ below, so one publish-day post poisoned the two highest-priority URLs
+// too.
+//
+// The day the page actually changed is the day it shipped, so clamp to the
+// build date. Every post but the one being published is already in the past and
+// passes through untouched. scripts/generate-feed.mjs stamps <lastBuildDate>
+// with the build date for exactly this reason.
+function clampToBuildDate(dateISO, today) {
+  if (!dateISO) return null;
+
+  return dateISO > today ? today : dateISO;
+}
+
 function discoverBlogPosts() {
   const blogDir = join(DIST, "blog");
   if (!existsSync(blogDir)) return [];
 
   return readdirSync(blogDir, { withFileTypes: true })
-    .filter((d) => d.isDirectory())
+    // A nested hub like `blog/series/agent-reliability/` creates a `series/`
+    // directory with no index of its own. Listing every directory would emit
+    // `https://pratik.pa.tel/blog/series/` — a 404. Only real post pages have
+    // an `index.html` immediately under their slug.
+    .filter(
+      (d) => d.isDirectory() && existsSync(join(blogDir, d.name, "index.html"))
+    )
     .map((d) => ({
       loc: `https://pratik.pa.tel/blog/${d.name}/`,
-      changefreq: "yearly",
+      // `yearly` tells crawlers not to bother recrawling for a year, which is
+      // exactly wrong for a blog that republishes weekly. `monthly` invites a
+      // recrawl cadence that matches how often a post actually changes; the
+      // newest post is bumped to `weekly` below (see generateSitemap).
+      changefreq: "monthly",
       priority: "0.7",
-      lastmod: publishedDate(d.name),
+      // The date the post declares, before clamping. Which post is newest is a
+      // question about publication order, so it is asked of these rather than of
+      // the clamped values — clamping ties the publish-day post with anything
+      // else dated today and would hand `weekly` to both.
+      published: publishedDate(d.name),
     }));
 }
 
-function generateSitemap() {
+// Markdown aliases written by scripts/generate-llms.mjs. These are files, not
+// directories: a trailing slash would 404 on GitHub Pages, so the <loc> keeps
+// the .md suffix and no slash. Lower priority than the HTML canonical.
+function discoverMarkdownAliases() {
+  const blogDir = join(DIST, "blog");
+  if (!existsSync(blogDir)) return [];
+
+  return readdirSync(blogDir, { withFileTypes: true })
+    .filter((d) => d.isFile() && d.name.endsWith(".md"))
+    .map((d) => {
+      const slug = d.name.slice(0, -".md".length);
+      return {
+        loc: `https://pratik.pa.tel/blog/${d.name}`,
+        changefreq: "monthly",
+        priority: "0.4",
+        published: publishedDate(slug),
+      };
+    });
+}
+
+function generateSitemap(today) {
   const blogPosts = discoverBlogPosts();
+  const markdownAliases = discoverMarkdownAliases();
   // The homepage lists the five newest posts and /blog/ lists all of them, so
   // both change exactly when the newest post does.
   const newest = blogPosts
-    .map((p) => p.lastmod)
+    .map((p) => p.published)
     .filter(Boolean)
     .sort()
     .pop();
+  // The most recent post is the one still gathering links and social shares, so
+  // it earns the tightest recrawl hint. Markdown aliases stay monthly — they
+  // are citation mirrors, not the page gathering shares.
+  for (const post of blogPosts) {
+    if (newest && post.published === newest) post.changefreq = "weekly";
+    post.lastmod = clampToBuildDate(post.published, today);
+  }
+  for (const alias of markdownAliases) {
+    alias.lastmod = clampToBuildDate(alias.published, today);
+  }
   const allRoutes = [
-    ...STATIC_ROUTES.map((r) => ({ ...r, lastmod: newest ?? null })),
+    ...STATIC_ROUTES.map((r) => ({
+      ...r,
+      lastmod: clampToBuildDate(newest ?? null, today),
+    })),
     ...blogPosts,
+    ...markdownAliases,
   ];
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -79,4 +163,7 @@ ${allRoutes
   console.log(`Sitemap generated: ${outputPath} (${allRoutes.length} URLs)`);
 }
 
-generateSitemap();
+// SITEMAP_TODAY lets the test drive the publish-day clamp without rewriting
+// fixture dates every time the real date moves past them, matching FEED_TODAY
+// in scripts/generate-feed.mjs.
+generateSitemap(process.env.SITEMAP_TODAY || new Date().toISOString().slice(0, 10));

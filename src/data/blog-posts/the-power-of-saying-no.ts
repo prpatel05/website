@@ -4,6 +4,8 @@ export const thePowerOfSayingNo: BlogPost = {
   slug: "the-power-of-saying-no",
   title: "The Power of Saying No",
   subtitle: "And How It Can Save Your Sanity",
+  description:
+    "Saying yes to everything doesn't make you a team player. It makes you the bottleneck. How I learned to say no, and the diplomatic versions that work better.",
   date: "2025.02",
   dateISO: "2025-02-10",
   readTime: "4 min",

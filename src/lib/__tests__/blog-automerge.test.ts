@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { execFileSync } from "child_process";
+import { spawnSync } from "child_process";
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
@@ -61,12 +61,20 @@ else:
  *
  * fixture.mergeableSequence[pr] lets a PR report UNKNOWN and then settle, which
  * is what GitHub actually does while it builds the test merge commit.
+ *
+ * fixture.checks[pr] is the check-runs payload for that PR's head commit, or
+ * the sentinel "error" (the API call fails) or "malformed" (it returns
+ * unparseable bytes). Defaults to a single green `ci` run, so the tests that
+ * are about date and conflict logic keep merging without restating CI.
  */
 const GH_SHIM = `#!/usr/bin/env python3
-import sys, json, os, base64
+import sys, json, os, base64, subprocess
 
 argv = sys.argv[1:]
 fixture = json.load(open(os.environ["GH_FIXTURE"]))
+
+GREEN = {"total_count": 1,
+         "check_runs": [{"name": "ci", "status": "completed", "conclusion": "success"}]}
 
 def record(action):
     with open(os.environ["GH_ACTIONS"], "a") as fh:
@@ -106,15 +114,54 @@ elif argv[:2] == ["issue", "list"]:
 elif argv[:2] == ["issue", "create"]:
     record({"issue": arg("--title"), "body": arg("--body")})
 
+elif argv[:2] == ["workflow", "run"]:
+    # gh workflow run "Deploy static content to Pages" --repo ... --ref main
+    record({"workflow": argv[2], "ref": arg("--ref"), "repo": arg("--repo")})
+    if fixture.get("workflowRunResult", "ok") != "ok":
+        sys.stderr.write("workflow run failed\\n")
+        sys.exit(1)
+
 elif argv[0] == "api":
-    # repos/{repo}/contents/src/data/blog-posts/{slug}.ts?ref={branch}
     path = argv[1]
-    branch = path.split("ref=")[1]
-    date_iso = fixture.get("files", {}).get(branch)
-    if date_iso is None:
-        sys.exit(1)  # missing data file
-    body = 'export const post = {\\n  dateISO: "%s",\\n};\\n' % date_iso
-    print(json.dumps({"content": base64.b64encode(body.encode()).decode()}))
+
+    if "/contents/" in path:
+        # repos/{repo}/contents/src/data/blog-posts/{slug}.ts?ref={branch}
+        branch = path.split("ref=")[1]
+        date_iso = fixture.get("files", {}).get(branch)
+        if date_iso is None:
+            sys.exit(1)  # missing data file
+        body = 'export const post = {\\n  dateISO: "%s",\\n};\\n' % date_iso
+        payload = {"content": base64.b64encode(body.encode()).decode()}
+
+    elif "/pulls/" in path:
+        # repos/{repo}/pulls/{number} -- the head sha the CI gate then looks up
+        payload = {"head": {"sha": "sha-" + path.rstrip("/").split("/")[-1]}}
+
+    elif "/check-runs" in path:
+        # repos/{repo}/commits/{sha}/check-runs -- sha encodes the PR number
+        number = path.split("/commits/")[1].split("/check-runs")[0].replace("sha-", "")
+        record({"checks": number})
+        spec = fixture.get("checks", {}).get(number, GREEN)
+        if spec == "error":
+            sys.exit(1)
+        if spec == "malformed":
+            print("{ this is not json")
+            sys.exit(0)
+        payload = spec
+
+    else:
+        sys.stderr.write("unstubbed gh api path: %s\\n" % path)
+        sys.exit(2)
+
+    out = json.dumps(payload)
+    # Honour --jq with the real jq, so the shim cannot quietly diverge from the
+    # filter the script actually passes.
+    if "--jq" in argv:
+        p = subprocess.run(["jq", "-r", arg("--jq")], input=out,
+                           capture_output=True, text=True)
+        sys.stdout.write(p.stdout)
+        sys.exit(p.returncode)
+    print(out)
 
 else:
     sys.stderr.write("unstubbed gh call: %s\\n" % " ".join(argv))
@@ -156,20 +203,30 @@ type Fixture = {
   mergeableSequence?: Record<string, string[]>;
   mergeResult?: Record<string, string>;
   existingIssues?: string[];
+  checks?: Record<string, unknown>;
+  workflowRunResult?: string;
 };
 
 type Run = {
   status: number;
   stdout: string;
+  stderr: string;
   summary: string;
   merges: string[];
   issues: string[];
   polls: number;
+  checkCalls: string[];
+  dispatches: Array<{ workflow: string; ref: string; repo: string }>;
 };
 
 let runSeq = 0;
 
-function run(fixture: Fixture, today = TODAY, bin = () => binDir): Run {
+function run(
+  fixture: Fixture,
+  today = TODAY,
+  bin = () => binDir,
+  extraEnv: Record<string, string> = {},
+): Run {
   const id = `run-${runSeq++}`;
   const fixturePath = join(workDir, `${id}.json`);
   const actionsPath = join(workDir, `${id}.actions`);
@@ -178,28 +235,28 @@ function run(fixture: Fixture, today = TODAY, bin = () => binDir): Run {
   writeFileSync(actionsPath, "");
   writeFileSync(summaryPath, "");
 
-  let status = 0;
-  let stdout = "";
-  try {
-    stdout = execFileSync("bash", [SCRIPT], {
-      encoding: "utf8",
-      env: {
-        ...process.env,
-        PATH: `${bin()}:${process.env.PATH}`,
-        GITHUB_REPOSITORY: REPO,
-        GH_FIXTURE: fixturePath,
-        GH_ACTIONS: actionsPath,
-        FAKE_TODAY: today,
-        AUTOMERGE_TODAY: today,
-        AUTOMERGE_MERGEABLE_RETRY_SLEEP: "0",
-        GITHUB_STEP_SUMMARY: summaryPath,
-      },
-    });
-  } catch (err) {
-    const e = err as { status: number; stdout: string };
-    status = e.status;
-    stdout = e.stdout ?? "";
-  }
+  // spawnSync rather than execFileSync: the CI gate's diagnostics go to stderr
+  // (stdout carries the verdict and must stay parseable), and execFileSync only
+  // surfaces stderr on a throw -- which would make the diagnostic assertable
+  // only on runs that happen to exit non-zero.
+  const proc = spawnSync("bash", [SCRIPT], {
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      PATH: `${bin()}:${process.env.PATH}`,
+      GITHUB_REPOSITORY: REPO,
+      GH_FIXTURE: fixturePath,
+      GH_ACTIONS: actionsPath,
+      FAKE_TODAY: today,
+      AUTOMERGE_TODAY: today,
+      AUTOMERGE_MERGEABLE_RETRY_SLEEP: "0",
+      GITHUB_STEP_SUMMARY: summaryPath,
+      ...extraEnv,
+    },
+  });
+  const status = proc.status ?? 0;
+  const stdout = proc.stdout ?? "";
+  const stderr = proc.stderr ?? "";
 
   const actions = existsSync(actionsPath)
     ? readFileSync(actionsPath, "utf8")
@@ -211,10 +268,15 @@ function run(fixture: Fixture, today = TODAY, bin = () => binDir): Run {
   return {
     status,
     stdout,
+    stderr,
     summary: readFileSync(summaryPath, "utf8"),
     merges: actions.filter((a) => a.merge).map((a) => a.merge),
     issues: actions.filter((a) => a.issue).map((a) => a.issue),
     polls: actions.filter((a) => a.poll).length,
+    checkCalls: actions.filter((a) => a.checks).map((a) => a.checks),
+    dispatches: actions
+      .filter((a) => a.workflow)
+      .map((a) => ({ workflow: a.workflow, ref: a.ref, repo: a.repo })),
   };
 }
 
@@ -236,9 +298,13 @@ describe("blog auto-merge routine", () => {
     expect(r.status).toBe(0);
   });
 
-  it("merges a PR whose publish date is tomorrow", () => {
-    const r = run({ prs: [pr()], files: { [BRANCH]: "2026-07-10" } });
-    expect(r.merges).toEqual(["31"]);
+  // The routine used to merge a day early, so every post went live the evening
+  // before its own dateISO. A post is due on its dateISO and not before.
+  it("leaves a PR whose publish date is tomorrow until the morning of", () => {
+    const r = run({ prs: [pr()], files: { [BRANCH]: TOMORROW } });
+    expect(r.merges).toEqual([]);
+    expect(r.stdout).toContain("has not arrived yet");
+    expect(r.issues).toEqual([]);
     expect(r.status).toBe(0);
   });
 
@@ -306,13 +372,13 @@ describe("blog auto-merge routine", () => {
       expect(r.status).toBe(1);
     });
 
-    // The merge is only ever attempted on a post due today or tomorrow, so a
-    // failed merge is always a real failure. It used to exit 0 when the post
-    // was due tomorrow, because only an arrived publish date reddened the run.
-    it("fails the run when the merge fails on a post due tomorrow", () => {
+    // A merge is only ever attempted on a post that is already due, so every
+    // failed merge is a real failure -- including on a post being published
+    // late, which has already missed its date once.
+    it("fails the run when the merge fails on a post being published late", () => {
       const r = run({
         prs: [pr()],
-        files: { [BRANCH]: TOMORROW },
+        files: { [BRANCH]: "2026-07-05" },
         mergeResult: { "31": "fail" },
       });
       expect(r.merges).toEqual(["31"]);
@@ -348,6 +414,129 @@ describe("blog auto-merge routine", () => {
       expect(r.issues).toEqual([`Resolve blocked blog merge: ${BRANCH}`]);
       // Not yet a missed date, so the run stays green.
       expect(r.status).toBe(0);
+    });
+  });
+
+  // `main` is unprotected and `ci.yml` only runs `on: pull_request`, so nothing
+  // re-checks a commit on its way in. Merging on the publish date also removes
+  // the spare day in which a human used to catch a red branch, so this gate is
+  // the only thing between a broken post and a live site.
+  describe("CI gate", () => {
+    const checks = (runs: unknown[]) => ({ total_count: runs.length, check_runs: runs });
+    const CHECK = { name: "ci", status: "completed", conclusion: "success" };
+
+    it("merges when every check-run succeeded", () => {
+      const r = run({
+        prs: [pr()],
+        files: { [BRANCH]: TODAY },
+        checks: { "31": checks([CHECK]) },
+      });
+      expect(r.merges).toEqual(["31"]);
+      expect(r.stdout).toContain("CI verdict: GREEN");
+      expect(r.status).toBe(0);
+    });
+
+    it("merges when the commit has no check-runs at all", () => {
+      // A repo with no CI configured must not brick the publishing pipeline.
+      const r = run({ prs: [pr()], files: { [BRANCH]: TODAY }, checks: { "31": checks([]) } });
+      expect(r.merges).toEqual(["31"]);
+      expect(r.stdout).toContain("CI verdict: NONE");
+      expect(r.status).toBe(0);
+    });
+
+    it("counts neutral and skipped conclusions as green", () => {
+      const r = run({
+        prs: [pr()],
+        files: { [BRANCH]: TODAY },
+        checks: {
+          "31": checks([
+            CHECK,
+            { name: "optional", status: "completed", conclusion: "neutral" },
+            { name: "gated", status: "completed", conclusion: "skipped" },
+          ]),
+        },
+      });
+      expect(r.merges).toEqual(["31"]);
+      expect(r.status).toBe(0);
+    });
+
+    // This is the PRA-1107 class: a post whose own body trips a suite, caught
+    // because `ci` runs fresh the moment its PR is opened.
+    it.each(["failure", "timed_out", "action_required"])(
+      "never merges a post whose CI concluded %s",
+      (conclusion) => {
+        const r = run({
+          prs: [pr()],
+          files: { [BRANCH]: TODAY },
+          checks: { "31": checks([{ name: "ci", status: "completed", conclusion }]) },
+        });
+        expect(r.merges).toEqual([]);
+        expect(r.stdout).toContain("CI verdict is RED");
+        expect(r.issues).toEqual([`Resolve blocked blog merge: ${BRANCH}`]);
+        // The publish date has arrived and the post cannot go live: a miss.
+        expect(r.status).toBe(1);
+      },
+    );
+
+    it("never merges while a check-run is still running", () => {
+      const r = run({
+        prs: [pr()],
+        files: { [BRANCH]: TODAY },
+        checks: { "31": checks([{ name: "ci", status: "in_progress", conclusion: null }]) },
+      });
+      expect(r.merges).toEqual([]);
+      expect(r.stdout).toContain("CI verdict is PENDING");
+      expect(r.issues).toEqual([`Resolve blocked blog merge: ${BRANCH}`]);
+      expect(r.status).toBe(1);
+    });
+
+    it("treats a failure among still-running checks as red, not pending", () => {
+      const r = run({
+        prs: [pr()],
+        files: { [BRANCH]: TODAY },
+        checks: {
+          "31": checks([
+            { name: "ci", status: "completed", conclusion: "failure" },
+            { name: "e2e", status: "in_progress", conclusion: null },
+          ]),
+        },
+      });
+      expect(r.stdout).toContain("CI verdict is RED");
+      expect(r.merges).toEqual([]);
+    });
+
+    // Unknown is unsafe. `cancelled` and `stale` fall outside both sets, the
+    // API can fail outright, and a truncated page hides the run that is red.
+    it.each([
+      ["a conclusion outside both sets", checks([{ name: "ci", status: "completed", conclusion: "cancelled" }])],
+      ["an API failure", "error"],
+      ["an unparseable payload", "malformed"],
+      ["a truncated page", { total_count: 9, check_runs: [CHECK] }],
+    ])("never merges on %s", (_label, spec) => {
+      const r = run({ prs: [pr()], files: { [BRANCH]: TODAY }, checks: { "31": spec } });
+      expect(r.merges).toEqual([]);
+      expect(r.stdout).toContain("CI verdict is UNVERIFIED");
+      expect(r.issues).toEqual([`Resolve blocked blog merge: ${BRANCH}`]);
+      expect(r.status).toBe(1);
+    });
+
+    it("does not spend a CI call on a post that is not due yet", () => {
+      const r = run({ prs: [pr()], files: { [BRANCH]: "2026-07-28" } });
+      expect(r.checkCalls).toEqual([]);
+      expect(r.merges).toEqual([]);
+      expect(r.status).toBe(0);
+    });
+
+    it("gates each due PR independently", () => {
+      const second = "blog/trust-comes-from-the-trace";
+      const r = run({
+        prs: [pr(), pr({ number: 33, headRefName: second })],
+        files: { [BRANCH]: TODAY, [second]: TODAY },
+        checks: { "31": checks([{ name: "ci", status: "completed", conclusion: "failure" }]) },
+      });
+      expect(r.checkCalls.sort()).toEqual(["31", "33"]);
+      expect(r.merges).toEqual(["33"]);
+      expect(r.status).toBe(1);
     });
   });
 
@@ -388,7 +577,7 @@ describe("blog auto-merge routine", () => {
       TODAY,
       () => realDateBinDir,
     );
-    expect(r.stdout).toContain(`UTC date: ${TODAY} (tomorrow: 2026-07-10)`);
+    expect(r.stdout).toContain(`UTC date: ${TODAY} (merging posts due on or before ${TODAY})`);
     expect(r.merges).toEqual(["31"]);
     expect(r.status).toBe(0);
   });
@@ -405,5 +594,129 @@ describe("blog auto-merge routine", () => {
     expect(r.merges).toEqual(["33"]);
     expect(r.issues).toContain(`Resolve blocked blog merge: ${BRANCH}`);
     expect(r.status).toBe(1);
+  });
+
+  // GITHUB_TOKEN push events do not start other workflows, so a successful
+  // merge used to leave the live site on the previous SHA (#102, 2026-08-25).
+  // The documented exception is workflow_dispatch, which GITHUB_TOKEN *can*
+  // trigger. One call after the last successful merge is enough.
+  describe("deploy dispatch after a real merge", () => {
+    const DEPLOY = {
+      workflow: "Deploy static content to Pages",
+      ref: "main",
+      repo: REPO,
+    };
+
+    it("dispatches deploy on main after a successful merge", () => {
+      const r = run({ prs: [pr()], files: { [BRANCH]: TODAY } });
+      expect(r.merges).toEqual(["31"]);
+      expect(r.dispatches).toEqual([DEPLOY]);
+      expect(r.status).toBe(0);
+    });
+
+    it("dispatches once when several PRs merge in the same run", () => {
+      const second = "blog/trust-comes-from-the-trace";
+      const r = run({
+        prs: [pr(), pr({ number: 33, headRefName: second })],
+        files: { [BRANCH]: TODAY, [second]: TODAY },
+      });
+      expect(r.merges).toEqual(["31", "33"]);
+      expect(r.dispatches).toEqual([DEPLOY]);
+      expect(r.status).toBe(0);
+    });
+
+    it("does not dispatch when the merge command fails", () => {
+      const r = run({
+        prs: [pr()],
+        files: { [BRANCH]: TODAY },
+        mergeResult: { "31": "fail" },
+      });
+      expect(r.merges).toEqual(["31"]);
+      expect(r.dispatches).toEqual([]);
+      expect(r.status).toBe(1);
+    });
+
+    it("fails the run when the dispatch itself fails", () => {
+      const r = run({
+        prs: [pr()],
+        files: { [BRANCH]: TODAY },
+        workflowRunResult: "fail",
+      });
+      expect(r.merges).toEqual(["31"]);
+      expect(r.dispatches).toEqual([DEPLOY]);
+      expect(r.stdout).toContain("Failed to dispatch deploy workflow");
+      expect(r.status).toBe(1);
+    });
+
+    it("does not dispatch on a dry run that would have merged", () => {
+      const r = run({ prs: [pr()], files: { [BRANCH]: TODAY } }, TODAY, () => binDir, {
+        AUTOMERGE_DRY_RUN: "true",
+      });
+      expect(r.merges).toEqual([]);
+      expect(r.dispatches).toEqual([]);
+      expect(r.stdout).toContain("Dry run: would merge #31");
+      expect(r.status).toBe(0);
+    });
+  });
+
+  // A dry run is the only way to run this routine without publishing a post,
+  // which makes it the only way to check the workflow's token against the real
+  // API before a publish date depends on it. Every assertion below is about
+  // that: it must read like the real run and write nothing.
+  describe("dry run", () => {
+    const dry = (fixture: Fixture, today = TODAY) =>
+      run(fixture, today, () => binDir, { AUTOMERGE_DRY_RUN: "true" });
+
+    it("merges nothing, and says what it would have merged", () => {
+      const r = dry({ prs: [pr()], files: { [BRANCH]: TODAY } });
+      expect(r.merges).toEqual([]);
+      expect(r.dispatches).toEqual([]);
+      expect(r.stdout).toContain(`Dry run: would merge #31`);
+      expect(r.summary).toContain("**Dry run**");
+      expect(r.summary).toContain(`#31 (\`${BRANCH}\`, \`${TODAY}\`)`);
+      expect(r.status).toBe(0);
+    });
+
+    // The blocked-merge issue is reachable without a merge, so it is the one
+    // write a dry run could still perform by accident.
+    it("files no blocked-merge issue for a due PR it cannot merge", () => {
+      const r = dry({ prs: [pr({ mergeable: "CONFLICTING" })], files: { [BRANCH]: TODAY } });
+      expect(r.issues).toEqual([]);
+      expect(r.stdout).toContain("Dry run: would create blocked-merge issue");
+      // Still red: a dry run that finds a missed publish date reports one.
+      expect(r.status).toBe(1);
+    });
+
+    // The counterpart to "does not spend a CI call on a post that is not due
+    // yet". The real run's thrift is what leaves `checks: read` unexercised on
+    // every day but a publish day, so the dry run deliberately pays that cost.
+    it("reads the CI gate even when nothing is due, to exercise `checks: read`", () => {
+      const r = dry({ prs: [pr()], files: { [BRANCH]: "2026-07-28" } });
+      expect(r.checkCalls).toEqual(["31"]);
+      expect(r.stdout).toContain("Dry run: not due, but reading the CI gate anyway: GREEN");
+      expect(r.merges).toEqual([]);
+      expect(r.status).toBe(0);
+    });
+
+    // `AUTOMERGE_DRY_RUN: ${{ inputs.dry_run }}` renders to the empty string on
+    // the `schedule` event, where there is no `inputs` context. If empty ever
+    // counted as dry, the daily cron would silently stop publishing.
+    it("treats the empty value the cron passes as a real run", () => {
+      const r = run({ prs: [pr()], files: { [BRANCH]: TODAY } }, TODAY, () => binDir, {
+        AUTOMERGE_DRY_RUN: "",
+      });
+      expect(r.merges).toEqual(["31"]);
+      expect(r.stdout).not.toContain("DRY RUN");
+      expect(r.status).toBe(0);
+    });
+  });
+
+  // UNVERIFIED is fail-safe but says nothing about which read failed or why, so
+  // a wrong `checks: read` scope would stall the queue anonymously.
+  it("names the failing CI-gate read on stderr, without polluting the verdict", () => {
+    const r = run({ prs: [pr()], files: { [BRANCH]: TODAY }, checks: { "31": "error" } });
+    expect(r.stderr).toContain("CI gate: no check-runs for #31");
+    expect(r.stdout).toContain("CI verdict is UNVERIFIED");
+    expect(r.merges).toEqual([]);
   });
 });

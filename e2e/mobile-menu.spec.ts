@@ -1,4 +1,10 @@
-import { test, expect } from "./fixtures";
+import {
+  test,
+  expect,
+  openMobileMenu,
+  expectOverlayClosed,
+  SITE_MENU,
+} from "./fixtures";
 
 test.describe("Mobile menu", () => {
   test.use({ viewport: { width: 375, height: 667 } });
@@ -12,7 +18,10 @@ test.describe("Mobile menu", () => {
   });
 
   test("opens mobile menu and shows navigation links", async ({ page }) => {
-    await page.getByText("[menu]").click();
+    // `openMobileMenu` is the gate that means it: `toBeVisible()` on these four
+    // links passed against both PRA-884 (opacity 0) and PRA-902 (2273px below
+    // the fold). See `expectOverlayOpen` in ./fixtures.
+    await openMobileMenu(page);
 
     await expect(page.getByText("about()").nth(1)).toBeVisible();
     await expect(page.getByText("writing()").nth(1)).toBeVisible();
@@ -21,24 +30,19 @@ test.describe("Mobile menu", () => {
   });
 
   test("closes mobile menu when a link is clicked", async ({ page }) => {
-    await page.getByText("[menu]").click();
-
-    // Wait for menu to open
-    await expect(page.getByText("about()").nth(1)).toBeVisible();
+    await openMobileMenu(page);
 
     // Click a link in the mobile overlay
     await page.locator(".font-display.text-4xl").filter({ hasText: "about()" }).click();
 
-    // Menu should close — the overlay links should no longer be visible
-    await expect(page.locator(".font-display.text-4xl").filter({ hasText: "about()" })).not.toBeVisible();
+    await expectOverlayClosed(page, SITE_MENU);
   });
 
   test("closes mobile menu via close button", async ({ page }) => {
-    await page.getByText("[menu]").click();
-    await expect(page.getByText("about()").nth(1)).toBeVisible();
+    await openMobileMenu(page);
 
     await page.getByRole("button", { name: "Close menu" }).click();
 
-    await expect(page.locator(".font-display.text-4xl").filter({ hasText: "about()" })).not.toBeVisible();
+    await expectOverlayClosed(page, SITE_MENU);
   });
 });

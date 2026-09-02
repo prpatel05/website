@@ -29,36 +29,96 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
-      - name: Cache Bun dependencies
-        uses: actions/cache@v4
+      # The step list lives in the composite action, shared with ci.yml, so a
+      # check added for pull requests cannot miss direct pushes to main the way
+      # verify:hero and verify:portrait did (PRA-1108). It leaves the built
+      # dist/ that the upload step below ships.
+      #
+      # It also writes the dist/build-sha.txt that the liveness check at the
+      # bottom of this job reads back off the live site. Set repo variable
+      # CF_BEACON_TOKEN to activate the analytics beacon; unset = disabled
+      # (PRA-465).
+      - name: Build and check
+        uses: ./.github/actions/build-and-check
         with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
-          restore-keys: ${{ runner.os }}-bun-
-      - name: Install dependencies
-        run: bun install
-      - name: Lint
-        run: bun run lint
-      - name: Unit tests
-        run: bun run test
-      - name: Install Playwright browsers
-        run: bunx playwright install --with-deps chromium
-      - name: Build
-        run: bun run build
-        env:
-          # Cloudflare Web Analytics site token (public, cookieless beacon).
-          # Set repo variable CF_BEACON_TOKEN to activate; unset = beacon disabled. See PRA-465.
-          VITE_CF_BEACON_TOKEN: ${{ vars.CF_BEACON_TOKEN }}
-      - name: Playwright tests
-        run: bunx playwright test
+          cf-beacon-token: ${{ vars.CF_BEACON_TOKEN }}
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:
           path: './dist'
+      # There is no `timeout:` here on purpose, and raising one would not help.
+      # `actions/deploy-pages@v4` hard-caps the input at 10 minutes —
+      # `MAX_TIMEOUT = 600000` in src/internal/deployment.js, applied as
+      # `Math.min(timeoutInput, MAX_TIMEOUT)`. The cap is in neither the input
+      # description nor the README, and the action echoes whatever you passed
+      # back into its `with:` block, so `timeout: 1800000` (e87bd79) read as
+      # applied in the log and aborted at 10:01 all the same. A slow Pages queue
+      # cannot be waited out from here.
+      #
+      # But the abort is not a failed deploy. On 2026-08-06 four consecutive
+      # runs aborted at exactly 10:00 with `Canceled deployment with ID <sha>`,
+      # and the site updated anyway — for 6ecf5d0, 13 seconds after the action
+      # gave up. The action's verdict is "I stopped watching", not "it did not
+      # ship", and only the live site can tell those apart. So let the step fail
+      # soft and ask the site.
       - name: Deploy to GitHub Pages
         id: deployment
+        continue-on-error: true
         uses: actions/deploy-pages@v4
+      # Retrying is not an alternative to this check. A Pages deployment is
+      # keyed by commit SHA, so re-running the same commit collides with the
+      # cancelled deployment and returns "Deployment cancelled" in seconds, and
+      # `gh run rerun --failed` re-runs the upload step too, leaving two
+      # `github-pages` artifacts, which the action refuses outright. Only a new
+      # commit is a clean retry — and since the deploy has usually landed
+      # already, an automatic empty-commit retry would mostly queue a second
+      # slow deploy behind the first and re-red the run. Kept a human/agent
+      # call; `concurrency: cancel-in-progress` above would also cancel this
+      # wait the moment such a retry was pushed.
+      #
+      # A deploy that failed for a real reason (bad artifact, revoked token)
+      # also lands here and burns the full window before failing. That is the
+      # cheap side of the trade: the verdict is still correct, just late.
+      - name: Confirm the deploy landed anyway
+        if: steps.deployment.outcome == 'failure'
+        timeout-minutes: 22
+        run: |
+          set -uo pipefail
+          # The 20 minutes below is sized by the CDN, not by the deploy. Pages
+          # serves dist files through Fastly with `cache-control: max-age=600`,
+          # and that cache cannot be bypassed from here: the query string is
+          # stripped from the cache key (three never-before-seen query strings
+          # returned byte-identical `age:` from three different edge nodes), and
+          # `Cache-Control: no-cache`, `no-store`, `Pragma: no-cache` and a bogus
+          # `If-None-Match` are all ignored — every one still came back
+          # `x-cache: HIT` at the same age. So do not add a cache-buster here;
+          # there isn't one. Budget instead: up to 600s of this window can be
+          # spent watching a stale copy, leaving ~10 minutes of real observation.
+          #
+          # Staleness only ever delays the truth, it never fakes it — a cached
+          # response is a *previous* deploy's SHA (or a cached 404), and neither
+          # equals $GITHUB_SHA. The check cannot pass early; at worst it is late.
+          deadline=$(( $(date +%s) + 1200 ))
+          while :; do
+            live=$(curl -fsS --max-time 20 \
+              "https://pratik.pa.tel/build-sha.txt" 2>/dev/null \
+              | tr -d '[:space:]') || live=""
+            if [ "$live" = "$GITHUB_SHA" ]; then
+              echo "Live site is serving $GITHUB_SHA — the deploy landed after the action stopped waiting."
+              exit 0
+            fi
+            if [ "$(date +%s)" -ge "$deadline" ]; then
+              echo "::error::Pages deploy aborted and pratik.pa.tel is still serving '${live:-<no build-sha.txt>}' 20 minutes later, not $GITHUB_SHA. This one really did not ship."
+              exit 1
+            fi
+            echo "serving '${live:-<no build-sha.txt>}', want $GITHUB_SHA — retrying in 15s"
+            sleep 15
+          done
+      # Ping IndexNow only after the site (and the key file) is live, so Bing can
+      # verify the key and crawl new/changed posts within minutes. Best-effort:
+      # the script always exits 0, so a submission hiccup never fails the deploy.
+      - name: Submit sitemap to IndexNow
+        if: success()
+        run: node scripts/submit-indexnow.mjs

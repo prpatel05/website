@@ -7,13 +7,29 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <!-- Fonts: linked here, not @import-ed from index.css, so the preload scanner
-         starts them in parallel with our own CSS instead of one round trip later. -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Fonts are self-hosted; src/styles/fonts.css carries the reasoning, and
+         this comment ships on all 26 routes so it stays short.
+
+         @font-face rides our own CSS bundle now, so these preloads are what keep
+         the font bytes on the preload scanner's radar instead of a round trip
+         behind that CSS. Only the two latin files that paint above the fold on
+         every route -- latin-ext and the italic are left to unicode-range to
+         fetch on demand. `crossorigin` is required even same-origin: font
+         requests are CORS-mode, and without it the preload is discarded and the
+         file fetched twice. -->
     <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/jetbrains-mono-latin.woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/space-grotesk-latin.woff2"
+      crossorigin
     />
     <title data-rh="true">Pratik Patel — CTO & Chief Architect</title>
     <meta data-rh="true" name="description" content="Pratik Patel — Technology executive, CTO, and 3x company builder with 11+ years scaling engineering orgs across AI, Cloud, and Web3." />
@@ -40,6 +56,93 @@
 
   <body>
     <div id="root"></div>
+    <!--
+      Ctrl+K opens the terminal, but the handler that does it lives in a React
+      effect, so it cannot bind until the bundle has downloaded, parsed and
+      hydrated. Every route is prerendered, so the page is painted and readable
+      long before that — on a slow connection, seconds before. A visitor who
+      hits the shortcut in that window gets nothing, and worse: with no
+      preventDefault bound yet the keystroke falls through to the browser, which
+      takes Ctrl+K for its own search bar. The shortcut is advertised on the
+      toggle button that is already on screen, so the window is real.
+
+      This stand-in binds at parse time — ahead of the module script, which is
+      deferred — and does the one thing that must not wait: swallow the key and
+      remember it. React claims the press on mount and retires the stand-in, so
+      only ever one handler is live.
+
+      Inline and unbundled on purpose: anything imported from `src/` arrives in
+      the very bundle whose download this exists to cover.
+
+      Only the home route mounts the terminal, but this file is the shell for
+      every route, so the stand-in first checks that the page it landed on
+      actually has a terminal to open. Without that check it would bind on
+      /blog, /404 and the rest, where nothing ever mounts to claim it, and go on
+      swallowing Ctrl+K for the life of the page — leaving the shortcut worse off
+      than the gap it exists to close. The prerendered markup is already in the
+      DOM above, so the toggle is a reliable tell at this point.
+
+      The same reasoning applies to a bundle that never arrives at all, which is
+      the other way nothing ever claims the stand-in: a chunk 404'd by a deploy,
+      a connection that drops mid-download. So it also gives up on its own after
+      DISARM_AFTER_MS and hands the shortcut back to the browser.
+    -->
+    <script>
+      (function () {
+        var armed = !!document.querySelector('button[title="Open terminal (Ctrl+K)"]');
+        var pending = false;
+
+        /*
+          The stand-in exists to cover one bundle download. Ten seconds is well
+          past a slow one, and a bundle that has not landed by then is not
+          landing — nothing is left to call claim(), so without this the key is
+          swallowed for the life of the page with no terminal it could ever
+          open. Long rather than tight on purpose: cutting a real download short
+          would reopen the gap this script is here to close, and the cost of
+          waiting is that the browser's own Ctrl+K stays unavailable a few
+          seconds longer on a load that is already failing.
+        */
+        var DISARM_AFTER_MS = 10000;
+
+        function onKeyDown(e) {
+          if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+            e.preventDefault();
+            pending = true;
+          }
+        }
+
+        function disarm() {
+          if (!armed) return;
+          armed = false;
+          // Dropped along with the handler: a press made before the bundle gave
+          // up should not open a terminal minutes later if one somehow arrives.
+          pending = false;
+          window.removeEventListener("keydown", onKeyDown);
+        }
+
+        if (armed) {
+          window.addEventListener("keydown", onKeyDown);
+          setTimeout(disarm, DISARM_AFTER_MS);
+        }
+
+        // Published either way, so "this script has run" is observable on every
+        // route — on the unarmed ones that is the only way to tell the guard
+        // apart from a page that simply has not parsed this far yet.
+        window.__terminalBoot = {
+          // A getter, not a copy: `armed` is the live answer to "is Ctrl+K
+          // still being swallowed", and after a disarm a copy would say yes
+          // when the handler is gone.
+          get armed() {
+            return armed;
+          },
+          claim: function () {
+            if (armed) window.removeEventListener("keydown", onKeyDown);
+            window.__terminalBoot = undefined;
+            return pending;
+          },
+        };
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

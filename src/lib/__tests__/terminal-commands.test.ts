@@ -37,8 +37,9 @@ describe("processTerminalCommand", () => {
     const result = processTerminalCommand("blog");
     expect(result.action).toBe("navigate");
     if (result.action !== "navigate") return;
-    expect(result.path).toBe("/blog");
-    expect(result.lines.some((l) => l.text.includes("Opening /blog"))).toBe(true);
+    // Slash-terminated, like every other route we emit — the bare form 301s.
+    expect(result.path).toBe("/blog/");
+    expect(result.lines.some((l) => l.text.includes("Opening /blog/"))).toBe(true);
   });
 
   // --- resume ---
@@ -143,6 +144,30 @@ describe("processTerminalCommand", () => {
     expect(result.action).toBe("lines");
     if (result.action !== "lines") return;
     expect(result.lines.some((l) => l.text.includes("hello world"))).toBe(true);
+  });
+
+  // The verb is matched case-insensitively, but the argument is the visitor's
+  // own text. It used to be sliced out of the lowercased string, so `echo Hello
+  // World` printed `hello world` directly beneath an input line that still read
+  // `$ echo Hello World` — the mangling sat on screen next to the original.
+  it("preserves the casing of echo's argument", () => {
+    const result = processTerminalCommand("echo Hello World");
+    expect(result.action).toBe("lines");
+    if (result.action !== "lines") return;
+    const output = result.lines.filter((l) => l.type === "output");
+    expect(output.some((l) => l.text.includes("Hello World"))).toBe(true);
+    expect(output.some((l) => l.text.includes("hello world"))).toBe(false);
+  });
+
+  it("matches the echo verb case-insensitively while keeping the argument", () => {
+    const result = processTerminalCommand("ECHO MiXeD Case");
+    expect(result.action).toBe("lines");
+    if (result.action !== "lines") return;
+    expect(
+      result.lines.some(
+        (l) => l.type === "output" && l.text.includes("MiXeD Case")
+      )
+    ).toBe(true);
   });
 
   it("echoes empty string for bare 'echo'", () => {

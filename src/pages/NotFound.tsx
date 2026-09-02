@@ -4,20 +4,26 @@ import { m } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { posts } from "@/data/blog-posts/registry";
 import { useEntrance } from "@/hooks/useEntrance";
+import { mainContentProps } from "@/lib/skip-target";
+import { NOT_FOUND_TITLE } from "@/lib/route-title";
 
 const NotFound = () => {
   const entrance = useEntrance();
   const recentPosts = posts.slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4">
+    // This page has no nav, so the whole page is the content region.
+    <main
+      {...mainContentProps}
+      className="min-h-screen bg-background flex flex-col items-center justify-center px-4"
+    >
       {/*
         This page is prerendered to dist/404.html, which GitHub Pages serves —
         with a real 404 status — for every unknown URL. No canonical: pointing
         one at the homepage is the soft-404 signal this change removes.
       */}
       <Helmet>
-        <title>404 — Page Not Found | Pratik Patel</title>
+        <title>{NOT_FOUND_TITLE}</title>
         <meta name="robots" content="noindex" />
       </Helmet>
       <m.div
@@ -26,7 +32,7 @@ const NotFound = () => {
         transition={{ duration: 0.5 }}
         className="text-center max-w-lg"
       >
-        <span className="font-mono text-xs text-primary/60 tracking-widest block mb-4">
+        <span className="font-mono text-xs text-primary/60 print:text-primary tracking-widest block mb-4">
           {"// error:404"}
         </span>
         <h1 className="font-display text-6xl lg:text-8xl font-bold text-primary text-glow mb-4">
@@ -37,7 +43,9 @@ const NotFound = () => {
         </p>
         <Link
           to="/"
-          className="inline-flex items-center gap-2 font-mono text-sm bg-primary text-primary-foreground px-6 py-3 hover:bg-primary/90 transition-colors"
+          // Background-only button: forced colours flatten it to Canvas, so it needs
+          // a real border to stay identifiable as a control. See PRA-998.
+          className="inline-flex items-center gap-2 font-mono text-sm bg-primary text-primary-foreground px-6 py-3 hover:bg-primary/90 transition-colors forced-colors:border forced-colors:border-[ButtonText]"
         >
           <ArrowLeft className="w-4 h-4" />
           cd ~
@@ -72,7 +80,7 @@ const NotFound = () => {
           </div>
         </m.div>
       )}
-    </div>
+    </main>
   );
 };
 

@@ -28,6 +28,18 @@ vi.mock("framer-motion", () => {
     useScroll: () => ({ scrollYProgress: { get: () => 0 } }),
     useTransform: (_: unknown, __: unknown, defaults: unknown[]) => defaults?.[0] ?? 0,
     useReducedMotion: () => false,
+    // `useParallaxFade` builds its pointer-events gate with the standalone
+    // `transform()` rather than the hook, so this mock has to carry it or Hero
+    // throws on render. A clamped linear interpolator — what the real one is
+    // for the numeric two-stop ranges this component passes it.
+    transform: (input: number[], output: number[]) => (value: number) => {
+      const inMin = input[0];
+      const inMax = input[input.length - 1];
+      const outMin = output[0];
+      const outMax = output[output.length - 1];
+      const t = Math.min(Math.max((value - inMin) / (inMax - inMin), 0), 1);
+      return outMin + t * (outMax - outMin);
+    },
   };
 });
 
@@ -203,5 +215,41 @@ describe("Hero – portrait", () => {
 
     expect(portrait.getAttribute("width")).toBe("288");
     expect(portrait.getAttribute("height")).toBe("288");
+  });
+});
+
+describe("Hero – the role line as a screen reader gets it", () => {
+  /**
+   * The line read as "dollar sign, CTO & Chief Architect, left five eighths
+   * block": neither piece of shell decoration was hidden. The convention was
+   * already the repo's own — InteractiveTerminal hides the identical `$`
+   * prompt, and the archive, preview and post page all hide their `|`
+   * separators — the hero was just the one place it was missed.
+   *
+   * Asserted as "no bare glyph is exposed" rather than by naming the two spans,
+   * so a third decorative character added later is caught too.
+   */
+  it("keeps the prompt and cursor glyphs out of the accessibility tree", () => {
+    const { container } = renderHero();
+
+    const exposed = Array.from(container.querySelectorAll("span"))
+      .filter((el) => el.children.length === 0)
+      .filter((el) => /[▊$]/.test(el.textContent ?? ""))
+      .filter((el) => !el.closest("[aria-hidden='true']"))
+      .map((el) => el.textContent);
+
+    expect(exposed).toEqual([]);
+  });
+
+  // Positive control: the spans are actually there to be hidden. Without this,
+  // deleting the whole line would pass the assertion above.
+  it("still paints both glyphs", () => {
+    const { container } = renderHero();
+
+    const glyphs = Array.from(container.querySelectorAll("[aria-hidden='true']"))
+      .map((el) => el.textContent?.trim())
+      .filter((t) => t === "$" || t === "▊");
+
+    expect(glyphs).toHaveLength(2);
   });
 });
