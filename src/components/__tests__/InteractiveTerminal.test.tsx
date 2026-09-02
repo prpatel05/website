@@ -8,28 +8,12 @@ vi.mock("react-router-dom", async () => {
   return { ...actual, useNavigate: () => vi.fn() };
 });
 
-vi.mock("framer-motion", () => {
-  const motionProxy = new Proxy(
-    {},
-    {
-      get: (_target, prop) => {
-        return ({ children, ...props }: Record<string, unknown>) => {
-          const htmlProps: Record<string, unknown> = {};
-          for (const [k, v] of Object.entries(props)) {
-            if (k.startsWith("on") || k === "className" || k === "style" || k === "title" || k === "ref") {
-              htmlProps[k] = v;
-            }
-          }
-          const Tag = typeof prop === "string" ? prop : "div";
-          return <Tag data-testid={`motion-${String(prop)}`} {...htmlProps}>{children}</Tag>;
-        };
-      },
-    }
-  );
-  return {
-    m: motionProxy,
-    AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  };
+// The `ref` on the terminal's overlay is what `useFocusTrap` traps, so the mock
+// has to forward it — see `@/test/framer-motion-mock` for what a plain function
+// component costs here.
+vi.mock("framer-motion", async () => {
+  const { createFramerMotionMock } = await import("@/test/framer-motion-mock");
+  return createFramerMotionMock();
 });
 
 function renderTerminal() {
@@ -59,7 +43,12 @@ describe("InteractiveTerminal – UI interactions", () => {
     renderTerminal();
     fireEvent.keyDown(window, { key: "k", ctrlKey: true });
     expect(screen.getByPlaceholderText(/type "help"/i)).toBeInTheDocument();
-    fireEvent.keyDown(window, { key: "Escape" });
+    // Dispatched on `document`, unlike the Ctrl+K above. Escape belongs to the
+    // focus trap now (PRA-912), which listens on `document` so that only the
+    // overlay on top answers it — a real keydown targets the focused element
+    // and propagates through there, but an event dispatched *at* `window` never
+    // visits any node below it.
+    fireEvent.keyDown(document, { key: "Escape" });
     expect(screen.queryByPlaceholderText(/type "help"/i)).not.toBeInTheDocument();
   });
 
@@ -89,5 +78,64 @@ describe("InteractiveTerminal – UI interactions", () => {
     fireEvent.keyDown(window, { key: "k", ctrlKey: true });
     expect(screen.getByText("$")).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/type "help"/i)).toBeInTheDocument();
+  });
+});
+
+/**
+ * `useTerminalHistory` owns the cursor and is unit-tested on its own; these
+ * cover the wiring, which is where the defect actually reached the visitor —
+ * the hook returned `""` at the bottom of the history and the keydown handler
+ * assigned it to the input without asking.
+ */
+describe("InteractiveTerminal – command history", () => {
+  const openTerminal = () => {
+    renderTerminal();
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+    return screen.getByPlaceholderText(/type "help"/i) as HTMLInputElement;
+  };
+
+  const submit = (input: HTMLInputElement, cmd: string) => {
+    fireEvent.change(input, { target: { value: cmd } });
+    fireEvent.submit(input.closest("form")!);
+  };
+
+  it("does not erase a half-typed line on ArrowDown", () => {
+    const input = openTerminal();
+    fireEvent.change(input, { target: { value: "neofetc" } });
+
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+
+    expect(input.value).toBe("neofetc");
+  });
+
+  it("recalls the previous command on ArrowUp", () => {
+    const input = openTerminal();
+    submit(input, "whoami");
+    expect(input.value).toBe("");
+
+    fireEvent.keyDown(input, { key: "ArrowUp" });
+
+    expect(input.value).toBe("whoami");
+  });
+
+  it("gives the half-typed line back when ArrowDown returns to the bottom", () => {
+    const input = openTerminal();
+    submit(input, "help");
+    fireEvent.change(input, { target: { value: "ech" } });
+
+    fireEvent.keyDown(input, { key: "ArrowUp" });
+    expect(input.value).toBe("help");
+
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    expect(input.value).toBe("ech");
+  });
+
+  it("leaves the line alone on ArrowUp with no history", () => {
+    const input = openTerminal();
+    fireEvent.change(input, { target: { value: "neofetc" } });
+
+    fireEvent.keyDown(input, { key: "ArrowUp" });
+
+    expect(input.value).toBe("neofetc");
   });
 });

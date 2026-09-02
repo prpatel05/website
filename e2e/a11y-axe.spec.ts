@@ -1,0 +1,320 @@
+import AxeBuilder from "@axe-core/playwright";
+import { renderMarkdownToHtml } from "../scripts/markdown-html.mjs";
+import { unmeasuredContrastNodes } from "./axe-unmeasured";
+import { htmlRoutesFromSitemap } from "./sitemap-routes";
+import { test, expect,
+  openMobileMenu,
+  openTerminalByClick,
+  expectOverlayOpen,
+  TERMINAL_DIALOG,
+} from "./fixtures";
+
+/**
+ * Every route passes the WCAG 2.1 AA rule set, on both breakpoints.
+ *
+ * The a11y coverage on this site is a set of hand-written rules, each added the
+ * day something specific broke: named landmarks, the pipe leaking into card
+ * accessible names, focus traps in the two overlays, target size. Each is
+ * sharper than a generic engine on the thing it owns, and they stay — but
+ * together they cover the handful of rules somebody thought to write, and
+ * nothing else. Nothing on the site checks form labels, ARIA attribute
+ * validity, duplicate ids, list structure, or colour contrast outside the two
+ * specific pairs `text-contrast.test.ts` pins.
+ *
+ * Standing this up while the site is clean is the point. Measured across all 25
+ * sitemap routes on 2026-08-09, axe-core 4.10 reports zero violations at
+ * wcag2a/wcag2aa/wcag21a/wcag21aa — so this starts green and its whole job is
+ * the next regression, not a backlog.
+ *
+ * Both Playwright projects matter, as in `target-size.spec.ts`: Navbar's
+ * `about()`/`writing()`/`contact()` row is `hidden md:flex` and only exists on
+ * desktop, while the `[menu]` overlay is mobile-only.
+ *
+ * `best-practice` is deliberately excluded. It is axe's non-normative advice
+ * (heading-order, region, landmark uniqueness), it moves between minor
+ * releases, and a CI gate that fails on a non-normative rule change is a gate
+ * that gets disabled. `landmarks-and-names.spec.ts` already pins the parts of
+ * that advice this site actually cares about, by hand and on purpose.
+ */
+
+const routes = htmlRoutesFromSitemap();
+
+const WCAG_AA = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
+
+/**
+ * The one route allowed to hand axe text it cannot measure.
+ *
+ * `/` sits on a gradient, so axe returns its copy as `incomplete` rather than
+ * judging it, and `gradient-contrast.spec.ts` measures those nodes by pixel
+ * instead. Every other route is flat and axe measures it outright — swept on
+ * 2026-08-16 across all 26 sitemap routes at both breakpoints: `/` produced 24
+ * unmeasured nodes at 1280px and 21 at 393px, the other 25 produced none at
+ * either width.
+ */
+const MEASURED_BY_PIXEL = "/";
+
+test.describe("every route passes axe at WCAG 2.1 AA", () => {
+  for (const route of routes) {
+    test(`${route} has no accessibility violations`, async ({ page }) => {
+      await page.goto(route);
+
+      // Scanned hydrated. The prerendered markup is what a crawler sees, but a
+      // reader using AT gets the live tree — that is where aria-expanded,
+      // dialog roles and focus management exist at all.
+      await expect(page.getByRole("navigation", { name: "Main" })).toBeVisible();
+
+      const { violations, incomplete } = await new AxeBuilder({ page }).withTags(WCAG_AA).analyze();
+
+      /*
+        A green `violations` list is not the same as axe having measured the
+        page, and until PRA-1023 this file treated it as if it were.
+
+        Text whose backdrop axe cannot resolve comes back `incomplete` instead,
+        and on `/` that quietly excused the whole page — hero `h1` through
+        footer — while a decorative particle drifted behind the subtitle and
+        took it under AA for part of every animation cycle. `/` is measured by
+        pixel now. This is what stops that from being a one-page patch: the day
+        a gradient lands on any other route, that route's copy stops being
+        checked by anything, and this is the only thing that would say so.
+      */
+      if (route !== MEASURED_BY_PIXEL) {
+        const unmeasured = unmeasuredContrastNodes(incomplete);
+        expect(
+          unmeasured,
+          `${route} at ${page.viewportSize()?.width}px gives axe ${unmeasured.length} text node(s) ` +
+            `it cannot measure the contrast of, so nothing checks them. Either flatten the ` +
+            `surface, or add the route to \`e2e/gradient-contrast.spec.ts\` so it is measured ` +
+            `by pixel the way \`/\` is:\n  ${unmeasured.join("\n  ")}`
+        ).toEqual([]);
+      }
+
+      const detail = violations
+        .map(
+          (v) =>
+            `[${v.impact}] ${v.id} — ${v.help}\n` +
+            v.nodes.map((n) => `      ${n.target.join(" ")}\n      ${n.html.slice(0, 140)}`).join("\n")
+        )
+        .join("\n  ");
+
+      expect(
+        violations.map((v) => v.id),
+        `${route} at ${page.viewportSize()?.width}px has ${violations.length} violation(s):\n  ${detail}`
+      ).toEqual([]);
+    });
+  }
+
+  /**
+   * The overlay exists only while it is open, so the per-route sweep never sees
+   * it — the same blind spot `target-size.spec.ts` calls out. It is also the
+   * one surface on the site that is pure controls plus a focus trap.
+   */
+  test("the open mobile menu passes axe", async ({ page }) => {
+    test.skip(
+      (page.viewportSize()?.width ?? 0) >= 768,
+      "the [menu] button is md:hidden, so there is no overlay to open on desktop"
+    );
+
+    await page.goto("/");
+    // A click rather than a bare toggle, because `setOpen` is React state and
+    // Playwright's actionability checks are what wait out hydration.
+    await openMobileMenu(page);
+
+    const { violations } = await new AxeBuilder({ page }).withTags(WCAG_AA).analyze();
+
+    expect(
+      violations.map((v) => v.id),
+      `the open mobile menu has ${violations.length} violation(s):\n  ${violations
+        .map((v) => `[${v.impact}] ${v.id} — ${v.help}`)
+        .join("\n  ")}`
+    ).toEqual([]);
+  });
+
+  /**
+   * The terminal was the other overlay-shaped blind spot, and unlike the menu
+   * it had never been scanned at all — not its `role="log"` live region, not
+   * its unlabelled-by-default command input, not the `aria-hidden` traffic-light
+   * button sitting next to a real one. PRA-912 is what surfaced the gap.
+   */
+  test("the open terminal passes axe", async ({ page }) => {
+    await page.goto("/");
+    await openTerminalByClick(page);
+
+    const { violations } = await new AxeBuilder({ page }).withTags(WCAG_AA).analyze();
+
+    expect(
+      violations.map((v) => v.id),
+      `the open terminal has ${violations.length} violation(s):\n  ${violations
+        .map((v) => `[${v.impact}] ${v.id} — ${v.help}`)
+        .join("\n  ")}`
+    ).toEqual([]);
+  });
+
+  /**
+   * The scan above opens the terminal and reads it as it lands: three welcome
+   * lines, well inside the `min-h-[200px]` floor. That is not yet a scroll
+   * container, so every rule about scroll containers was vacuous there —
+   * `scrollable-region-focusable` among them, and it was failing. The log had no
+   * `tabIndex` and no focusable descendant, so on WebKit nothing keyboard-driven
+   * could scroll it and the output above the fold was unreachable (PRA-1034).
+   *
+   * So this scans the state the reader actually reaches: a scrollback that has
+   * outgrown the panel. It is a separate test rather than more commands in the
+   * one above, because both states are worth scanning and the fresh one is what
+   * most visitors see.
+   *
+   * The overflow is asserted, not assumed. It is the whole precondition, and the
+   * way this rule went quiet the first time was by being pointed at a box that
+   * did not overflow — a silent, green failure that would repeat the moment the
+   * cap, the floor or the `help` text changed.
+   */
+  test("the terminal passes axe once the scrollback overflows", async ({ page }) => {
+    await page.goto("/");
+    await openTerminalByClick(page);
+
+    // The banner tells the reader to type `help`, and `help` lists these.
+    for (const command of ["help", "socials", "skills"]) {
+      await page.getByPlaceholder('type "help" to get started...').fill(command);
+      await page.keyboard.press("Enter");
+    }
+
+    const log = page.locator('[role="log"][aria-label="Terminal output"]');
+    const overflow = await log.evaluate((el) => el.scrollHeight - el.clientHeight);
+    expect(
+      overflow,
+      "the scrollback has to outgrow the log for this scan to mean anything"
+    ).toBeGreaterThan(0);
+
+    const { violations } = await new AxeBuilder({ page }).withTags(WCAG_AA).analyze();
+
+    expect(
+      violations.map((v) => v.id),
+      `the terminal with ${overflow}px of scrollback out of view has ` +
+        `${violations.length} violation(s):\n  ${violations
+          .map((v) => `[${v.impact}] ${v.id} — ${v.help}`)
+          .join("\n  ")}`
+    ).toEqual([]);
+
+    // Said once directly too: axe's rule is the reason this was caught, but the
+    // requirement is that a keyboard can reach the scroller, and that outlives
+    // any one rule id. Chromium synthesises a tab stop here even without the
+    // attribute, so only the attribute itself distinguishes the engines.
+    await expect(log).toHaveAttribute("tabindex", "0");
+  });
+
+  /**
+   * Both at once — reachable by Ctrl+K with the menu up, and a state no sweep
+   * saw before PRA-912. Two `aria-modal` dialogs is the shape axe cannot flag
+   * (there is no rule for it) but which everything downstream of it depends on,
+   * so `stacked-overlays.spec.ts` owns that assertion by hand and this scans
+   * for whatever else the pair produces — the covered overlay is `inert` here,
+   * which changes what is in the accessibility tree at all.
+   */
+  test("the terminal stacked over the mobile menu passes axe", async ({ page }) => {
+    test.skip(
+      (page.viewportSize()?.width ?? 0) >= 768,
+      "the [menu] button is md:hidden, so there is no menu to stack on"
+    );
+
+    await page.goto("/");
+    await openMobileMenu(page);
+    await page.keyboard.press("Control+k");
+    await expectOverlayOpen(page, TERMINAL_DIALOG);
+
+    const { violations } = await new AxeBuilder({ page }).withTags(WCAG_AA).analyze();
+
+    expect(
+      violations.map((v) => v.id),
+      `the stacked overlays have ${violations.length} violation(s):\n  ${violations
+        .map((v) => `[${v.impact}] ${v.id} — ${v.help}`)
+        .join("\n  ")}`
+    ).toEqual([]);
+  });
+
+  /**
+   * A fenced block wider than the phone.
+   *
+   * The route sweep above cannot catch this. `pre` is `overflow-x-auto`, so it
+   * only becomes a scroll container when a line does not fit — which depends on
+   * rendered pixel width, not on anything in the markdown. At 1280px a code
+   * sample fits and nothing scrolls; at 393px the same markup is a scrollable
+   * region, and one no keyboard can reach or pan fails WCAG 2.1.1. Worse, the
+   * sweep is vacuous either way: no merged post contains a fenced block at all,
+   * standalone ones having only become legal in #113. The first author to paste
+   * a shell command would have found out from CI, not from the page.
+   *
+   * So the block is rendered here rather than found on a route, by the same
+   * renderer the build uses — the assertion cannot drift from the markup that
+   * ships, and it does not wait on a post to exist. The scroll check in the
+   * middle is what keeps this from going quietly vacuous the way the sweep did.
+   */
+  test("a code sample wider than the phone stays reachable by keyboard", async ({ page }) => {
+    test.skip(
+      (page.viewportSize()?.width ?? 0) >= 768,
+      "at desktop width the sample fits, nothing scrolls, and there is no violation to catch"
+    );
+
+    await page.goto("/");
+
+    // The command from PRA-934's own verification section: ~95 monospace
+    // characters, and `pre` does not wrap, so it is far past 393px.
+    const html = renderMarkdownToHtml(
+      "```sh\nnpx playwright test e2e/a11y-axe.spec.ts --project=mobile-chrome --reporter=line\n```\n"
+    );
+    await page.evaluate((body) => {
+      const probe = document.createElement("div");
+      probe.id = "wide-code-probe";
+      probe.innerHTML = body;
+      document.body.appendChild(probe);
+    }, html);
+
+    const pre = page.locator("#wide-code-probe pre");
+    expect(
+      await pre.evaluate((el) => el.scrollWidth > el.clientWidth),
+      "the sample no longer overflows, so this test would pass without proving anything"
+    ).toBe(true);
+
+    // Tab order membership, not `focus()` — that is the assertion this test
+    // shipped with, and it passed against the unfixed renderer: Chrome grants
+    // programmatic focus to a scroll container whether or not any keyboard can
+    // get there. Being reachable by Tab is the thing the rule is about, and it
+    // holds whichever id the engine files the violation under.
+    expect(await pre.evaluate((el) => el.tabIndex)).toBeGreaterThanOrEqual(0);
+
+    const { violations } = await new AxeBuilder({ page })
+      .withTags(WCAG_AA)
+      .include("#wide-code-probe")
+      .analyze();
+
+    expect(
+      violations.map((v) => v.id),
+      `a wide code block has ${violations.length} violation(s):\n  ${violations
+        .map((v) => `[${v.impact}] ${v.id} — ${v.help}`)
+        .join("\n  ")}`
+    ).toEqual([]);
+  });
+
+  /**
+   * Control: axe is actually running and can fail.
+   *
+   * Every assertion above is an empty-array check, which is exactly what a
+   * silently broken scanner also produces — a bad selector, a version that
+   * stopped injecting, a `withTags` typo narrowing to nothing. This injects two
+   * unambiguous violations and requires the engine to name both.
+   */
+  test("the scanner reports violations when they exist", async ({ page }) => {
+    await page.goto("/");
+    await page.evaluate(() => {
+      const probe = document.createElement("div");
+      probe.id = "axe-control-probe";
+      probe.innerHTML = '<img src="/favicon-32.png"><button></button>';
+      document.body.appendChild(probe);
+    });
+
+    const { violations } = await new AxeBuilder({ page })
+      .withTags(WCAG_AA)
+      .include("#axe-control-probe")
+      .analyze();
+
+    expect(violations.map((v) => v.id).sort()).toEqual(["button-name", "image-alt"]);
+  });
+});

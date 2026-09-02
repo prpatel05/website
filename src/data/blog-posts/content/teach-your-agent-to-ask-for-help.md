@@ -34,7 +34,7 @@ The last clause is the important one. The agent's confidence isn't a signal you 
 
 ## The Agent's Confidence Is Not Evidence
 
-Here is the arithmetic that should end the "just let it decide" argument. Chain three agents together, each reporting 90 percent confidence but actually running around 75 percent accurate. Every step has to land for the chain to land, so the accuracies multiply: 0.75 × 0.75 × 0.75 ≈ 0.42. Three steps in, real end-to-end reliability is roughly 42 percent.
+Here is the arithmetic that should end the "just let it decide" argument. Chain three agents together, each reporting 90 percent confidence but actually running around 75 percent accurate. Every step has to land for the chain to land, so the accuracies multiply: 0.75 × 0.75 × 0.75, which is just over 0.42. Three steps in, real end-to-end reliability is roughly 42 percent.
 
 The agent will tell you it's 90 percent sure. The system is a coin flip. And it will report that 90 percent with exactly the same fluent, self-assured tone whether it's right or catastrophically wrong.
 

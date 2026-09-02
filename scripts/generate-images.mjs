@@ -1,14 +1,20 @@
 /**
- * Emits the derived raster variants the site loads: the archive-card
+ * Emits the derived raster variants the site serves: the archive-card
  * thumbnails in public/images/thumbs/, the column-width post heroes in
- * public/images/hero/, and the homepage portrait in public/images/portrait/.
+ * public/images/hero/, the homepage portrait in public/images/portrait/, and
+ * the per-post social cards in public/images/social/.
  *
- * All three exist for the same reason. The blog archive paints each hero into
- * a 128x96 box but loaded the full 1200x670 asset to do it — about 1.0MB
- * across the archive. The post page paints that same asset into a 704px
+ * The first three exist for the same reason. The blog archive paints each
+ * hero into a 128x96 box but loaded the full 1200x670 asset to do it — about
+ * 1.0MB across the archive. The post page paints that same asset into a 704px
  * column. The homepage paints a 556x556, 341KB PNG portrait into a 288px box,
  * and ships it to phones where that box is `hidden`. This resizes each source
  * once per width and the components point at the results.
+ *
+ * The social card is here for a different reason: not bytes, but format. The
+ * hero master is WebP, which LinkedIn's image spec does not list, so the card
+ * a scraper reads is emitted separately as JPEG. Nothing the browser loads
+ * changes. See scripts/social.mjs.
  *
  * Wired into `bun run dev` and `bun run build` rather than run by hand. New
  * posts land through an unattended auto-merge routine, so a hand-run step
@@ -30,6 +36,7 @@ import {
   PORTRAIT_SOURCE,
   portraitTargets,
 } from "./portrait.mjs";
+import { SOCIAL_QUALITY, socialTargets } from "./social.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = join(here, "..", "public");
@@ -48,8 +55,12 @@ let skipped = 0;
 /**
  * Resizes one source into its targets, skipping any output already newer than
  * the source it came from.
+ *
+ * `encode` is how the social card gets out as JPEG while everything else stays
+ * WebP; a target carrying a `height` is cropped to that box rather than being
+ * scaled by width alone.
  */
-async function emit({ source, targets, quality, describe }) {
+async function emit({ source, targets, quality, describe, encode }) {
   const sourcePath = join(PUBLIC_DIR, source.slice(1));
   const sourceMtime = mtimeOrNull(sourcePath);
 
@@ -57,7 +68,7 @@ async function emit({ source, targets, quality, describe }) {
     throw new Error(`${describe} points at a missing asset: ${source}`);
   }
 
-  for (const { width, publicPath } of targets) {
+  for (const { width, height, publicPath } of targets) {
     const output = join(PUBLIC_DIR, publicPath.slice(1));
     const outputMtime = mtimeOrNull(output);
 
@@ -68,12 +79,18 @@ async function emit({ source, targets, quality, describe }) {
 
     mkdirSync(dirname(output), { recursive: true });
 
-    await sharp(sourcePath)
+    const resized = sharp(sourcePath).resize({
+      width,
       // A source narrower than the target keeps its own width rather than
-      // being upscaled into bytes that carry no detail.
-      .resize({ width, withoutEnlargement: true })
-      .webp({ quality, effort: 6 })
-      .toFile(output);
+      // being upscaled into bytes that carry no detail. A card names both
+      // dimensions, so it crops to the box instead — `withoutEnlargement`
+      // would leave it the master's taller aspect and defeat the point.
+      ...(height ? { height, fit: "cover" } : { withoutEnlargement: true }),
+    });
+
+    await (encode ? encode(resized, quality) : resized.webp({ quality, effort: 6 })).toFile(
+      output
+    );
 
     written += 1;
   }
@@ -111,6 +128,16 @@ for (const post of posts) {
     targets: heroTargets(post.image),
     quality: HERO_QUALITY,
     describe: post.slug,
+  });
+
+  // The card a scraper reads, which is deliberately not the hero: LinkedIn's
+  // image spec does not list WebP. See scripts/social.mjs.
+  await emit({
+    source: post.image,
+    targets: socialTargets(post.image),
+    quality: SOCIAL_QUALITY,
+    describe: post.slug,
+    encode: (pipeline, quality) => pipeline.jpeg({ quality, mozjpeg: true }),
   });
 }
 

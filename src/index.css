@@ -1,4 +1,7 @@
-/* Google Fonts are linked from index.html, not @import-ed here — see the comment there. */
+/* Fonts are self-hosted — see src/styles/fonts.css for why, and index.html for
+   the preload that starts the two above-the-fold files with the preload scanner. */
+@import "./styles/fonts.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -54,6 +57,20 @@
     @apply border-border;
   }
 
+  /*
+    The navbar is `fixed` and 64px tall, so it covers the top of the scrollport
+    at every scroll position. Without this, the browser's own "is it already in
+    view?" test counts that covered band as visible: a Shift+Tab onto a focus
+    target sitting there scrolls nothing, and the focus ring ends up *entirely*
+    behind the nav — WCAG 2.2 SC 2.4.11 Focus Not Obscured (Minimum), level AA.
+    scroll-padding-top takes the nav out of the viewing region, so the browser
+    scrolls the target clear of it instead of deciding it has nothing to do.
+    5rem is the 64px nav plus breathing room. See PRA-975.
+  */
+  html {
+    scroll-padding-top: 5rem;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-mono);
@@ -61,6 +78,18 @@
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
+  }
+
+  /*
+    <main> carries tabIndex={-1} so the skip link can actually move focus in
+    Safari, which only focuses fragment targets that are focusable. That makes it
+    programmatically focusable but never keyboard-reachable, so a focus ring
+    around the entire page would be noise — the skip link itself is the visible
+    affordance. Scoped to :focus, not :focus-visible: this element is only ever
+    focused by script, which is exactly the case :focus-visible suppresses.
+  */
+  main:focus {
+    outline: none;
   }
 
   ::selection {
@@ -161,5 +190,128 @@
   .cursor-blink,
   .glitch-hover:hover {
     animation: none;
+  }
+}
+
+/*
+ * Paper is white and the palette above is not. Every colour in `:root` is
+ * chosen against `--background: 220 15% 5%`, and the default Print / Save as
+ * PDF drops backgrounds — so without this block the sheet keeps the ink and
+ * loses the surface it was picked for.
+ *
+ * The damage was not uniform, which is what made it easy to miss. Chrome's
+ * print path darkens *achromatic* text on its own: the body's
+ * `rgb(157,163,175)` reached paper as `rgb(81,84,90)`, a comfortable 7.59:1,
+ * so a printed post looked broadly fine. It leaves saturated colour exactly as
+ * authored, so `--primary: 160 100% 50%` printed as literal `rgb(0,255,170)` —
+ * 1.32:1 — and every link, `em`, `strong` and heading went with it. The prose
+ * survived and the emphasis did not, which inverts what the author marked as
+ * load-bearing (PRA-1063).
+ *
+ * Re-declaring the tokens rather than restyling elements is what keeps this
+ * from drifting: the whole design system reads these, so a component added
+ * later prints correctly without knowing this block exists. The one thing
+ * tokens cannot reach is an alpha modifier — `text-primary/60` composites
+ * toward the *paper*, so a darker `--primary` still landed at 2.75:1. Those
+ * three sites carry `print:text-primary` in the markup instead.
+ *
+ * Measured through `page.pdf({format:"Letter", printBackground:false})` and
+ * read back off the rasterized sheet: `h1`/`h2`/`strong` 2.50:1 -> 16.88:1,
+ * links 1.32:1 -> 6.98:1, subtitle 1.15:1 -> 10.17:1, chips 1.19:1 -> 6.30:1.
+ * `e2e/print-contrast.spec.ts` is the gate.
+ *
+ * Every figure on that line is ink against *paper*, and the last one is the
+ * reason to say so out loud. "chips 1.19:1 -> 6.30:1" reports the inline code
+ * chip as fixed, and by that measure it is — but the chip's cue was never its
+ * ink, it was its fill, and `--muted` going white below takes the fill with it.
+ * On paper the span landed 1.75:1 from the prose beside it in the same family,
+ * size and weight, so a field name read as the English word. A number that
+ * answers the wrong question is worse than no number: it is what kept the loss
+ * invisible from inside the suite. The chip now carries a `print:border` and
+ * `print-contrast.spec.ts` has a third sweep that compares a run of ink to the
+ * ink around it rather than to the sheet (PRA-1086).
+ */
+@media print {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 220 15% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 15% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 15% 12%;
+
+    /* Dark enough that `text-primary` clears AA at body size, and dark enough
+     * again that the `border-l-2 border-primary` rule on an `h2` still reads
+     * as a rule rather than a smudge. */
+    --primary: 165 100% 20%;
+
+    --secondary: 0 0% 100%;
+    --secondary-foreground: 220 15% 12%;
+
+    --muted: 0 0% 100%;
+    --muted-foreground: 220 12% 28%;
+
+    --accent: 280 60% 32%;
+
+    /*
+     * 65% here printed at 2.53:1 against paper. That is fine for the hairline
+     * round a code sample, and not fine for the post cards on `/blog/`: their
+     * `bg-card` is white on paper like every other fill, so this border is the
+     * only thing telling the reader where one card's link ends and the next
+     * one starts — 1.4.11's "required to identify a UI component", carried
+     * entirely by a colour that reads as a smudge. 58% puts it at 3.19:1.
+     * Darkening the token rather than exempting the cards is deliberate: the
+     * borders that did not need it are hairlines, and a slightly darker
+     * hairline costs a reader nothing (PRA-1073).
+     */
+    --border: 220 10% 58%;
+
+    /*
+     * There are no filled surfaces on paper — every `--*-background` and
+     * `--card`/`--muted`/`--secondary` above is white for that reason — so the
+     * `*-foreground` pair of a fill has to be ink, not the knocked-out white it
+     * is on screen. The home page's primary CTA is the case that proves it:
+     * `bg-primary text-primary-foreground` with the fill dropped printed white
+     * on white, 1.00:1, an entirely blank button. A component that genuinely
+     * wants a fill on paper opts in with `print-color-adjust`, and then owns
+     * picking a foreground for it.
+     */
+    --primary-foreground: 220 15% 12%;
+    --accent-foreground: 220 15% 12%;
+  }
+
+  /*
+   * A `text-shadow` is not a background, so `printBackground: false` does not
+   * drop it — it is ink. The post subtitle's 20px/40px accent glow printed as
+   * a solid purple wash ~40k px in area with the glyphs at 1.15:1 *inside* it,
+   * bleeding to x=1: past the 0.4in printer margin, into the edge the hardware
+   * cannot reach. Same reasoning for `box-glow`, and for the two decorative
+   * background-images, which only cost toner when a reader ticks "Background
+   * graphics" — the setting that also took page 2 to 97.61% dark coverage.
+   */
+  .text-glow,
+  .text-glow-accent {
+    text-shadow: none;
+  }
+
+  .box-glow {
+    box-shadow: none;
+  }
+
+  .grid-bg,
+  .scanline {
+    background-image: none;
+  }
+
+  /*
+   * A `position: fixed` element paints on every printed sheet, not just the
+   * first. The navbar put `← cd ~` and its border rule at the top of all five
+   * pages of an 8-minute post — dead ink, and a control nothing on paper can
+   * follow.
+   */
+  nav[aria-label="Main"] {
+    display: none;
   }
 }

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
@@ -67,12 +67,30 @@ vi.mock("@/data/blog-posts/registry", async (importOriginal) => {
   return { ...actual, posts: testPosts };
 });
 
-function renderBlog() {
+function renderBlog(path = "/blog/") {
   return render(
-    <MemoryRouter initialEntries={["/blog"]}>
+    <MemoryRouter initialEntries={[path]}>
       <Blog />
     </MemoryRouter>
   );
+}
+
+/**
+ * The thumbnail on the card whose heading is `heading`.
+ *
+ * These used to be found with `img[alt="<title>"]`, which only worked because
+ * the alt was the title — the duplicate-announcement defect itself. The alt is
+ * empty now, so the card has to be identified by the text a reader actually
+ * gets, and the image found relative to it.
+ */
+function thumbnailForHeading(container: HTMLElement, heading: string) {
+  const card = Array.from(container.querySelectorAll("article")).find(
+    (article) => article.querySelector("h2")?.textContent?.trim() === heading
+  );
+  if (!card) throw new Error(`no archive card headed "${heading}"`);
+  const img = card.querySelector("img");
+  if (!img) throw new Error(`card "${heading}" has no thumbnail`);
+  return img;
 }
 
 function blogJsonLd(container: HTMLElement) {
@@ -104,11 +122,20 @@ describe("Blog archive", () => {
       (a) => a.getAttribute("href")
     );
 
-    expect(hrefs).toEqual([
-      // The bare origin is the one path served without a redirect.
-      "/",
-      ...testPosts.map((post) => `/blog/${post.slug}/`),
-    ]);
+    expect(hrefs).toContain("/");
+    expect(hrefs).toContain("/blog/");
+    for (const post of testPosts) {
+      expect(hrefs).toContain(`/blog/${post.slug}/`);
+      for (const tag of post.tags) {
+        expect(hrefs).toContain(`/blog/?tag=${tag}`);
+      }
+    }
+    for (const href of hrefs) {
+      const path = href.split("?")[0];
+      if (path !== "/") {
+        expect(path.endsWith("/")).toBe(true);
+      }
+    }
   });
 
   // Guard for the defect: the archive was the only page on the site emitting no
@@ -180,14 +207,30 @@ describe("Blog archive", () => {
     expect(crumbs.itemListElement.map((c: { name: string }) => c.name)).toEqual(["Home", "Blog"]);
   });
 
+  it("dates and languages each listed BlogPosting", () => {
+    const { container } = renderBlog();
+    const blog = blogJsonLd(container).find((n) => n["@type"] === "Blog");
+
+    expect(blog.blogPost.length).toBe(testPosts.length);
+    for (const posting of blog.blogPost) {
+      expect(posting.dateModified).toBe(posting.datePublished);
+      expect(posting.inLanguage).toBe("en");
+      expect(posting.mainEntityOfPage).toEqual({
+        "@type": "WebPage",
+        "@id": posting.url,
+      });
+    }
+  });
+
   // The card paints a 128x96 box. Pointing it at the 1200x670 hero shipped
   // roughly 200x the pixels it displays — about 1.0MB across the archive — so
   // it has to ask for the thumbnail the build emits instead.
   it("paints the card from the generated thumbnail, not the full hero", () => {
     const { container } = renderBlog();
-    const thumb = container.querySelector<HTMLImageElement>(
-      'img[alt="Second Post"]'
-    );
+    // Selected by the card's heading rather than the image's alt: the alt is
+    // deliberately empty (the thumbnails are decorative), so there is nothing
+    // on the <img> itself that identifies which post it belongs to.
+    const thumb = thumbnailForHeading(container, "Second Post");
 
     expect(thumb.getAttribute("src")).toBe("/images/thumbs/second-320w.webp");
     expect(thumb.getAttribute("srcset")).toBe(
@@ -196,13 +239,41 @@ describe("Blog archive", () => {
     expect(thumb.getAttribute("sizes")).toBe(THUMBNAIL_SIZES);
   });
 
+  /**
+   * The thumbnails used to carry `alt={post.title}` — byte-identical to the
+   * `<h2>` eighteen lines below, on 24 of 24 cards — so a screen reader read
+   * the title, then the identical title again as the description of the
+   * picture. 48 announcements to get through 24 links.
+   *
+   * BlogPost.tsx had already fixed exactly this for the full-size hero cropped
+   * from the same master; the archive was missed. Asserted per card rather than
+   * on one sample, because the defect was that it held for every one of them.
+   */
+  it("does not repeat each card's title as its thumbnail's alt", () => {
+    const { container } = renderBlog();
+    const cards = Array.from(container.querySelectorAll("article"));
+
+    // Positive control: there are cards with both parts to compare.
+    expect(cards.length).toBe(testPosts.length);
+
+    for (const card of cards) {
+      const heading = card.querySelector("h2")?.textContent?.trim();
+      const img = card.querySelector("img");
+
+      expect(img, `card "${heading}" has no thumbnail`).not.toBeNull();
+      // Empty, not absent: an empty alt is what takes a decorative image out of
+      // the accessibility tree, while a missing one makes the reader fall back
+      // to announcing the filename.
+      expect(img!.getAttribute("alt")).toBe("");
+      expect(img!.getAttribute("alt")).not.toBe(heading);
+    }
+  });
+
   // A hero the build does not own has no thumbnail to point at, so the card
   // keeps the original rather than requesting a file that will never exist.
   it("falls back to the hero when there is no thumbnail for it", () => {
     const { container } = renderBlog();
-    const remote = container.querySelector<HTMLImageElement>(
-      'img[alt="First Post"]'
-    );
+    const remote = thumbnailForHeading(container, "First Post");
 
     expect(remote.getAttribute("src")).toBe("https://cdn.example.com/first.png");
     expect(remote.getAttribute("srcset")).toBeNull();
@@ -223,5 +294,56 @@ describe("Blog archive", () => {
     expect(meta("og:type")).toBe("website");
     expect(meta("article:published_time")).toBeUndefined();
     expect(meta("article:author")).toBeUndefined();
+  });
+
+  it("links the series hub from a discreet archive entry", () => {
+    renderBlog();
+    const entry = screen.getByRole("link", { name: /series · Agent reliability/i });
+    expect(entry).toHaveAttribute("href", "/blog/series/agent-reliability/");
+    // Kept outside the filter landmark on purpose — it is not a tag chip.
+    expect(
+      screen.getByRole("navigation", { name: "Filter by tag" })
+    ).not.toContainElement(entry);
+  });
+
+  it("derives filter chips from the posts rather than a hardcoded list", () => {
+    renderBlog();
+    const filter = screen.getByRole("navigation", { name: "Filter by tag" });
+    expect(filter).toHaveTextContent("#agents");
+    expect(filter).toHaveTextContent("#testing");
+    expect(filter).toHaveTextContent("#vitest");
+    expect(filter).not.toHaveTextContent("#not-a-tag");
+  });
+
+  it("filters the archive when the URL carries ?tag=", async () => {
+    renderBlog("/blog/?tag=agents");
+    await waitFor(() => {
+      expect(screen.getByText("Second Post")).toBeInTheDocument();
+      expect(screen.queryByText("First Post")).not.toBeInTheDocument();
+    });
+    const filter = screen.getByRole("navigation", { name: "Filter by tag" });
+    expect(filter.querySelector('[aria-current="page"]')?.textContent).toBe("#agents");
+  });
+
+  it("shows an empty state and a clear link for an unknown tag", async () => {
+    renderBlog("/blog/?tag=not-a-tag");
+    await waitFor(() => {
+      expect(screen.getByText("No posts tagged #not-a-tag.")).toBeInTheDocument();
+    });
+    expect(screen.queryByText("Second Post")).not.toBeInTheDocument();
+    expect(screen.queryByText("First Post")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "show all posts" })).toHaveAttribute(
+      "href",
+      "/blog/"
+    );
+  });
+
+  it("turns archive chips into shareable filter links", () => {
+    renderBlog();
+    const chips = screen.getAllByRole("link", { name: "#agents" });
+    expect(chips.length).toBeGreaterThan(0);
+    for (const chip of chips) {
+      expect(chip).toHaveAttribute("href", "/blog/?tag=agents");
+    }
   });
 });

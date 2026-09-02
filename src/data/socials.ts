@@ -1,4 +1,4 @@
-import { Github, Linkedin, Twitter, BookOpen, Code2 } from "lucide-react";
+import { Github, Linkedin, Twitter, BookOpen, Code2, Newspaper } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 export interface SocialLink {
@@ -12,6 +12,7 @@ export const socials: SocialLink[] = [
   { name: "LinkedIn", url: "https://www.linkedin.com/in/prpatel05/", icon: Linkedin, handle: "linkedin.com/in/prpatel05" },
   { name: "GitHub", url: "https://github.com/prpatel05", icon: Github, handle: "github.com/prpatel05" },
   { name: "Medium", url: "https://medium.com/@prpatel05", icon: BookOpen, handle: "medium.com/@prpatel05" },
+  { name: "Substack", url: "https://prpatel05.substack.com", icon: Newspaper, handle: "prpatel05.substack.com" },
   { name: "X", url: "https://x.com/prpatel05", icon: Twitter, handle: "x.com/prpatel05" },
   { name: "Dev.to", url: "https://dev.to/prpatel05", icon: Code2, handle: "dev.to/prpatel05" },
 ];
