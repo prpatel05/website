@@ -14,46 +14,15 @@
  * preload scanner actually sees in production only exists in dist/.
  */
 import { chromium, devices } from "playwright";
-import { createServer } from "http";
-import { readFileSync, existsSync, statSync } from "fs";
-import { join, dirname } from "path";
-import { fileURLToPath } from "url";
 import { discoverPostSlugs } from "./blog-posts.mjs";
-
-const DIST = join(dirname(fileURLToPath(import.meta.url)), "..", "dist");
+import { serveDist } from "./static-dist-server.mjs";
 
 // Every post page renders the same hero markup, so one is enough to prove the
 // wiring. Taken from discovery rather than named here, so deleting a post
 // cannot leave this pointed at a page that no longer exists.
 const SLUG = process.argv[2] ?? discoverPostSlugs()[0];
 
-const server = createServer((req, res) => {
-  const url = req.url.split("?")[0];
-  let filePath = join(DIST, url === "/" ? "index.html" : url);
-  // A post URL is a directory on disk. Serving the directory itself reads as a
-  // 404 with no scripts, and every hero count comes back a convincing zero.
-  const isDir = existsSync(filePath) && statSync(filePath).isDirectory();
-  if (!existsSync(filePath) || isDir) {
-    const indexPath = join(filePath, "index.html");
-    filePath = existsSync(indexPath) ? indexPath : join(DIST, "index.html");
-  }
-  try {
-    const body = readFileSync(filePath);
-    const ext = filePath.split(".").pop();
-    res.writeHead(200, {
-      "Content-Type":
-        { html: "text/html", js: "application/javascript", css: "text/css", webp: "image/webp", png: "image/png", svg: "image/svg+xml", xml: "application/xml", json: "application/json" }[ext] ??
-        "application/octet-stream",
-    });
-    res.end(body);
-  } catch {
-    res.writeHead(404);
-    res.end("Not found");
-  }
-});
-
-await new Promise((r) => server.listen(0, r));
-const base = `http://localhost:${server.address().port}`;
+const { base, close } = await serveDist();
 
 const cases = [
   { name: "desktop 1x (1280w, dpr 1)", opts: { viewport: { width: 1280, height: 900 }, deviceScaleFactor: 1 } },
@@ -93,6 +62,6 @@ for (const { name, opts } of cases) {
 }
 
 await browser.close();
-server.close();
+close();
 
 process.exit(failed ? 1 : 0);

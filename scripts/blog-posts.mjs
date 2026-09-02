@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "fs";
+import { existsSync, readdirSync, readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import ts from "typescript";
@@ -27,10 +27,12 @@ function getPropertyName(name) {
   return null;
 }
 
-// Reads the string-valued fields off the exported post object. `content` is a
-// template literal rather than a plain string, so it is deliberately not
-// readable here — the feed summarises posts from `subtitle` instead.
-function findPostFields(filePath, fields) {
+// Reads the string-valued fields off the exported post object, plus string
+// arrays (`tags`). Bodies live in content/<slug>.md now — see
+// `postBodyMarkdown` — so they are not read off the object. Fields listed in
+// `optional` are returned when present and simply omitted when absent, rather
+// than failing the build.
+function findPostFields(filePath, fields, optional = []) {
   const sourceFile = ts.createSourceFile(
     filePath,
     readFileSync(filePath, "utf-8"),
@@ -38,7 +40,7 @@ function findPostFields(filePath, fields) {
     true,
     ts.ScriptKind.TS
   );
-  const wanted = new Set(fields);
+  const wanted = new Set([...fields, ...optional]);
   const found = {};
 
   function visit(node) {
@@ -49,14 +51,17 @@ function findPostFields(filePath, fields) {
       ts.isObjectLiteralExpression(node.initializer)
     ) {
       for (const property of node.initializer.properties) {
-        if (
-          ts.isPropertyAssignment(property) &&
-          ts.isStringLiteralLike(property.initializer)
-        ) {
+        if (ts.isPropertyAssignment(property)) {
           const name = getPropertyName(property.name);
 
-          if (name && wanted.has(name)) {
+          if (!name || !wanted.has(name)) continue;
+
+          if (ts.isStringLiteralLike(property.initializer)) {
             found[name] = property.initializer.text;
+          } else if (ts.isArrayLiteralExpression(property.initializer)) {
+            found[name] = property.initializer.elements
+              .filter((element) => ts.isStringLiteralLike(element))
+              .map((element) => element.text);
           }
         }
       }
@@ -91,6 +96,12 @@ function postFilePaths() {
   return postFiles.map((name) => join(BLOG_POSTS_DIR, name));
 }
 
+// Mirrors src/lib/post-description.ts for the Node scripts, which run outside
+// Vite and cannot import the app's TypeScript.
+export function postDescription(post) {
+  return post.description?.trim() || post.subtitle;
+}
+
 export function discoverPostSlugs() {
   return postFilePaths().map(
     (filePath) => findPostFields(filePath, ["slug"]).slug
@@ -102,16 +113,23 @@ export function discoverPostSlugs() {
 export function discoverPosts() {
   return postFilePaths()
     .map((filePath) =>
-      findPostFields(filePath, [
-        "slug",
-        "title",
-        "subtitle",
-        "dateISO",
-        "image",
-      ])
+      findPostFields(
+        filePath,
+        ["slug", "title", "subtitle", "dateISO", "image"],
+        ["description", "tags"]
+      )
     )
     .sort(
       (a, b) =>
         b.dateISO.localeCompare(a.dateISO) || a.slug.localeCompare(b.slug)
     );
+}
+
+// Bodies live beside the metadata as markdown. The feed reads them here so it
+// can emit content:encoded without importing the Vite registry, and so a
+// fixture without a .md file still publishes — it just has no encoded body.
+export function postBodyMarkdown(slug) {
+  const filePath = join(BLOG_POSTS_DIR, "content", `${slug}.md`);
+  if (!existsSync(filePath)) return null;
+  return readFileSync(filePath, "utf-8");
 }

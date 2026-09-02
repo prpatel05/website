@@ -51,6 +51,7 @@ That question, the one that redirects a month of misguided work, is worth more t
 A simple way to think about it:
 
 **Individual output** = what you ship yourself.
+
 **Multiplier effect** = how much better you make everyone around you.
 
 A team of 10 engineers where one person has a 2x multiplier effect is more productive than a team of 10 where one person writes 2x the code. Because the multiplier raises everyone. The individual just raises themselves.

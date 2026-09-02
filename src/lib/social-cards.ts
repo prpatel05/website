@@ -20,8 +20,54 @@ export const SITE_CARD = {
   height: 630,
 } as const;
 
-/** Every blog card is generated at this size; a post that isn't fails the test. */
+/**
+ * Where the per-post cards land. They are derived from the hero masters by
+ * scripts/generate-images.mjs and gitignored, like every other variant.
+ */
+export const SOCIAL_DIR = "/images/social";
+
+/**
+ * Every post card is emitted at this size — the 1.91:1 that Facebook,
+ * LinkedIn, X, Slack and Discord all render without cropping. The hero masters
+ * it is cropped from are 1200x670 (1.79:1).
+ */
 export const BLOG_POST_CARD = {
   width: 1200,
-  height: 670,
+  height: 630,
 } as const;
+
+const LOCAL_IMAGE = /^\/images\/(.+)\.(?:webp|png|jpe?g)$/;
+
+/**
+ * The card a scraper should read for a post, which is deliberately not the
+ * post's hero.
+ *
+ * The heroes are WebP because that is right for the bytes the page paints. It
+ * is wrong for `og:image`: LinkedIn's published image spec lists JPG, PNG and
+ * GIF and does not include WebP, and LinkedIn is where these posts go. The
+ * homepage card was already a PNG; only the posts handed scrapers the WebP
+ * master. So the build emits a JPEG card per hero and the post page names that
+ * in its meta tags, while the <img> keeps its WebP srcSet — nothing the
+ * browser loads changes.
+ *
+ * The path derivation is repeated in scripts/social.mjs, because the post page
+ * renders in the app bundle and the generator runs in Node. social-cards.test
+ * fails if the two ever disagree.
+ *
+ * Returns null for a hero the build does not own — a remote one, or a format
+ * the generator is not asked to read. Callers fall back to the master, which
+ * is what they shipped before this existed.
+ */
+export function blogPostCardFor(image: string) {
+  const match = LOCAL_IMAGE.exec(image);
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    path: `${SOCIAL_DIR}/${match[1]}.jpg`,
+    width: BLOG_POST_CARD.width,
+    height: BLOG_POST_CARD.height,
+  };
+}

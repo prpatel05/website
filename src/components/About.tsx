@@ -1,4 +1,5 @@
 import { m } from "framer-motion";
+import { useEntrance } from "@/hooks/useEntrance";
 import { useParallax } from "@/hooks/useParallax";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import SectionHeader from "./SectionHeader";
@@ -22,6 +23,7 @@ const stats = [
 
 const About = () => {
   const { ref, scrollYProgress, sectionOpacity } = useScrollAnimation();
+  const entrance = useEntrance();
 
   const leftX = useParallax(scrollYProgress, [0, 0.4], ["-60px", "0px"]);
   const rightX = useParallax(scrollYProgress, [0, 0.4], ["60px", "0px"]);
@@ -37,7 +39,7 @@ const About = () => {
           {/* Left - bio with parallax slide-in */}
           <m.div style={{ x: leftX }}>
             <m.div
-              initial={{ opacity: 0, y: 30 }}
+              initial={entrance({ opacity: 0, y: 30 })}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.2 }}
@@ -74,11 +76,24 @@ const About = () => {
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-6">
+              {/*
+                Four-up needs a tile wide enough for the longest label:
+                `companies_built` paints a 97.5px run at `text-[10px]` and
+                cannot break, so it wants ~114px of tile once the border and
+                padding are paid for. Below `lg` the stats own the full
+                container and get 132px at the narrowest. At `lg` the section
+                splits into two columns and the tile drops to 100px, which put
+                the label 14.5px past the card's right border — the tile does
+                not clip, so it painted straight over it. The column only grows
+                back past ~1150px, so hold two-up across that band and restore
+                four-up at `xl`, where the container has hit its 1200px cap and
+                the tile is at its widest 122px.
+              */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mt-6">
                 {stats.map((stat, i) => (
                   <m.div
                     key={stat.label}
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={entrance({ opacity: 0, y: 20 })}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: 0.4 + i * 0.1, duration: 0.5 }}
@@ -99,7 +114,7 @@ const About = () => {
           {/* Right - skills with parallax slide-in */}
           <m.div style={{ x: rightX }}>
             <m.div
-              initial={{ opacity: 0, y: 30 }}
+              initial={entrance({ opacity: 0, y: 30 })}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.3 }}
@@ -115,7 +130,7 @@ const About = () => {
                   {skills.map((skill, i) => (
                     <m.div
                       key={skill.name}
-                      initial={{ opacity: 0, x: 20 }}
+                      initial={entrance({ opacity: 0, x: 20 })}
                       whileInView={{ opacity: 1, x: 0 }}
                       viewport={{ once: true }}
                       transition={{ delay: 0.4 + i * 0.08, duration: 0.4 }}
@@ -124,13 +139,27 @@ const About = () => {
                         <span className="font-mono text-xs text-foreground/80">{skill.name}</span>
                         <span className="font-mono text-xs text-primary">{skill.level}%</span>
                       </div>
-                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                      {/*
+                        The track is a background colour and the fill below is a gradient
+                        (a background *image*). Forced colours flatten the first to Canvas
+                        and remove the second outright, so all seven bars render as empty
+                        space. Re-draw the meter in system colours: an outlined track and a
+                        Highlight fill. See PRA-998.
+                      */}
+                      <div className="h-1.5 bg-muted rounded-full overflow-hidden forced-colors:border forced-colors:border-[CanvasText]">
                         <m.div
-                          initial={{ width: 0 }}
+                          // Every other `entrance` call animates opacity or a transform, whose
+                          // CSS default is already the resting state — so suppressing `initial`
+                          // leaves the prerendered markup correct. `width` has no such default:
+                          // with no inline style the bar fills its track, so every skill read
+                          // 100% until hydration scrolled it into view. Keep the resting width
+                          // in `style` and let the animation override it when it does run.
+                          style={{ width: `${skill.level}%` }}
+                          initial={entrance({ width: 0 })}
                           whileInView={{ width: `${skill.level}%` }}
                           viewport={{ once: true }}
                           transition={{ delay: 0.6 + i * 0.08, duration: 0.8, ease: "easeOut" }}
-                          className="h-full bg-gradient-to-r from-primary to-accent rounded-full"
+                          className="h-full bg-gradient-to-r from-primary to-accent rounded-full forced-colors:bg-[Highlight]"
                         />
                       </div>
                     </m.div>

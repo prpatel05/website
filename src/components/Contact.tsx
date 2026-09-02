@@ -1,14 +1,54 @@
 import { m } from "framer-motion";
 import { Mail, Phone } from "lucide-react";
 import { socials } from "@/data/socials";
+import { useEntrance, useEntranceGate } from "@/hooks/useEntrance";
 import { useParallax } from "@/hooks/useParallax";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import SectionHeader from "./SectionHeader";
+
+/**
+ * One social tile. Its own component so it can own its own entrance gate — a
+ * hook cannot be called from inside the `map` below.
+ */
+const SocialLink = ({
+  social,
+  index,
+}: {
+  social: (typeof socials)[number];
+  index: number;
+}) => {
+  const entrance = useEntrance();
+  const gate = useEntranceGate();
+
+  return (
+    <m.a
+      href={social.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      {...gate}
+      initial={entrance({ opacity: 0, scale: 0.8, y: 20 })}
+      whileInView={{ opacity: 1, scale: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: 0.4 + index * 0.07, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+      className="group flex flex-col items-center gap-2 border border-border bg-card p-4 hover:border-primary/40 hover:box-glow transition-all duration-500"
+    >
+      <social.icon className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+      <span className="font-mono text-[10px] text-muted-foreground group-hover:text-primary transition-colors">
+        {social.name}
+      </span>
+    </m.a>
+  );
+};
 
 const Contact = () => {
   const { ref, scrollYProgress, sectionOpacity } = useScrollAnimation({
     opacityRange: [0, 0.2],
   });
+  const entrance = useEntrance();
+  // The direct-contact column and the social grid each fade in a set of links.
+  const directGate = useEntranceGate();
+  const socialGridGate = useEntranceGate();
 
   const decorY = useParallax(scrollYProgress, [0, 1], ["100px", "-60px"]);
 
@@ -30,7 +70,8 @@ const Contact = () => {
         <div className="grid lg:grid-cols-2 gap-12">
           {/* Direct contact */}
           <m.div
-            initial={{ opacity: 0, y: 30 }}
+            {...directGate}
+            initial={entrance({ opacity: 0, y: 30 })}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
@@ -64,37 +105,29 @@ const Contact = () => {
 
           {/* Social grid */}
           <m.div
-            initial={{ opacity: 0, y: 30 }}
+            {...socialGridGate}
+            initial={entrance({ opacity: 0, y: 30 })}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.3, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="grid grid-cols-3 sm:grid-cols-5 gap-3"
+            className="grid grid-cols-3 sm:grid-cols-6 gap-3"
           >
             {socials.map((s, i) => (
-              <m.a
-                key={s.name}
-                href={s.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                whileInView={{ opacity: 1, scale: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.4 + i * 0.07, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                className="group flex flex-col items-center gap-2 border border-border bg-card p-4 hover:border-primary/40 hover:box-glow transition-all duration-500"
-              >
-                <s.icon className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                <span className="font-mono text-[10px] text-muted-foreground group-hover:text-primary transition-colors">
-                  {s.name}
-                </span>
-              </m.a>
+              <SocialLink key={s.name} social={s} index={i} />
             ))}
           </m.div>
         </div>
       </m.div>
 
-      {/* Background decoration with parallax */}
+      {/* Background decoration with parallax. `aria-hidden` because it is a
+          watermark and nothing else: 3% alpha, `select-none`,
+          `pointer-events-none`, no meaning to lose. Without it a screen reader
+          reads out "/>" at the end of the contact section, and every contrast
+          audit has to carry an exemption for a glyph that is meant to be
+          invisible — `e2e/print-contrast.spec.ts` skips `aria-hidden` text for
+          exactly that reason. */}
       <m.div
+        aria-hidden="true"
         style={{ y: decorY }}
         className="absolute bottom-0 right-0 font-mono text-[10rem] lg:text-[18rem] font-bold text-primary/[0.03] leading-none select-none pointer-events-none"
       >

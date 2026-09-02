@@ -1,28 +1,14 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-vi.mock("framer-motion", () => {
-  const motionProxy = new Proxy(
-    {},
-    {
-      get: (_target, prop) => {
-        return ({ children, ...props }: Record<string, unknown>) => {
-          const htmlProps: Record<string, unknown> = {};
-          for (const [k, v] of Object.entries(props)) {
-            if (k.startsWith("on") || k === "className" || k === "style" || k === "href" || k === "target" || k === "rel") {
-              htmlProps[k] = v;
-            }
-          }
-          const Tag = typeof prop === "string" ? prop : "div";
-          return <Tag {...htmlProps}>{children}</Tag>;
-        };
-      },
-    }
-  );
-  return {
-    m: motionProxy,
-    AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  };
+// The shared mock rather than a local proxy, because the local one built its
+// `m.*` components with a plain function and React 18 drops `ref` on those
+// silently: `<m.div ref={dialogRef}>` left the ref null, `useFocusTrap` bailed
+// on its first line, and the overlay rendered here had no focus trap at all.
+// Every keyboard assertion below would have passed against that (PRA-915).
+vi.mock("framer-motion", async () => {
+  const { createFramerMotionMock } = await import("@/test/framer-motion-mock");
+  return createFramerMotionMock();
 });
 
 vi.mock("lucide-react", () => ({
@@ -134,5 +120,38 @@ describe("Navbar", () => {
 
     const remaining = screen.getAllByText("about()");
     expect(remaining.length).toBe(1);
+  });
+
+  // --- Keyboard contract ---
+  //
+  // These two only mean something because the mock forwards `ref`. Under the
+  // plain-function proxy this file used to carry, `dialogRef.current` stayed
+  // null, `useFocusTrap` returned before binding anything, and both of these
+  // would report on an overlay that had no trap. The first is the cheap check
+  // that the ref arrived at all; the second is the one to run the negative
+  // control on — drop `onEscape` from Navbar.tsx and it has to go red.
+  //
+  // Focus *restoration* is not asserted here on purpose: it goes through
+  // `canTakeFocus`, which asks for `getClientRects().length > 0`, and jsdom
+  // reports no boxes for anything. e2e/overlay-a11y.spec.ts owns that half.
+  it("moves focus into the overlay when the menu opens", () => {
+    render(<Navbar />);
+    fireEvent.click(screen.getByText("[menu]"));
+
+    const closeBtn = screen.getByTestId("x-icon").closest("button");
+    expect(document.activeElement).toBe(closeBtn);
+  });
+
+  it("closes the mobile menu on Escape", () => {
+    render(<Navbar />);
+    fireEvent.click(screen.getByText("[menu]"));
+    expect(screen.getAllByText("about()").length).toBeGreaterThanOrEqual(2);
+
+    // From the focused node, not from `window`: the trap listens on `document`
+    // in the capture phase, and an event dispatched *at* `window` visits no
+    // node below it.
+    fireEvent.keyDown(document.activeElement!, { key: "Escape" });
+
+    expect(screen.getAllByText("about()").length).toBe(1);
   });
 });

@@ -47,9 +47,13 @@ export function processTerminalCommand(
   cmd: string,
   baseUrl: string = "/"
 ): CommandResult {
-  const trimmed = cmd.trim().toLowerCase();
-  const parts = trimmed.split(" ");
-  const base = parts[0];
+  const trimmed = cmd.trim();
+  // Only the verb is case-folded. Slicing arguments out of a lowercased string
+  // meant `echo Hello World` printed `hello world` directly beneath an input
+  // line that still read `$ echo Hello World` — the site mangling the visitor's
+  // own words, with the original sitting one line above as the counterexample.
+  const base = trimmed.split(" ")[0].toLowerCase();
+  const args = trimmed.slice(base.length).trim();
 
   const wrapLines = (newLines: TerminalLine[]): CommandResult => ({
     action: "lines",
@@ -68,32 +72,49 @@ export function processTerminalCommand(
         { type: "output", text: "  Tip: Ctrl+K to toggle terminal" },
       ]);
 
+    // `->`, not `→`. These four lines are the only place in this file where a
+    // symbol shares a text node with words, and U+2192 is in neither brand
+    // subset — Google's latin cut carries U+2191 and U+2193 and omits it. So the
+    // arrow painted in Menlo while "Navigating to #about..." beside it painted
+    // in JetBrains Mono: one sentence, two typefaces, with `getComputedStyle`
+    // reporting our family throughout, because font matching falls back per
+    // glyph. `75a54ec` took the same character out of a published post for the
+    // same reason; this is that edit, one surface later.
+    //
+    // The box art, the bar chart and the ASCII logo fall back too, and all of
+    // them stay: each is alone on its run, with no brand glyph beside it to
+    // change typeface against. They are recorded in SYSTEM_STACK_BY_DESIGN in
+    // e2e/font-glyph-coverage.spec.ts, which is also what goes red if a new
+    // arrow lands here.
     case "about":
       return {
         action: "scroll" as const,
         id: "about",
-        lines: wrapLines([{ type: "system", text: "→ Navigating to #about..." }]).lines,
+        lines: wrapLines([{ type: "system", text: "-> Navigating to #about..." }]).lines,
       };
 
     case "contact":
       return {
         action: "scroll" as const,
         id: "contact",
-        lines: wrapLines([{ type: "system", text: "→ Navigating to #contact..." }]).lines,
+        lines: wrapLines([{ type: "system", text: "-> Navigating to #contact..." }]).lines,
       };
 
     case "blog":
       return {
         action: "navigate" as const,
-        path: "/blog",
-        lines: wrapLines([{ type: "system", text: "→ Opening /blog..." }]).lines,
+        // Every other route on the site is written slash-terminated, because
+        // Pages 301s the bare form. This one goes through `navigate`, so the
+        // unslashed path would sit in the address bar for the reader to copy.
+        path: "/blog/",
+        lines: wrapLines([{ type: "system", text: "-> Opening /blog/..." }]).lines,
       };
 
     case "resume":
       return {
         action: "open" as const,
         url: `${baseUrl}resume.pdf`,
-        lines: wrapLines([{ type: "system", text: "→ Downloading resume.pdf..." }]).lines,
+        lines: wrapLines([{ type: "system", text: "-> Downloading resume.pdf..." }]).lines,
       };
 
     case "socials":
@@ -158,7 +179,7 @@ export function processTerminalCommand(
       return wrapLines([{ type: "output", text: `  ${new Date().toString()}` }]);
 
     case "echo":
-      return wrapLines([{ type: "output", text: `  ${parts.slice(1).join(" ") || ""}` }]);
+      return wrapLines([{ type: "output", text: `  ${args}` }]);
 
     case "":
       return { action: "empty" };

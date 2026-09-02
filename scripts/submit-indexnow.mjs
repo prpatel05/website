@@ -22,6 +22,11 @@ const ENDPOINT = "https://api.indexnow.org/indexnow";
 // file (rather than a duplicated constant) keeps a single source of truth and
 // self-validates: the filename stem must equal the file body.
 function findKey() {
+  // The step runs after Build today, so dist/ is always present — but
+  // readdirSync throws ENOENT rather than returning empty, and an uncaught
+  // throw exits non-zero, which under `bash -e` fails the deploy job after the
+  // site has already shipped. Guarding keeps the best-effort promise above true.
+  if (!existsSync(DIST)) return null;
   for (const name of readdirSync(DIST)) {
     const m = name.match(/^([0-9a-f]{8,128})\.txt$/i);
     if (!m) continue;

@@ -32,3 +32,6 @@ User-agent: *
 Allow: /
 
 Sitemap: https://pratik.pa.tel/sitemap.xml
+
+# AI citation index (see llmstxt.org)
+# https://pratik.pa.tel/llms.txt

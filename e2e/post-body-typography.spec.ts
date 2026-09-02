@@ -1,0 +1,254 @@
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { test, expect } from "./fixtures";
+
+/**
+ * A post body has to render the elements the author actually wrote.
+ *
+ * The build-time markdown renderer maps a fixed set of tags. Anything outside
+ * that set emitted a bare element, and Tailwind's preflight then stripped the
+ * browser defaults that would have made it legible — so three constructs the
+ * posts already use came out as something else:
+ *
+ *   - `<ol>` lost `list-style` and its padding, and the shared `li` painted the
+ *     same ▸ a bullet list gets. A seven-step runbook read as seven bullets.
+ *   - `<blockquote>` lost its margin, and the `p` inside it is the same
+ *     component as any body paragraph — so four quotations from a research
+ *     paper were pixel-identical to the author's own prose.
+ *   - `<code>` would inherit the reading face (Space Grotesk) and look like
+ *     prose. The chip plus an explicit `font-mono` are what keep it code.
+ *
+ * Everything here reads computed style rather than className, because the
+ * failure this guards against is a rule that does not exist. This renderer
+ * lives in `scripts/`, and its classes reach the stylesheet only through that
+ * directory's Tailwind content glob — `tabular-nums` and `px-1.5` appear
+ * nowhere in `src/`, so if that glob were dropped the markup would still carry
+ * the class names and nothing would paint. An assertion on the class would pass
+ * against exactly the build this is meant to catch.
+ *
+ * Which posts to load is derived from the built HTML rather than hardcoded, and
+ * each construct asserts it found at least one page, so this cannot quietly
+ * shrink to nothing when a post is edited.
+ */
+
+const DIST = fileURLToPath(new URL("../dist/blog", import.meta.url));
+
+/** Slugs whose built body satisfies `matches`, read off the artifact under test. */
+const postsWhere = (matches: (html: string) => boolean) =>
+  readdirSync(DIST, { withFileTypes: true })
+    // Nested hubs (e.g. `series/agent-reliability/`) create directories with
+    // no post `index.html` of their own — skip those so discovery stays posts.
+    .filter(
+      (entry) =>
+        entry.isDirectory() && existsSync(`${DIST}/${entry.name}/index.html`)
+    )
+    .map((entry) => entry.name)
+    .filter((slug) => matches(readFileSync(`${DIST}/${slug}/index.html`, "utf8")));
+
+/** Slugs whose built body contains `tag`, read off the artifact under test. */
+const postsContaining = (tag: RegExp) => postsWhere((html) => tag.test(html));
+
+/** Ordered lists in the markdown body — the Contents jump list is also an <ol>. */
+const postsContainingInBody = (tag: RegExp) =>
+  postsWhere((html) => {
+    const start = html.indexOf("data-post-body");
+    return start >= 0 && tag.test(html.slice(start));
+  });
+
+const orderedListPosts = postsContainingInBody(/<ol[\s>]/);
+const blockquotePosts = postsContaining(/<blockquote[\s>]/);
+
+/**
+ * Inline code only — a fenced block is not inline code.
+ *
+ * `pre` and `code` are deliberately different treatments in the renderer: the
+ * chip (background, padding) is what the test below measures, and a fenced
+ * block must not inherit it. But a fence renders as `<pre><code>`, which
+ * matches a bare `/<code/` exactly as well as an inline span does, while
+ * offering no `article p code` for that assertion to reach. So the first post
+ * to use a fence *without* also using an inline span selected itself into this
+ * test and then failed it with `Cannot read properties of null (reading
+ * 'closest')` — an error naming neither the post nor the construct, for a post
+ * that had done nothing wrong.
+ *
+ * No post uses a fence today, so this is guarding a construct the archive has
+ * not reached yet rather than fixing a red build.
+ */
+const inlineCodePosts = postsWhere((html) =>
+  /<code[\s>]/.test(html.replace(/<pre[\s\S]*?<\/pre>/gi, ""))
+);
+
+test.describe("post bodies render the markdown that was written", () => {
+  test("numbered steps show numbers, not bullets", async ({ page }) => {
+    expect(
+      orderedListPosts,
+      "no built post contains an <ol> — the coverage this test claims is gone"
+    ).not.toHaveLength(0);
+
+    for (const slug of orderedListPosts) {
+      await page.goto(`/blog/${slug}/`);
+
+      const list = page.locator("[data-post-body] ol").first();
+      const markers = await list.evaluate((ol) => {
+        const items = [...ol.querySelectorAll(":scope > li")];
+        return {
+          text: items.map((li) => li.firstElementChild?.textContent?.trim() ?? ""),
+          // `display: flex` on the row suppresses ::marker, so the ordinal has
+          // to be painted content. Prove it is really on screen.
+          firstMarkerWidth: Math.round(
+            items[0].firstElementChild!.getBoundingClientRect().width
+          ),
+          numericVariant: getComputedStyle(
+            items[0].firstElementChild!
+          ).fontVariantNumeric,
+        };
+      });
+
+      expect(markers.text, `${slug} should number its steps`).toEqual(
+        markers.text.map((_, i) => `${i + 1}.`)
+      );
+      expect(markers.text).not.toContain("▸");
+      expect(markers.firstMarkerWidth).toBeGreaterThan(0);
+      // `tabular-nums` exists nowhere in src/ — if the scripts/ content glob
+      // stopped feeding Tailwind, this is the half that would go back to
+      // `normal` while the class name stayed in the markup.
+      expect(markers.numericVariant, `${slug}: tabular-nums did not compile`).toBe(
+        "tabular-nums"
+      );
+    }
+  });
+
+  test("a quotation is visibly not the author's own prose", async ({ page }) => {
+    expect(blockquotePosts, "no built post contains a <blockquote>").not.toHaveLength(0);
+
+    for (const slug of blockquotePosts) {
+      await page.goto(`/blog/${slug}/`);
+
+      const measured = await page.evaluate(() => {
+        const quote = document.querySelector("article blockquote")!;
+        const quoted = quote.querySelector("p")!;
+        // The control: a body paragraph carrying the *same* className, so the
+        // only thing that can separate the two is the blockquote wrapper.
+        const body = [...document.querySelectorAll("article p")].find(
+          (p) => !p.closest("blockquote") && p.className === quoted.className
+        )!;
+        const rule = getComputedStyle(quote);
+        return {
+          sameClassName: quoted.className === body.className,
+          borderLeftWidth: parseFloat(rule.borderLeftWidth),
+          borderLeftStyle: rule.borderLeftStyle,
+          borderLeftColor: rule.borderLeftColor,
+          indent: Math.round(
+            quoted.getBoundingClientRect().left - body.getBoundingClientRect().left
+          ),
+        };
+      });
+
+      // Guards the control itself: if the two paragraphs stopped sharing a
+      // class, an indent could come from the paragraph rather than the quote.
+      expect(measured.sameClassName).toBe(true);
+      expect(measured.borderLeftWidth, `${slug}: quote has no rule`).toBeGreaterThan(0);
+      expect(measured.borderLeftStyle).not.toBe("none");
+      expect(measured.borderLeftColor).not.toBe("rgba(0, 0, 0, 0)");
+      expect(measured.indent, `${slug}: quote is not indented`).toBeGreaterThan(0);
+    }
+  });
+
+  test("inline code is distinguishable from the prose around it", async ({ page }) => {
+    expect(inlineCodePosts, "no built post contains a <code>").not.toHaveLength(0);
+
+    for (const slug of inlineCodePosts) {
+      await page.goto(`/blog/${slug}/`);
+
+      // Says which post and which construct, where dereferencing a null
+      // `querySelector` would only say `Cannot read properties of null`.
+      await expect(
+        page.locator("article p code").first(),
+        `${slug} was selected as an inline-code post but has no <code> in a paragraph`
+      ).toBeAttached();
+
+      const measured = await page.evaluate(() => {
+        const code = document.querySelector("article p code")!;
+        const para = code.closest("p")!;
+        const c = getComputedStyle(code);
+        const p = getComputedStyle(para);
+        const family = (s: CSSStyleDeclaration) => s.fontFamily.split(",")[0].replace(/["']/g, "").trim();
+        return {
+          // Body copy is Space Grotesk; code stays JetBrains Mono. The chip is
+          // the other cue, and the one paper still needs once the fill drops.
+          codeFamily: family(c),
+          proseFamily: family(p),
+          background: c.backgroundColor,
+          proseBackground: p.backgroundColor,
+          paddingLeft: parseFloat(c.paddingLeft),
+        };
+      });
+
+      expect(measured.proseFamily, `${slug}: body copy should be Space Grotesk`).toBe(
+        "Space Grotesk"
+      );
+      expect(measured.codeFamily, `${slug}: inline code should stay JetBrains Mono`).toBe(
+        "JetBrains Mono"
+      );
+      expect(measured.background, `${slug}: code chip is not painted`).not.toBe(
+        measured.proseBackground
+      );
+      expect(measured.background).not.toBe("rgba(0, 0, 0, 0)");
+      // px-1.5, the other class with no user in src/.
+      expect(measured.paddingLeft, `${slug}: px-1.5 did not compile`).toBeGreaterThan(0);
+    }
+  });
+
+  test("body copy is the display face; chrome stays mono", async ({ page }) => {
+    // One long post with a TOC, a quotation, and the usual chrome. Series is
+    // a second hop: this slug is not in the reliability rail.
+    await page.goto("/blog/the-entry-level-job-is-the-canary/");
+    await page.locator("[data-post-body] p").first().waitFor();
+
+    const onCanary = await page.evaluate(() => {
+      const family = (el) =>
+        el ? getComputedStyle(el).fontFamily.split(",")[0].replace(/["']/g, "").trim() : "";
+      const first = (sel) => document.querySelector(sel);
+      return {
+        paragraph: family(first("[data-post-body] p")),
+        h2: family(first("[data-post-body] h2")),
+        quote: family(first("[data-post-body] blockquote p") || first("[data-post-body] blockquote")),
+        list: family(first("[data-post-body] li")),
+        nav: family(first('nav[aria-label="Main"] a')),
+        toc: family(first('nav[aria-label="Contents"]')),
+        dek: family(first("article h1 + p")),
+        share: family(
+          [...document.querySelectorAll("p")].find((p) => p.textContent === "// share")
+        ),
+        footer: family(
+          [...document.querySelectorAll("span")].find((s) =>
+            (s.textContent ?? "").includes("PRATIK PATEL")
+          )
+        ),
+        tag: family(first("article a[href*='tag=']")),
+      };
+    });
+
+    expect(onCanary.paragraph, "body paragraph").toBe("Space Grotesk");
+    expect(onCanary.h2, "body h2").toBe("Space Grotesk");
+    expect(onCanary.quote, "blockquote").toBe("Space Grotesk");
+    if (onCanary.list) expect(onCanary.list, "list item").toBe("Space Grotesk");
+
+    expect(onCanary.nav, "cd ~").toBe("JetBrains Mono");
+    expect(onCanary.toc, "// contents").toBe("JetBrains Mono");
+    expect(onCanary.dek, "dek stays accent mono").toBe("JetBrains Mono");
+    expect(onCanary.share, "// share").toBe("JetBrains Mono");
+    expect(onCanary.footer, "copyright").toBe("JetBrains Mono");
+    expect(onCanary.tag, "tag chip").toBe("JetBrains Mono");
+
+    await page.goto("/blog/give-your-agent-an-undo-button/");
+    await page.getByRole("navigation", { name: "Agent reliability" }).first().waitFor();
+    const series = await page
+      .getByRole("navigation", { name: "Agent reliability" })
+      .first()
+      .evaluate((el) =>
+        getComputedStyle(el).fontFamily.split(",")[0].replace(/["']/g, "").trim()
+      );
+    expect(series, "// series").toBe("JetBrains Mono");
+  });
+});

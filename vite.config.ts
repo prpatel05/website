@@ -28,9 +28,14 @@ export default defineConfig(({ mode }) => ({
   build: {
     rollupOptions: {
       output: {
+        // framer-motion is deliberately absent. Naming it here forced every
+        // one of its modules into a single chunk, which meant the dynamic
+        // import in `App.tsx` resolved back into a chunk the entry already
+        // pulled in eagerly and the split saved nothing. Left to Rollup, the
+        // core that `m` needs stays with the entry and the animation features
+        // land in their own async chunk.
         manualChunks: {
           "vendor-react": ["react", "react-dom", "react-router-dom"],
-          "vendor-motion": ["framer-motion"],
         },
       },
     },

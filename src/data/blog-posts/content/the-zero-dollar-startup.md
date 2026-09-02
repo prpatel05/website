@@ -28,7 +28,7 @@ The obvious takeaway is "building is cheaper now." But that understates what's a
 
 ### The End of Fundraising as a Prerequisite
 
-The traditional startup path was: have an idea → raise money to build it → build it → find out if anyone wants it. The fundraising step wasn't just about money. It was a filter. You had to convince investors that your idea was worth building before you could build it. That filter was imperfect — it selected for charisma and credentials as much as for good ideas.
+The traditional startup path was: have an idea, raise money to build it, build it, and then find out if anyone wants it. The fundraising step wasn't just about money. It was a filter. You had to convince investors that your idea was worth building before you could build it. That filter was imperfect — it selected for charisma and credentials as much as for good ideas.
 
 When building costs nothing, you skip the filter entirely. Build first, then decide if you need money to scale. The question changes from "can I convince someone to fund this?" to "can I convince someone to use this?" That's a much better question.
 

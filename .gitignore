@@ -23,14 +23,20 @@ dist-ssr
 *.sln
 *.sw?
 
-# Archive-card thumbnails, post-hero variants, and the homepage portrait
-# variants, derived from their masters by scripts/generate-images.mjs on every
-# dev and build.
+# Archive-card thumbnails, post-hero variants, the homepage portrait variants,
+# and the per-post social cards, derived from their masters by
+# scripts/generate-images.mjs on every dev and build.
 public/images/thumbs/
 public/images/hero/
 public/images/portrait/
+public/images/social/
 
 # Test artifacts
 playwright-report/
 test-results/
 coverage/
+
+# Scratch audit probes. They must live in site/ to resolve @playwright/test,
+# which puts them one `git add -A` away from a commit — _audit_about.mjs
+# reached main that way.
+_audit*.mjs

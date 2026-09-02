@@ -2,6 +2,8 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it, expect } from "vitest";
 import {
+  PORTRAIT_BLANK,
+  PORTRAIT_BLANK_MEDIA,
   PORTRAIT_DIR,
   PORTRAIT_SIZES,
   PORTRAIT_SRC,
@@ -76,7 +78,39 @@ describe("homepage portrait", () => {
 
   // The box is 224px from md and 288px from lg; a `sizes` that claimed one
   // width for both would over- or under-fetch on half the desktop range.
+  // Neither branch has to describe the sub-md range, because PORTRAIT_BLANK
+  // takes it before `sizes` is ever consulted.
   it("describes both box widths", () => {
     expect(PORTRAIT_SIZES).toBe("(min-width: 1024px) 288px, 224px");
+  });
+
+  // The wrapper is `hidden md:block` and `display:none` does not cancel an
+  // eager fetch, so without this the portrait — the homepage's only image —
+  // was downloaded in full by every phone and painted by none. It also picked
+  // the *larger* file: `sizes` resolved to 224px, and 224 x DPR 2.75 is 616
+  // device px, which selects 556w over 288w.
+  describe("the range with no box", () => {
+    // Tailwind's md is 768px, so the gate has to stop one pixel below it. Off
+    // by one and either the phones keep fetching or the md box goes blank.
+    it("stops one pixel below md", () => {
+      expect(PORTRAIT_BLANK_MEDIA).toBe("(max-width: 767px)");
+    });
+
+    // Inline, or the request this exists to remove just changes target.
+    it("is inline, so it costs no request", () => {
+      expect(PORTRAIT_BLANK.startsWith("data:image/")).toBe(true);
+    });
+
+    // A `<source>` the browser cannot decode falls through to the `<img>`,
+    // which would put the full portrait back on every phone.
+    it("decodes to a real 1x1 image", () => {
+      const [meta, data] = PORTRAIT_BLANK.split(",");
+      expect(meta).toBe("data:image/gif;base64");
+      const bytes = Buffer.from(data, "base64");
+      // GIF header, then width and height as little-endian 16-bit.
+      expect(bytes.subarray(0, 3).toString("latin1")).toBe("GIF");
+      expect(bytes.readUInt16LE(6)).toBe(1);
+      expect(bytes.readUInt16LE(8)).toBe(1);
+    });
   });
 });
