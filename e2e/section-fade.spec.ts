@@ -71,7 +71,7 @@ async function scrollTo(page: Page, y: number) {
  */
 async function navigateToHome(page: Page) {
   await page.goto("/blog/");
-  const home = page.getByRole("link", { name: "cd ~" });
+  const home = page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Home" });
   await expect(home).toBeVisible();
   await page.evaluate(() => {
     (window as unknown as { __sameDocument: boolean }).__sameDocument = true;

@@ -117,6 +117,13 @@ async function prerender() {
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext();
 
+  // Keep status-bar fetches out of the snapshot. useBuildInfo skips work when
+  // this flag is set, so the baked HTML stays on the first-paint placeholder
+  // (`main @ …`) that the hydrating client also renders before its own fetch.
+  await context.addInitScript(() => {
+    window.__PRERENDER__ = true;
+  });
+
   // The app's analytics beacon injects a real <script src> tag, which this
   // browser would otherwise fetch and execute, reporting a pageview per route
   // per deploy into the live read-out. Keep the tag, drop the hit.
