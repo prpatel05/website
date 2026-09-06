@@ -1,7 +1,9 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
-import { posts } from "@/data/blog-posts/registry";
+import { SELECTED_WRITING_SLUGS } from "@/data/selected-writing";
+import { getPostBySlug } from "@/data/blog-posts/registry";
+import { SERIES_HREF } from "@/lib/blog-series";
 
 vi.mock("framer-motion", () => {
   const motionProxy = new Proxy(
@@ -37,28 +39,35 @@ vi.mock("lucide-react", () => ({
 
 import BlogPreview from "../BlogPreview";
 
+const selectedPosts = SELECTED_WRITING_SLUGS.map((slug) => {
+  const post = getPostBySlug(slug);
+  if (!post) throw new Error(`selected slug missing from registry: ${slug}`);
+  return post;
+});
+
 describe("BlogPreview", () => {
-  it("renders only the latest five posts on the homepage", () => {
+  it("renders the curated Selected writing posts, not newest-five", () => {
     const { container } = render(
       <MemoryRouter>
         <BlogPreview />
       </MemoryRouter>
     );
 
-    const postLinks = container.querySelectorAll("article a");
-    expect(postLinks).toHaveLength(5);
+    expect(screen.getByText("Selected")).toBeInTheDocument();
+    expect(screen.getByText("writing")).toBeInTheDocument();
+    expect(screen.queryByText("Recent")).not.toBeInTheDocument();
 
-    for (const post of posts.slice(0, 5)) {
+    const postLinks = container.querySelectorAll("article a");
+    expect(postLinks).toHaveLength(SELECTED_WRITING_SLUGS.length);
+
+    for (const post of selectedPosts) {
       expect(screen.getByText(post.title)).toBeInTheDocument();
     }
-
-    expect(screen.queryByText(posts[5].title)).not.toBeInTheDocument();
   });
 
   // Every pratik.pa.tel path 301s to its trailing-slash form, so a slashless
   // href is a link the crawler has to follow twice. The homepage carries the
-  // archive link plus the five newest posts, so it is where that cost lands
-  // first.
+  // archive link, the series hub, and the curated posts.
   it("points every internal link at its non-redirecting trailing-slash form", () => {
     const { container } = render(
       <MemoryRouter>
@@ -72,7 +81,17 @@ describe("BlogPreview", () => {
 
     expect(hrefs).toEqual([
       "/blog/",
-      ...posts.slice(0, 5).map((post) => `/blog/${post.slug}/`),
+      SERIES_HREF,
+      ...selectedPosts.map((post) => `/blog/${post.slug}/`),
     ]);
+  });
+
+  it("keeps the ls ./posts archive affordance for keyboard/e2e contracts", () => {
+    render(
+      <MemoryRouter>
+        <BlogPreview />
+      </MemoryRouter>
+    );
+    expect(screen.getByText(/ls \.\/posts/)).toBeInTheDocument();
   });
 });

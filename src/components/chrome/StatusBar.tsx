@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useBuildInfo } from "@/hooks/useBuildInfo";
+import { useCrtNoise } from "@/hooks/useCrtNoise";
 
 /**
  * Sitewide bottom strip. Reads `/build-sha.txt` once after mount (with
@@ -7,9 +8,14 @@ import { useBuildInfo } from "@/hooks/useBuildInfo";
  * flow rather than `fixed`: a fixed translucent bar sat on top of whatever
  * was at the bottom of the viewport and made axe refuse to measure contrast
  * on every content route. Hidden in print — it is chrome, not content.
+ *
+ * Also hosts the CRT noise toggle: off by default, remembered in localStorage,
+ * forced off under prefers-reduced-motion.
  */
 const StatusBar = () => {
   const { shortSha, deployed, newestTitle, newestSlug } = useBuildInfo();
+  const { storedOn, reduceMotion, toggle } = useCrtNoise();
+  const crtLabel = reduceMotion ? "crt: off*" : storedOn ? "crt: on" : "crt: off";
 
   return (
     <div
@@ -42,6 +48,30 @@ const StatusBar = () => {
             </span>
           </>
         ) : null}
+        <span aria-hidden="true" className="text-border shrink-0">
+          |
+        </span>
+        <button
+          type="button"
+          onClick={toggle}
+          disabled={reduceMotion}
+          aria-pressed={storedOn && !reduceMotion}
+          aria-label={
+            reduceMotion
+              ? "CRT noise unavailable with reduced motion"
+              : storedOn
+                ? "Turn CRT noise off"
+                : "Turn CRT noise on"
+          }
+          title={
+            reduceMotion
+              ? "CRT noise stays off while prefers-reduced-motion is set"
+              : "Toggle subtle CRT noise / scanlines"
+          }
+          className="shrink-0 inline-flex items-center min-h-6 px-1 text-muted-foreground hover:text-primary transition-colors disabled:opacity-50 disabled:hover:text-muted-foreground"
+        >
+          {crtLabel}
+        </button>
       </div>
     </div>
   );

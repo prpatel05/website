@@ -1,10 +1,12 @@
 import type { ReactNode } from "react";
 import Navbar from "@/components/Navbar";
 import InteractiveTerminal from "@/components/InteractiveTerminal";
+import { CrtNoiseProvider } from "./CrtNoiseProvider";
 import SiteTopBar from "./SiteTopBar";
 import SiteFooter from "./SiteFooter";
 import StatusBar from "./StatusBar";
 import SectionJumpRail from "./SectionJumpRail";
+import CrtNoise from "./CrtNoise";
 import type { BreadcrumbSegment } from "./Breadcrumbs";
 
 type PageShellProps = {
@@ -29,14 +31,17 @@ const PageShell = ({
   jumpRail = false,
   terminal = false,
 }: PageShellProps) => (
-  <div className="min-h-screen bg-background">
-    {breadcrumbs ? <SiteTopBar segments={breadcrumbs} /> : <Navbar />}
-    {jumpRail ? <SectionJumpRail /> : null}
-    {children}
-    {terminal ? <InteractiveTerminal /> : null}
-    <SiteFooter />
-    <StatusBar />
-  </div>
+  <CrtNoiseProvider>
+    <div className="min-h-screen bg-background">
+      {breadcrumbs ? <SiteTopBar segments={breadcrumbs} /> : <Navbar />}
+      {jumpRail ? <SectionJumpRail /> : null}
+      {children}
+      {terminal ? <InteractiveTerminal /> : null}
+      <SiteFooter />
+      <StatusBar />
+      <CrtNoise />
+    </div>
+  </CrtNoiseProvider>
 );
 
 export default PageShell;

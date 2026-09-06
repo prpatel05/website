@@ -3,12 +3,12 @@ import { Link } from "react-router-dom";
 import { m } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { posts } from "@/data/blog-posts/registry";
+import { resolveSelectedWriting } from "@/data/selected-writing";
+import { SERIES_HREF, SERIES_NAME } from "@/lib/blog-series";
 import { useEntrance, useEntranceGate } from "@/hooks/useEntrance";
 import { useParallax } from "@/hooks/useParallax";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import SectionHeader from "./SectionHeader";
-
-const HOME_BLOG_POST_LIMIT = 5;
 
 /**
  * One card's entrance, in its own component so it can own its own gate — a
@@ -42,7 +42,10 @@ const PreviewCard = ({ index, children }: { index: number; children: ReactNode }
 
 const BlogPreview = () => {
   const { ref, scrollYProgress, sectionOpacity } = useScrollAnimation();
-  const previewPosts = posts.slice(0, HOME_BLOG_POST_LIMIT);
+  const previewPosts = resolveSelectedWriting();
+  // Fall back to newest three only if curation somehow resolves empty — the
+  // homepage should never ship a blank writing block.
+  const cards = previewPosts.length > 0 ? previewPosts : posts.slice(0, 3);
 
   const gridY = useParallax(scrollYProgress, [0, 1], ["0%", "-15%"]);
 
@@ -50,23 +53,37 @@ const BlogPreview = () => {
     <section ref={ref} id="writing" className="py-16 sm:py-24 lg:py-40 relative overflow-hidden">
       <m.div className="absolute inset-0 grid-bg pointer-events-none opacity-50" style={{ y: gridY }} />
       <m.div className="container relative z-10" style={{ opacity: sectionOpacity }}>
-        <SectionHeader label="// section:blog" titleLeft="Recent" titleRight="writes" titleRightClass="text-accent text-glow-accent">
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-12">
+        <SectionHeader
+          label="// section:blog"
+          titleLeft="Selected"
+          titleRight="writing"
+          titleRightClass="text-accent text-glow-accent"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-12 gap-4">
             <h2 className="font-display text-3xl sm:text-4xl lg:text-6xl font-bold">
-              <span className="text-foreground">Recent</span>{" "}
-              <span className="text-accent text-glow-accent">writes</span>
+              <span className="text-foreground">Selected</span>{" "}
+              <span className="text-accent text-glow-accent">writing</span>
             </h2>
-            <Link
-              to="/blog/"
-              className="font-mono text-xs text-muted-foreground hover:text-primary transition-colors mt-4 sm:mt-0 flex items-center gap-1 py-1"
-            >
-              ls ./posts <ArrowUpRight className="w-3 h-3" />
-            </Link>
+            <div className="flex flex-col sm:items-end gap-1">
+              <Link
+                to="/blog/"
+                className="font-mono text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 py-1"
+              >
+                ls ./posts <ArrowUpRight className="w-3 h-3" />
+              </Link>
+              <Link
+                to={SERIES_HREF}
+                className="font-mono text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 py-1"
+              >
+                series/{SERIES_NAME.toLowerCase().replace(/\s+/g, "-")}{" "}
+                <ArrowUpRight className="w-3 h-3" />
+              </Link>
+            </div>
           </div>
         </SectionHeader>
 
         <div className="space-y-4">
-          {previewPosts.map((post, i) => (
+          {cards.map((post, i) => (
             <PreviewCard key={post.slug} index={i}>
               <Link
                 to={`/blog/${post.slug}/`}

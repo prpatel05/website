@@ -33,7 +33,8 @@ test.describe("Homepage", () => {
     const writing = page.locator("#writing");
     await expect(writing).toBeAttached();
     await writing.scrollIntoViewIfNeeded();
-    await expect(page.locator("#writing").getByText("writes")).toBeVisible();
+    await expect(page.locator("#writing").getByText("Selected")).toBeVisible();
+    await expect(page.locator("#writing").getByText("writing")).toBeVisible();
   });
 
   test("renders the contact section", async ({ page }) => {
