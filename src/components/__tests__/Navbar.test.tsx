@@ -47,13 +47,14 @@ describe("Navbar", () => {
     expect(screen.getByText("about()").closest("a")).toHaveAttribute("href", "#about");
     expect(screen.getByText("writing()").closest("a")).toHaveAttribute("href", "#writing");
     expect(screen.getByText("contact()").closest("a")).toHaveAttribute("href", "#contact");
+    expect(screen.getByText("resume()").closest("a")).toHaveAttribute("href", "/resume/");
   });
 
-  it("marks resume link as external", () => {
+  it("points resume() at the HTML resume page", () => {
     render(<Navbar />);
     const resumeLink = screen.getByText("resume()").closest("a");
-    expect(resumeLink).toHaveAttribute("target", "_blank");
-    expect(resumeLink).toHaveAttribute("rel", "noopener noreferrer");
+    expect(resumeLink).toHaveAttribute("href", "/resume/");
+    expect(resumeLink).not.toHaveAttribute("target");
   });
 
   it("does not apply scrolled styles initially", () => {

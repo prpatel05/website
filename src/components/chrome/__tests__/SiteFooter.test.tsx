@@ -20,6 +20,10 @@ describe("SiteFooter", () => {
     expect(screen.getByRole("link", { name: "home (sitemap)" })).toHaveAttribute("href", "/");
     expect(screen.getByRole("link", { name: "blog" })).toHaveAttribute("href", "/blog/");
     expect(screen.getByRole("link", { name: /series/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "resume" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "resume" })).toHaveAttribute(
+      "href",
+      "/resume/"
+    );
+    expect(screen.getByRole("link", { name: "resume.pdf" })).toBeInTheDocument();
   });
 });

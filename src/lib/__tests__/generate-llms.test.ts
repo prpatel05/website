@@ -139,7 +139,7 @@ describe("generate-llms", () => {
   it("orders posts newest first, matching the feed", () => {
     const titles = [...llms.matchAll(/^- \[([^\]]+)\]\(/gm)]
       .map((m) => m[1])
-      .filter((t) => !["Home", "Blog", "RSS feed", "llms-full.txt", "Sitemap"].includes(t));
+      .filter((t) => !["Home", "Blog", "Resume", "RSS feed", "llms-full.txt", "Sitemap"].includes(t));
     expect(titles).toEqual([
       "Today Post",
       'Newer & "Quoted"',
