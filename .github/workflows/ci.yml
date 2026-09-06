@@ -2,8 +2,9 @@
 name: CI
 
 on:
+  # All PRs — including stacked UX branches whose base is not main — so GitHub
+  # CI can gate a stack the same way local CI does.
   pull_request:
-    branches: ['main']
 
 permissions:
   contents: read
