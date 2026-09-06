@@ -18,7 +18,19 @@ const EMPTY: BuildInfo = {
   newestSlug: posts[0]?.slug ?? "",
 };
 
-const short = (value: string) => value.trim().slice(0, 7);
+/**
+ * Accept a git SHA or a UUID-like stamp id; reject SPA HTML fallbacks and
+ * other junk. The prerender static server (and vite preview) answer missing
+ * files with the app shell at 200, so an unchecked `res.ok` once baked
+ * `<!DOCTYPE…` into the status bar and blew hydration.
+ */
+export const parseShaCandidate = (raw: string): string => {
+  const text = raw.trim();
+  if (!text || text.startsWith("<")) return "";
+  const hex = text.replace(/-/g, "");
+  if (!/^[0-9a-f]+$/i.test(hex) || hex.length < 7) return "";
+  return hex.slice(0, 7).toLowerCase();
+};
 
 const formatDeployed = (iso: string): string => {
   const d = new Date(iso);
@@ -31,15 +43,28 @@ const formatDeployed = (iso: string): string => {
   });
 };
 
+declare global {
+  interface Window {
+    /** Set only by `scripts/prerender.mjs` so status fetches stay off the snapshot. */
+    __PRERENDER__?: boolean;
+  }
+}
+
 /**
  * Status-bar inputs. SHA prefers `/build-sha.txt` (written by CI after build);
  * falls back to a shortened build-stamp id when the file is absent (local
  * preview). Fetch is fire-and-forget so first paint is never blocked.
+ *
+ * Skipped while `window.__PRERENDER__` is set: the prerenderer waits for
+ * network idle and would otherwise capture the post-fetch DOM (`main @ local`
+ * or worse), which cannot hydrate against the client's first paint (`main @ …`).
  */
 export const useBuildInfo = (): BuildInfo => {
   const [info, setInfo] = useState<BuildInfo>(EMPTY);
 
   useEffect(() => {
+    if (typeof window !== "undefined" && window.__PRERENDER__) return;
+
     let cancelled = false;
     const base = import.meta.env.BASE_URL || "/";
 
@@ -54,19 +79,26 @@ export const useBuildInfo = (): BuildInfo => {
 
       if (shaRes?.ok) {
         const text = await shaRes.text().catch(() => "");
-        if (text.trim()) shortSha = short(text);
+        shortSha = parseShaCandidate(text);
       }
 
       if (stampRes?.ok) {
-        const stamp = (await stampRes.json().catch(() => null)) as {
-          id?: string;
-          builtAt?: string;
-        } | null;
-        if (!shortSha && typeof stamp?.id === "string") {
-          shortSha = short(stamp.id);
-        }
-        if (typeof stamp?.builtAt === "string") {
-          deployed = formatDeployed(stamp.builtAt);
+        const raw = await stampRes.text().catch(() => "");
+        // Same SPA-fallback trap as the .txt: a 200 HTML body is not JSON.
+        if (raw && !raw.trimStart().startsWith("<")) {
+          const stamp = (() => {
+            try {
+              return JSON.parse(raw) as { id?: string; builtAt?: string };
+            } catch {
+              return null;
+            }
+          })();
+          if (!shortSha && typeof stamp?.id === "string") {
+            shortSha = parseShaCandidate(stamp.id);
+          }
+          if (typeof stamp?.builtAt === "string") {
+            deployed = formatDeployed(stamp.builtAt);
+          }
         }
       }
 

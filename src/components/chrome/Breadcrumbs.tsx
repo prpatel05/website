@@ -12,12 +12,13 @@ type BreadcrumbsProps = {
 };
 
 const segmentClass =
-  "inline-flex items-center justify-center min-h-6 min-w-6 px-1 py-1 text-primary hover:text-foreground transition-colors";
+  "inline-flex items-center justify-center min-h-6 min-w-6 px-1 py-1 text-primary hover:text-foreground transition-colors break-all";
 
 /**
  * Terminal-style path for the top bar: `~/blog/<slug>` with each ancestor a
  * link. Replaces the lonely `cd ~` so a reader can still go home and also see
- * where they are.
+ * where they are. Segments wrap rather than truncate so WCAG 1.4.12 text
+ * spacing never clips the path.
  */
 const Breadcrumbs = ({ segments }: BreadcrumbsProps) => {
   return (
@@ -35,13 +36,13 @@ const Breadcrumbs = ({ segments }: BreadcrumbsProps) => {
               /
             </span>
             {segment.to && !last ? (
-              <Link to={segment.to} className={`${segmentClass} truncate max-w-[12rem] sm:max-w-none`}>
+              <Link to={segment.to} className={segmentClass}>
                 {segment.label}
               </Link>
             ) : (
               <span
                 aria-current={last ? "page" : undefined}
-                className="inline-flex items-center min-h-6 px-1 py-1 text-muted-foreground truncate max-w-[12rem] sm:max-w-[20rem]"
+                className="inline-flex items-center min-h-6 px-1 py-1 text-muted-foreground break-all"
               >
                 {segment.label}
               </span>

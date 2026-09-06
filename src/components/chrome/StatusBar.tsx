@@ -16,7 +16,7 @@ const StatusBar = () => {
       aria-label="Build status"
       className="border-t border-border bg-background print:hidden"
     >
-      <div className="container px-4 min-h-8 py-1 flex items-center gap-x-2 overflow-hidden font-mono text-[10px] text-muted-foreground tracking-wide">
+      <div className="container px-4 min-h-8 py-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 font-mono text-[10px] text-muted-foreground tracking-wide">
         <span className="shrink-0">main @ {shortSha || "…"}</span>
         {deployed ? (
           <>
@@ -31,7 +31,7 @@ const StatusBar = () => {
             <span aria-hidden="true" className="text-border shrink-0">
               |
             </span>
-            <span className="min-w-0 truncate">
+            <span className="min-w-0 break-words">
               newest:{" "}
               <Link
                 to={`/blog/${newestSlug}/`}
