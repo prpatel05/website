@@ -79,10 +79,14 @@ function advanceTicks(count: number, intervalMs: number) {
 describe("Hero – typing effect", () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    // First-visit boot must play; a prior test (or jsdom reuse) may have marked
+    // the hero as already seen.
+    window.localStorage.removeItem("pratik.hero-boot-seen");
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    window.localStorage.removeItem("pratik.hero-boot-seen");
   });
 
   it("starts typing the first role character by character", () => {

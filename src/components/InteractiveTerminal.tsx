@@ -3,6 +3,7 @@ import { m, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Terminal, X } from "lucide-react";
 import { processTerminalCommand, type TerminalLine } from "@/lib/terminal-commands";
+import { posts } from "@/data/blog-posts/registry";
 import { useTerminalHistory } from "@/hooks/useTerminalHistory";
 import { useEntrance, useOverlayEntrance } from "@/hooks/useEntrance";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
@@ -141,7 +142,7 @@ const InteractiveTerminal = () => {
 
   const processCommand = useCallback(
     (cmd: string) => {
-      const result = processTerminalCommand(cmd, import.meta.env.BASE_URL);
+      const result = processTerminalCommand(cmd, import.meta.env.BASE_URL, posts);
 
       switch (result.action) {
         case "lines":

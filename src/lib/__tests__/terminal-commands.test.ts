@@ -236,14 +236,67 @@ describe("processTerminalCommand", () => {
   });
 });
 
+
+  // --- open / cd / cat / ls blog (terminal 2.0) ---
+  it("opens the resume for 'open resume'", () => {
+    const result = processTerminalCommand("open resume", "/base/");
+    expect(result.action).toBe("open");
+    if (result.action !== "open") return;
+    expect(result.url).toBe("/base/resume.pdf");
+  });
+
+  it("navigates to the archive for 'open blog'", () => {
+    const result = processTerminalCommand("open blog");
+    expect(result.action).toBe("navigate");
+    if (result.action !== "navigate") return;
+    expect(result.path).toBe("/blog/");
+  });
+
+  it("navigates to the archive for 'cd blog'", () => {
+    const result = processTerminalCommand("cd blog");
+    expect(result.action).toBe("navigate");
+    if (result.action !== "navigate") return;
+    expect(result.path).toBe("/blog/");
+  });
+
+  it("prints the about bio for 'cat about'", () => {
+    const result = processTerminalCommand("cat about");
+    expect(result.action).toBe("lines");
+    if (result.action !== "lines") return;
+    const text = result.lines.map((l) => l.text).join("\n");
+    expect(text).toContain("about.md");
+    expect(text).toContain("Tarobase");
+  });
+
+  it("lists post files for 'ls blog'", () => {
+    const result = processTerminalCommand("ls blog", "/", [
+      { slug: "the-handoff-is-where-agents-break" },
+      { slug: "give-your-agent-an-undo-button" },
+    ]);
+    expect(result.action).toBe("lines");
+    if (result.action !== "lines") return;
+    const text = result.lines.map((l) => l.text).join("\n");
+    expect(text).toContain("./blog");
+    expect(text).toContain("the-handoff-is-where-agents-break.md");
+    expect(text).toContain("give-your-agent-an-undo-button.md");
+  });
+
+  it("errors on unknown ls targets", () => {
+    const result = processTerminalCommand("ls nowhere");
+    expect(result.action).toBe("lines");
+    if (result.action !== "lines") return;
+    expect(result.lines.some((l) => l.type === "error")).toBe(true);
+  });
+
 describe("COMMANDS constant", () => {
-  it("has 14 commands", () => {
-    expect(Object.keys(COMMANDS).length).toBe(14);
+  it("has 17 commands", () => {
+    expect(Object.keys(COMMANDS).length).toBe(17);
   });
 
   it("includes all documented commands", () => {
     const expected = [
       "help", "about", "blog", "contact", "resume",
+      "open", "cd", "cat",
       "socials", "skills", "clear", "whoami", "neofetch",
       "ls", "pwd", "date", "echo",
     ];

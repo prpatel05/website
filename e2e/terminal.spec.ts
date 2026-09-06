@@ -88,6 +88,25 @@ test.describe("Interactive terminal", () => {
       await expect(page.getByText("-rw-r--r--  resume.pdf")).toBeVisible();
     });
 
+    test("ls blog lists post files", async ({ page }) => {
+      await commandLine(page).fill("ls blog");
+      await page.keyboard.press("Enter");
+
+      await expect(page.getByText("./blog")).toBeVisible();
+      await expect(page.getByText("the-handoff-is-where-agents-break.md")).toBeVisible();
+    });
+
+    test("cat about prints the bio", async ({ page }) => {
+      await commandLine(page).fill("cat about");
+      await page.keyboard.press("Enter");
+
+      // Scope to the terminal log — the About section also paints "about.md"
+      // in its fake window chrome, which would trip strict mode.
+      const log = page.locator(TERMINAL_LOG);
+      await expect(log.getByText(/── about\.md/)).toBeVisible();
+      await expect(log.getByText(/Tarobase/)).toBeVisible();
+    });
+
     test("pwd command shows working directory", async ({ page }) => {
       await commandLine(page).fill("pwd");
       await page.keyboard.press("Enter");

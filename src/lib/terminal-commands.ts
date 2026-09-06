@@ -11,12 +11,15 @@ export const COMMANDS: Record<string, string> = {
   blog: "Open blog archive",
   contact: "Navigate to contact section",
   resume: "Download resume",
+  open: "open resume | open blog",
+  cd: "cd blog — open the archive",
+  cat: "cat about — read the bio",
   socials: "List social links",
   skills: "Show tech stack",
   clear: "Clear terminal",
   whoami: "About Pratik",
   neofetch: "System info",
-  ls: "List site sections",
+  ls: "ls | ls blog — list sections or posts",
   pwd: "Print working directory",
   date: "Show current date",
   echo: "Echo a message",
@@ -31,6 +34,20 @@ export const ASCII_LOGO = `
   ╚═╝     ╚═╝
 `;
 
+const ABOUT_TEXT = [
+  "Technology executive and hands-on architect with 11+ years",
+  "building and scaling engineering organizations and shipping",
+  "products to hundreds of thousands of users.",
+  "",
+  "Three-time company builder: grew a 30-person engineering org at AWS,",
+  "co-founded and sold a blockchain studio via acquisition by Dapper Labs,",
+  "and took a healthtech startup from napkin sketch to 50K+ users as",
+  "founding CTO.",
+  "",
+  "Currently Chief Architect at Tarobase (poof.new), building AI-powered",
+  "tools for vibe-coded dApps.",
+];
+
 export type CommandResult =
   | { action: "lines"; lines: TerminalLine[] }
   | { action: "clear" }
@@ -39,13 +56,24 @@ export type CommandResult =
   | { action: "open"; url: string; lines: TerminalLine[] }
   | { action: "empty" };
 
+const normalizePathArg = (args: string) =>
+  args.trim().replace(/^\.\//, "").replace(/\/+$/, "").toLowerCase();
+
 /**
  * Pure function that processes a terminal command and returns the result.
  * Side effects (navigation, scrolling, opening URLs) are returned as action descriptors.
  */
+export type TerminalBlogEntry = { slug: string };
+
+/**
+ * @param blogPosts optional post list for `ls blog`. Injected by the UI so this
+ * module stays free of `import.meta.glob` (the e2e font-glyph probe imports it
+ * from Node outside Vite).
+ */
 export function processTerminalCommand(
   cmd: string,
-  baseUrl: string = "/"
+  baseUrl: string = "/",
+  blogPosts: readonly TerminalBlogEntry[] = []
 ): CommandResult {
   const trimmed = cmd.trim();
   // Only the verb is case-folded. Slicing arguments out of a lowercased string
@@ -54,6 +82,7 @@ export function processTerminalCommand(
   // own words, with the original sitting one line above as the counterexample.
   const base = trimmed.split(" ")[0].toLowerCase();
   const args = trimmed.slice(base.length).trim();
+  const pathArg = normalizePathArg(args);
 
   const wrapLines = (newLines: TerminalLine[]): CommandResult => ({
     action: "lines",
@@ -117,6 +146,86 @@ export function processTerminalCommand(
         lines: wrapLines([{ type: "system", text: "-> Downloading resume.pdf..." }]).lines,
       };
 
+    case "open": {
+      if (pathArg === "resume" || pathArg === "resume.pdf") {
+        return {
+          action: "open" as const,
+          url: `${baseUrl}resume.pdf`,
+          lines: wrapLines([{ type: "system", text: "-> Opening resume.pdf..." }]).lines,
+        };
+      }
+      if (pathArg === "blog") {
+        return {
+          action: "navigate" as const,
+          path: "/blog/",
+          lines: wrapLines([{ type: "system", text: "-> Opening /blog/..." }]).lines,
+        };
+      }
+      if (!pathArg) {
+        return wrapLines([
+          { type: "error", text: "  open: missing operand" },
+          { type: "output", text: "  usage: open resume | open blog" },
+        ]);
+      }
+      return wrapLines([
+        { type: "error", text: `  open: ${args}: nothing to open` },
+        { type: "output", text: "  try: open resume | open blog" },
+      ]);
+    }
+
+    case "cd": {
+      if (pathArg === "blog") {
+        return {
+          action: "navigate" as const,
+          path: "/blog/",
+          lines: wrapLines([{ type: "system", text: "-> cd /blog/..." }]).lines,
+        };
+      }
+      if (!pathArg || pathArg === "~" || pathArg === "home" || pathArg === "") {
+        return {
+          action: "navigate" as const,
+          path: "/",
+          lines: wrapLines([{ type: "system", text: "-> cd ~..." }]).lines,
+        };
+      }
+      return wrapLines([
+        { type: "error", text: `  cd: ${args}: No such file or directory` },
+        { type: "output", text: "  try: cd blog" },
+      ]);
+    }
+
+    case "cat": {
+      if (pathArg === "about" || pathArg === "about.md") {
+        return wrapLines([
+          { type: "system", text: "── about.md ───────────────────────────" },
+          ...ABOUT_TEXT.map((line) => ({
+            type: "output" as const,
+            text: line ? `  ${line}` : "",
+          })),
+          { type: "system", text: "───────────────────────────────────────" },
+        ]);
+      }
+      if (pathArg === "resume" || pathArg === "resume.pdf") {
+        return {
+          action: "open" as const,
+          url: `${baseUrl}resume.pdf`,
+          lines: wrapLines([
+            { type: "system", text: "-> resume.pdf is binary; opening download..." },
+          ]).lines,
+        };
+      }
+      if (!pathArg) {
+        return wrapLines([
+          { type: "error", text: "  cat: missing operand" },
+          { type: "output", text: "  usage: cat about" },
+        ]);
+      }
+      return wrapLines([
+        { type: "error", text: `  cat: ${args}: No such file or directory` },
+        { type: "output", text: "  try: cat about" },
+      ]);
+    }
+
     case "socials":
       return wrapLines([
         { type: "system", text: "┌─ Social Links ───────────────────────┐" },
@@ -164,13 +273,36 @@ export function processTerminalCommand(
     case "clear":
       return { action: "clear" };
 
-    case "ls":
+    case "ls": {
+      if (pathArg === "blog") {
+        const entries =
+          blogPosts.length > 0
+            ? blogPosts.map((p) => ({
+                type: "output" as const,
+                text: `  -rw-r--r--  ${p.slug}.md`,
+              }))
+            : [{ type: "output" as const, text: "  (empty)" }];
+        return wrapLines([
+          { type: "system", text: "┌─ ./blog ─────────────────────────────┐" },
+          ...entries,
+          { type: "system", text: "└──────────────────────────────────────┘" },
+          { type: "output", text: "  tip: open blog  |  cd blog" },
+        ]);
+      }
+      if (pathArg) {
+        return wrapLines([
+          { type: "error", text: `  ls: ${args}: No such file or directory` },
+          { type: "output", text: "  try: ls  |  ls blog" },
+        ]);
+      }
       return wrapLines([
         { type: "output", text: "  drwxr-xr-x  about/" },
         { type: "output", text: "  drwxr-xr-x  blog/" },
         { type: "output", text: "  drwxr-xr-x  contact/" },
         { type: "output", text: "  -rw-r--r--  resume.pdf" },
+        { type: "output", text: "  -rw-r--r--  about.md" },
       ]);
+    }
 
     case "pwd":
       return wrapLines([{ type: "output", text: "  /home/pratik/portfolio" }]);
