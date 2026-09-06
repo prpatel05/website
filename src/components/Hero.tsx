@@ -1,6 +1,7 @@
 import { m, useReducedMotion, useScroll } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import { useEntrance, useEntranceGate } from "@/hooks/useEntrance";
+import { useHeroBoot } from "@/hooks/useHeroBoot";
 import { useFitsViewport, useParallax, useParallaxFade } from "@/hooks/useParallax";
 import {
   PORTRAIT_BLANK,
@@ -26,6 +27,7 @@ const Hero = () => {
   const entrance = useEntrance();
   const ctaGate = useEntranceGate();
   const reduceMotion = useReducedMotion();
+  const boot = useHeroBoot();
 
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -82,10 +84,17 @@ const Hero = () => {
   const statusX = useParallax(scrollYProgress, [0, 1], ["0px", "-40px"], holdStill);
 
   useEffect(() => {
+    // Wait until the boot preference is known so a returning visitor does not
+    // get a frame of typing that the settled path then replaces.
+    if (!boot.ready) return;
+
     // A role line that types and retypes itself forever is the longest-running
-    // motion on the page. Reduced motion gets the first role, already typed.
-    if (reduceMotion) {
+    // motion on the page. Reduced motion — and any visit after the first boot —
+    // gets the first role, already typed.
+    if (reduceMotion || !boot.play) {
       setDisplayText(roles[0]);
+      setIsDeleting(false);
+      setRoleIndex(0);
       return;
     }
 
@@ -104,7 +113,7 @@ const Hero = () => {
     }
 
     return () => clearTimeout(timeout);
-  }, [displayText, isDeleting, roleIndex, reduceMotion]);
+  }, [displayText, isDeleting, roleIndex, reduceMotion, boot]);
 
   return (
     <section ref={sectionRef} className="relative min-h-screen flex items-center overflow-hidden grid-bg px-4 sm:px-0">
