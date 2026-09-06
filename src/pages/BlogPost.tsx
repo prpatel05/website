@@ -9,6 +9,7 @@ import {
   posts,
 } from "@/data/blog-posts/registry";
 import NotFound from "./NotFound";
+import PageShell from "@/components/chrome/PageShell";
 import SEO from "@/components/SEO";
 import { TagChip } from "@/components/TagChip";
 import ReadingProgress from "@/components/ReadingProgress";
@@ -254,7 +255,12 @@ const BlogPost = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <PageShell
+      breadcrumbs={[
+        { label: "blog", to: "/blog/" },
+        { label: post.slug },
+      ]}
+    >
       <SEO
         title={postTitle(post.title)}
         description={postDescription(post)}
@@ -272,19 +278,6 @@ const BlogPost = () => {
         preloadImageSizes={hero ? HERO_SIZES : undefined}
         jsonLd={blogPostJsonLd}
       />
-      {/* Header */}
-      <nav aria-label="Main" className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
-        <div className="container flex items-center h-16">
-          <Link
-            to="/"
-            className="font-mono text-xs text-primary flex items-center gap-2 py-1 hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            cd ~
-          </Link>
-        </div>
-      </nav>
-
       <ReadingProgress target={articleRef} enabled={Boolean(content)} />
 
       <main {...mainContentProps}>
@@ -544,24 +537,21 @@ const BlogPost = () => {
               </nav>
             )}
 
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <Link
                 to="/blog/"
-                className="font-mono text-xs text-primary hover:text-foreground transition-colors flex items-center gap-2 py-1"
+                className="font-mono text-xs text-primary hover:text-foreground transition-colors flex items-center gap-2 py-1 min-h-6"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 ls ../posts
               </Link>
-              <span className="font-mono text-[10px] text-muted-foreground">
-                © {new Date().getFullYear()} PRATIK PATEL
-              </span>
             </div>
           </m.div>
           )}
           </div>
         </article>
       </main>
-    </div>
+    </PageShell>
   );
 };
 

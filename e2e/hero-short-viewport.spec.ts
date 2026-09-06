@@ -69,9 +69,12 @@ async function sampleCtas(page: Page): Promise<Record<string, Reading>> {
     const out: Record<string, Reading> = {};
     const navBottom = Math.max(
       0,
-      ...Array.from(document.querySelectorAll("nav, header")).map(
-        (el) => el.getBoundingClientRect().bottom
-      )
+      ...Array.from(document.querySelectorAll("nav, header"))
+        .filter((el) => {
+          const pos = getComputedStyle(el).position;
+          return pos === "fixed" || pos === "sticky";
+        })
+        .map((el) => el.getBoundingClientRect().bottom)
     );
 
     for (const label of labels) {

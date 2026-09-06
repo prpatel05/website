@@ -284,7 +284,7 @@ describe("BlogPost", () => {
 
   it("renders back navigation link", () => {
     renderBlogPost("test-post");
-    expect(screen.getByText("cd ~")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Home" })).toBeInTheDocument();
   });
 
   // A post used to end with one link, to the homepage preview of the five most
@@ -355,7 +355,7 @@ describe("BlogPost", () => {
       expect(screen.getByRole("button", { name: "copy url" })).toBeInTheDocument();
       expect(screen.getByRole("link", { name: "share on x" })).toBeInTheDocument();
       expect(screen.getByRole("link", { name: "linkedin" })).toBeInTheDocument();
-      expect(screen.getByRole("link", { name: "rss" })).toBeInTheDocument();
+      expect(screen.getAllByRole("link", { name: "rss" }).length).toBeGreaterThanOrEqual(1);
       expect(screen.getByRole("link", { name: "substack" })).toBeInTheDocument();
     });
   });
@@ -367,14 +367,16 @@ describe("BlogPost", () => {
   it("points every internal link at its non-redirecting trailing-slash form", async () => {
     const { container } = renderBlogPost("test-post");
     // The closing links are part of the footer, which does not exist until the
-    // body does. Without this the list below is just the nav's `cd ~`.
+    // body does. Without this the list below is just the breadcrumb Home link.
     await screen.findByRole("heading", { name: "Introduction" });
     const hrefs = Array.from(container.querySelectorAll("a[href^='/']")).map(
       (a) => a.getAttribute("href")
     );
 
-    expect(hrefs).toEqual([
-      // The bare origin is the one path served without a redirect.
+    // Chrome (breadcrumbs / sitemap / status) adds stable sitewide links; the
+    // post-specific set below must still be present, and every HTML path still
+    // carries its trailing slash.
+    for (const required of [
       "/",
       "/blog/?tag=testing",
       "/blog/?tag=vitest",
@@ -382,7 +384,16 @@ describe("BlogPost", () => {
       "/blog/newer-post/",
       "/blog/older-post/",
       "/blog/",
-    ]);
+    ]) {
+      expect(hrefs).toContain(required);
+    }
+    for (const href of hrefs) {
+      const path = href.split("?")[0];
+      const last = path.split("/").pop() ?? "";
+      if (path !== "/" && !last.includes(".")) {
+        expect(path.endsWith("/")).toBe(true);
+      }
+    }
   });
 
   // Every internal href on the site now carries a trailing slash, so a client
@@ -605,7 +616,7 @@ describe("BlogPost", () => {
     renderBlogPost("nonexistent-slug");
     // The BlogPost component returns <NotFound /> which shows the 404 page
     expect(screen.getByText("404")).toBeInTheDocument();
-    expect(screen.getByText(/Page not found/)).toBeInTheDocument();
+    expect(screen.getByText(/command not found/i)).toBeInTheDocument();
   });
 
   // Absolute, and pointing at the derived JPEG card rather than the post's

@@ -7,7 +7,7 @@ import { test, expect, type Page,
  * Every standalone control is big enough to hit with a thumb.
  *
  * WCAG 2.2 SC 2.5.8 Target Size (Minimum, AA) puts the floor at 24x24 CSS px.
- * The terminal-style navigation missed it everywhere: `cd ~` measured 53x16 on
+ * The terminal-style navigation missed it everywhere: breadcrumbs measured 53x16 on
  * 24 routes, `ls ../posts` 329x16 on 23, and those are the primary way back out
  * of a blog post. The width was never the problem — a one-line `font-mono
  * text-xs` link is exactly its 16px line box tall, so the whole nav idiom was
@@ -22,7 +22,7 @@ import { test, expect, type Page,
  * would silently fall out of.
  *
  * Runs under both Playwright projects, and both breakpoints carry links the
- * other cannot see: the `cd ~`/`ls` nav is the mobile surface, while Navbar's
+ * other cannot see: the breadcrumb/`ls` nav is the mobile surface, while Navbar's
  * `about()`/`writing()`/`contact()`/`resume()` row is `hidden md:flex` and only
  * exists on desktop. A mobile-only assertion would have reported this clean
  * while four desktop nav links sat at 16px.

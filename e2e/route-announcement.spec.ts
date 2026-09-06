@@ -74,7 +74,7 @@ test.describe("Route announcement", () => {
       name: "/blog/ -> /",
       from: "/blog/",
       fromTitle: BLOG_TITLE,
-      click: "text=cd ~",
+      click: 'a[aria-label="Home"]',
       expected: HOME_TITLE,
     },
   ];

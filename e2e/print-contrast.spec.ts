@@ -821,7 +821,7 @@ test(`print media: decorative glows are not ink on ${route}`, async ({ page }) =
 
 /*
  * A `position: fixed` element paints on every sheet, not just the first. The
- * navbar put `← cd ~` and a rule across the top of all five pages of an
+ * navbar put breadcrumbs and a rule across the top of all five pages of an
  * 8-minute post.
  *
  * Run across every route, and not just the post, because the first version of

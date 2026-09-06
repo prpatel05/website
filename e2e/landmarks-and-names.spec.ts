@@ -13,6 +13,7 @@ test.describe("Navigation landmarks are all named", () => {
 
     await expect(page.getByRole("navigation", { name: "Main" })).toHaveCount(1);
     await expect(page.getByRole("navigation", { name: "More posts" })).toHaveCount(1);
+    await expect(page.getByRole("navigation", { name: "Sitemap" })).toHaveCount(1);
     const contents = page.getByRole("navigation", { name: "Contents" });
     const contentsCount = await contents.count();
     expect(contentsCount === 0 || contentsCount === 1).toBe(true);
@@ -20,7 +21,7 @@ test.describe("Navigation landmarks are all named", () => {
     const seriesCount = await series.count();
     expect(seriesCount === 0 || seriesCount === 2).toBe(true);
     await expect(page.getByRole("navigation")).toHaveCount(
-      2 + contentsCount + seriesCount
+      3 + contentsCount + seriesCount
     );
   });
 
@@ -28,19 +29,36 @@ test.describe("Navigation landmarks are all named", () => {
     await page.goto("/blog/");
     await expect(page.getByRole("navigation", { name: "Main" })).toHaveCount(1);
     await expect(page.getByRole("navigation", { name: "Filter by tag" })).toHaveCount(1);
-    await expect(page.getByRole("navigation")).toHaveCount(2);
+    await expect(page.getByRole("navigation", { name: "Sitemap" })).toHaveCount(1);
+    await expect(page.getByRole("navigation")).toHaveCount(3);
   });
 
-  test("homepage names its nav region", async ({ page }) => {
+  test("homepage names its nav regions", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("navigation", { name: "Main" })).toHaveCount(1);
-    await expect(page.getByRole("navigation")).toHaveCount(1);
+    await expect(page.getByRole("navigation", { name: "Sitemap" })).toHaveCount(1);
+    // Jump rail mounts only after scroll; at the top it must not exist yet.
+    await expect(page.getByRole("navigation", { name: "On this page" })).toHaveCount(0);
+    await expect(page.getByRole("navigation")).toHaveCount(2);
+
+    await page.evaluate(() => {
+      const about = document.getElementById("about");
+      if (!about) throw new Error("#about missing");
+      // Park about under the fixed nav so the jump rail's reveal predicate
+      // (top <= 64) is true, then dispatch scroll so the listener runs.
+      const y = about.getBoundingClientRect().top + window.scrollY - 64;
+      window.scrollTo(0, Math.max(0, y));
+      window.dispatchEvent(new Event("scroll"));
+    });
+    await expect(page.getByRole("navigation", { name: "On this page" })).toHaveCount(1);
+    await expect(page.getByRole("navigation")).toHaveCount(3);
   });
 
   test("series hub names its nav region", async ({ page }) => {
     await page.goto("/blog/series/agent-reliability/");
     await expect(page.getByRole("navigation", { name: "Main" })).toHaveCount(1);
-    await expect(page.getByRole("navigation")).toHaveCount(1);
+    await expect(page.getByRole("navigation", { name: "Sitemap" })).toHaveCount(1);
+    await expect(page.getByRole("navigation")).toHaveCount(2);
   });
 });
 
