@@ -304,7 +304,7 @@ describe("blog auto-merge routine", () => {
     const r = run({ prs: [pr({ mergeable: "MERGEABLE" })], files: { [BRANCH]: TOMORROW } });
     expect(r.merges).toEqual(["31"]);
     expect(r.stdout).toContain("Eve-of-publish merge");
-    expect(r.issues).toEqual([]);
+    expect(r.issues).toEqual([`Social promotion: ${BRANCH}`]);
     expect(r.status).toBe(0);
   });
 
