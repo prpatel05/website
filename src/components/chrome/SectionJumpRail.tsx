@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type MouseEvent } from "react";
 import { useActiveHeading } from "@/hooks/useActiveHeading";
 import { scrollBehavior } from "@/lib/scroll-behavior";
+import { chromeAccent, chromeSep } from "./chrome-tokens";
 
 const SECTIONS = [
   { id: "about", label: "about" },
@@ -50,17 +51,17 @@ const SectionJumpRail = () => {
   return (
     <nav
       aria-label="On this page"
-      className="fixed top-16 left-0 right-0 z-40 border-b border-border bg-background print:hidden"
+      className="fixed top-16 left-0 right-0 z-40 border-b border-border bg-background/90 backdrop-blur-md print:hidden"
     >
-      <div className="container px-4 h-9 flex items-center overflow-x-auto">
-        <p className="font-mono text-[10px] sm:text-xs tracking-widest text-muted-foreground whitespace-nowrap">
+      <div className="container h-9 flex items-center overflow-x-auto">
+        <p className="font-mono text-xs tracking-widest text-muted-foreground whitespace-nowrap">
           <span className="text-primary/60 print:text-primary">{"// "}</span>
           {SECTIONS.map((section, i) => {
             const current = section.id === activeId;
             return (
               <span key={section.id}>
                 {i > 0 ? (
-                  <span aria-hidden="true" className="text-border px-1.5">
+                  <span aria-hidden="true" className={`${chromeSep} px-1.5`}>
                     ·
                   </span>
                 ) : null}
@@ -71,8 +72,8 @@ const SectionJumpRail = () => {
                   className={
                     "inline-flex items-center justify-center min-h-6 min-w-6 px-1.5 transition-colors " +
                     (current
-                      ? "text-primary"
-                      : "text-muted-foreground hover:text-foreground")
+                      ? `${chromeAccent} underline decoration-primary/50 underline-offset-4`
+                      : "text-muted-foreground hover:text-primary")
                   }
                 >
                   {section.label}

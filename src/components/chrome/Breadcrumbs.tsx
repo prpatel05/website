@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { chromePath } from "./chrome-tokens";
 
 export type BreadcrumbSegment = {
   /** Path segment as shown after `~/` (e.g. `blog`, a slug). */
@@ -22,7 +23,7 @@ const segmentClass =
  */
 const Breadcrumbs = ({ segments }: BreadcrumbsProps) => {
   return (
-    <ol className="flex flex-wrap items-center gap-x-0 font-mono text-xs">
+    <ol className={`flex flex-wrap items-center gap-x-0 ${chromePath}`}>
       <li className="flex items-center">
         <Link to="/" aria-label="Home" className={segmentClass}>
           ~

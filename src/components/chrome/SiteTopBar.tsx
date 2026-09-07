@@ -13,7 +13,7 @@ const SiteTopBar = ({ segments }: SiteTopBarProps) => (
     aria-label="Main"
     className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border print:hidden"
   >
-    <div className="container flex items-center h-16">
+    <div className="container flex items-center min-h-16 py-1">
       <Breadcrumbs segments={segments} />
     </div>
   </nav>

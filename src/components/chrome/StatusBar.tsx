@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useBuildInfo } from "@/hooks/useBuildInfo";
 import { useCrtNoise } from "@/hooks/useCrtNoise";
+import { chromeAccent, chromeAccentSoft, chromeMeta, chromeSep } from "./chrome-tokens";
 
 /**
  * Sitewide bottom strip. Reads `/build-sha.txt` once after mount (with
@@ -11,22 +12,31 @@ import { useCrtNoise } from "@/hooks/useCrtNoise";
  *
  * Also hosts the CRT noise toggle: off by default, remembered in localStorage,
  * forced off under prefers-reduced-motion.
+ *
+ * Lives under SiteFooter inside PageShell's single foot border so mobile does
+ * not stack two competing `border-t` rules.
  */
 const StatusBar = () => {
   const { shortSha, deployed, newestTitle, newestSlug } = useBuildInfo();
   const { storedOn, reduceMotion, toggle } = useCrtNoise();
+  const crtOn = storedOn && !reduceMotion;
   const crtLabel = reduceMotion ? "crt: off*" : storedOn ? "crt: on" : "crt: off";
 
   return (
     <div
       aria-label="Build status"
-      className="border-t border-border bg-background print:hidden"
+      className="status-bar bg-muted/25 print:hidden"
     >
-      <div className="container px-4 min-h-8 py-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 font-mono text-[10px] text-muted-foreground tracking-wide">
-        <span className="shrink-0">main @ {shortSha || "…"}</span>
+      <div
+        className={`container min-h-8 py-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 ${chromeMeta}`}
+      >
+        <span className="shrink-0">
+          main @{" "}
+          <span className={chromeAccentSoft}>{shortSha || "…"}</span>
+        </span>
         {deployed ? (
           <>
-            <span aria-hidden="true" className="text-border shrink-0">
+            <span aria-hidden="true" className={`${chromeSep} shrink-0`}>
               |
             </span>
             <span className="shrink-0">deployed {deployed}</span>
@@ -34,7 +44,7 @@ const StatusBar = () => {
         ) : null}
         {newestSlug ? (
           <>
-            <span aria-hidden="true" className="text-border shrink-0">
+            <span aria-hidden="true" className={`${chromeSep} shrink-0`}>
               |
             </span>
             <span className="min-w-0 break-words">
@@ -48,14 +58,14 @@ const StatusBar = () => {
             </span>
           </>
         ) : null}
-        <span aria-hidden="true" className="text-border shrink-0">
+        <span aria-hidden="true" className={`${chromeSep} shrink-0`}>
           |
         </span>
         <button
           type="button"
           onClick={toggle}
           disabled={reduceMotion}
-          aria-pressed={storedOn && !reduceMotion}
+          aria-pressed={crtOn}
           aria-label={
             reduceMotion
               ? "CRT noise unavailable with reduced motion"
@@ -68,7 +78,12 @@ const StatusBar = () => {
               ? "CRT noise stays off while prefers-reduced-motion is set"
               : "Toggle subtle CRT noise / scanlines"
           }
-          className="shrink-0 inline-flex items-center min-h-6 px-1 text-muted-foreground hover:text-primary transition-colors disabled:opacity-50 disabled:hover:text-muted-foreground"
+          className={
+            "shrink-0 inline-flex items-center min-h-6 px-1 transition-colors disabled:opacity-50 disabled:hover:text-muted-foreground " +
+            (crtOn
+              ? `${chromeAccent} hover:text-foreground`
+              : "text-muted-foreground hover:text-primary")
+          }
         >
           {crtLabel}
         </button>
