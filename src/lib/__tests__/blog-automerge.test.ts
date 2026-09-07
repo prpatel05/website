@@ -300,10 +300,10 @@ describe("blog auto-merge routine", () => {
 
   // The routine used to merge a day early, so every post went live the evening
   // before its own dateISO. A post is due on its dateISO and not before.
-  it("leaves a PR whose publish date is tomorrow until the morning of", () => {
-    const r = run({ prs: [pr()], files: { [BRANCH]: TOMORROW } });
-    expect(r.merges).toEqual([]);
-    expect(r.stdout).toContain("has not arrived yet");
+  it("merges a PR whose publish date is tomorrow (eve-of-publish buffer)", () => {
+    const r = run({ prs: [pr({ mergeable: "MERGEABLE" })], files: { [BRANCH]: TOMORROW } });
+    expect(r.merges).toEqual(["31"]);
+    expect(r.stdout).toContain("Eve-of-publish merge");
     expect(r.issues).toEqual([]);
     expect(r.status).toBe(0);
   });
@@ -577,7 +577,7 @@ describe("blog auto-merge routine", () => {
       TODAY,
       () => realDateBinDir,
     );
-    expect(r.stdout).toContain(`UTC date: ${TODAY} (merging posts due on or before ${TODAY})`);
+    expect(r.stdout).toContain(`UTC date: ${TODAY} (merging posts due today or tomorrow)`);
     expect(r.merges).toEqual(["31"]);
     expect(r.status).toBe(0);
   });
