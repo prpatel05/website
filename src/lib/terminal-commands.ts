@@ -261,7 +261,7 @@ export function processTerminalCommand(
       return wrapLines([
         { type: "output", text: ASCII_LOGO },
         { type: "system", text: "  Pratik Patel" },
-        { type: "output", text: "  Chief Architect · Bounded · OpenApps · 3x Company Builder" },
+        { type: "output", text: "  Chief Architect · Bounded · OpenApps" },
         { type: "output", text: "  11+ years · AI · Cloud · Web3" },
         { type: "output", text: "  Washington, DC | pratik@pa.tel" },
       ]);

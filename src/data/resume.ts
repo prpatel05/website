@@ -74,7 +74,7 @@ export const experience: readonly ResumeRole[] = [
     ],
   },
   {
-    title: "Co-Founder & CTO → Senior Software Engineer II",
+    title: "Co-Founder & CTO -> Senior Software Engineer II",
     org: "Dapper Labs (via Acq. of Zay Codes)",
     dates: "Jun 2021 – May 2023",
     blurb:
@@ -86,7 +86,7 @@ export const experience: readonly ResumeRole[] = [
     ],
   },
   {
-    title: "Senior SDE → Lead, Proactive Security",
+    title: "Senior SDE -> Lead, Proactive Security",
     org: "Amazon Web Services",
     dates: "Jan 2015 – Mar 2022",
     blurb:
