@@ -31,7 +31,7 @@ const About = () => {
 
   return (
     <section ref={ref} id="about" className="py-16 sm:py-24 lg:py-40 relative overflow-hidden">
-      <m.div className="absolute inset-0 scanline pointer-events-none" style={{ y: scanlineY }} />
+      <m.div className="absolute inset-0 scanline pointer-events-none print:hidden" style={{ y: scanlineY }} />
       <m.div className="container relative z-10" style={{ opacity: sectionOpacity }}>
         <SectionHeader label="// section:about" titleLeft="About" titleRight="me" />
 

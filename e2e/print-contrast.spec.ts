@@ -396,6 +396,7 @@ const REQUIRED_EDGES: Record<string, string[]> = {
     "a border-left",
   ],
   "/blog/": ["a border-left"],
+  "/resume/": ["a border-left"],
   "/": ["a border-left"],
 };
 
@@ -865,6 +866,7 @@ const TERMINAL_TOGGLE = 'button[title="Open terminal (Ctrl+K)"]';
 const FIXED_CHROME: Record<string, string[]> = {
   "/blog/your-eval-suite-measures-the-wrong-thing/": [NAV],
   "/blog/": [NAV],
+  "/resume/": [NAV],
   "/": [NAV, TERMINAL_TOGGLE],
 };
 

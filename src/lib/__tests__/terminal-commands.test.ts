@@ -43,18 +43,19 @@ describe("processTerminalCommand", () => {
   });
 
   // --- resume ---
-  it("returns open action with resume URL for 'resume'", () => {
+  it("navigates to the HTML resume for 'resume'", () => {
     const result = processTerminalCommand("resume", "/base/");
-    expect(result.action).toBe("open");
-    if (result.action !== "open") return;
-    expect(result.url).toBe("/base/resume.pdf");
-    expect(result.lines.some((l) => l.text.includes("Downloading resume.pdf"))).toBe(true);
+    expect(result.action).toBe("navigate");
+    if (result.action !== "navigate") return;
+    expect(result.path).toBe("/resume/");
+    expect(result.lines.some((l) => l.text.includes("Opening /resume/"))).toBe(true);
   });
 
-  it("uses default baseUrl for resume", () => {
+  it("navigates to /resume/ without needing a baseUrl", () => {
     const result = processTerminalCommand("resume");
-    if (result.action !== "open") return;
-    expect(result.url).toBe("/resume.pdf");
+    expect(result.action).toBe("navigate");
+    if (result.action !== "navigate") return;
+    expect(result.path).toBe("/resume/");
   });
 
   // --- socials ---
@@ -238,8 +239,15 @@ describe("processTerminalCommand", () => {
 
 
   // --- open / cd / cat / ls blog (terminal 2.0) ---
-  it("opens the resume for 'open resume'", () => {
+  it("navigates to the HTML resume for 'open resume'", () => {
     const result = processTerminalCommand("open resume", "/base/");
+    expect(result.action).toBe("navigate");
+    if (result.action !== "navigate") return;
+    expect(result.path).toBe("/resume/");
+  });
+
+  it("opens the PDF for 'open resume.pdf'", () => {
+    const result = processTerminalCommand("open resume.pdf", "/base/");
     expect(result.action).toBe("open");
     if (result.action !== "open") return;
     expect(result.url).toBe("/base/resume.pdf");

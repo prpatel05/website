@@ -10,8 +10,8 @@ export const COMMANDS: Record<string, string> = {
   about: "Navigate to about section",
   blog: "Open blog archive",
   contact: "Navigate to contact section",
-  resume: "Download resume",
-  open: "open resume | open blog",
+  resume: "Open HTML resume",
+  open: "open resume | open resume.pdf | open blog",
   cd: "cd blog — open the archive",
   cat: "cat about — read the bio",
   socials: "List social links",
@@ -141,17 +141,24 @@ export function processTerminalCommand(
 
     case "resume":
       return {
-        action: "open" as const,
-        url: `${baseUrl}resume.pdf`,
-        lines: wrapLines([{ type: "system", text: "-> Downloading resume.pdf..." }]).lines,
+        action: "navigate" as const,
+        path: "/resume/",
+        lines: wrapLines([{ type: "system", text: "-> Opening /resume/..." }]).lines,
       };
 
     case "open": {
-      if (pathArg === "resume" || pathArg === "resume.pdf") {
+      if (pathArg === "resume.pdf") {
         return {
           action: "open" as const,
           url: `${baseUrl}resume.pdf`,
           lines: wrapLines([{ type: "system", text: "-> Opening resume.pdf..." }]).lines,
+        };
+      }
+      if (pathArg === "resume") {
+        return {
+          action: "navigate" as const,
+          path: "/resume/",
+          lines: wrapLines([{ type: "system", text: "-> Opening /resume/..." }]).lines,
         };
       }
       if (pathArg === "blog") {

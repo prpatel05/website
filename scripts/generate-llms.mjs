@@ -69,6 +69,7 @@ function llmsTxt(posts) {
   const pages = [
     `- [Home](${SITE_URL}/): Personal site and writing by ${AUTHOR}.`,
     `- [Blog](${SITE_URL}/blog/): Full archive of published posts.`,
+    `- [Resume](${SITE_URL}/resume/): HTML resume (PDF at ${SITE_URL}/resume.pdf).`,
     `- [RSS feed](${SITE_URL}/rss.xml): Machine-readable feed of the same posts.`,
   ].join("\n");
 

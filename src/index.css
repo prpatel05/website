@@ -341,7 +341,30 @@
    * pages of an 8-minute post — dead ink, and a control nothing on paper can
    * follow.
    */
-  nav[aria-label="Main"] {
-    display: none;
+  nav[aria-label="Main"],
+  nav[aria-label="On this page"],
+  nav[aria-label="Sitemap"],
+  [role="status"][aria-live],
+  .status-bar,
+  button[title*="terminal" i],
+  button[title*="CRT" i] {
+    display: none !important;
+  }
+
+  /*
+   * Resume + About print polish: keep role cards, skill groups, and the About
+   * bio/skills windows from splitting mid-card. About starts on a fresh sheet
+   * when the homepage is printed so the bio is not glued under the hero CTAs.
+   */
+  .resume-block,
+  .resume-avoid-break,
+  #about .border.bg-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  #about {
+    break-before: page;
+    page-break-before: always;
   }
 }

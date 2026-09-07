@@ -54,6 +54,14 @@ test.describe("Navigation landmarks are all named", () => {
     await expect(page.getByRole("navigation")).toHaveCount(3);
   });
 
+
+  test("resume page names its nav regions", async ({ page }) => {
+    await page.goto("/resume/");
+    await expect(page.getByRole("navigation", { name: "Main" })).toHaveCount(1);
+    await expect(page.getByRole("navigation", { name: "Sitemap" })).toHaveCount(1);
+    await expect(page.getByRole("navigation")).toHaveCount(2);
+    await expect(page.getByRole("heading", { level: 1, name: "Pratik Patel" })).toBeVisible();
+  });
   test("series hub names its nav region", async ({ page }) => {
     await page.goto("/blog/series/agent-reliability/");
     await expect(page.getByRole("navigation", { name: "Main" })).toHaveCount(1);
