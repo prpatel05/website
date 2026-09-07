@@ -82,10 +82,14 @@ test.describe("Interactive terminal", () => {
       await commandLine(page).fill("ls");
       await page.keyboard.press("Enter");
 
-      await expect(page.getByText("about/")).toBeVisible();
-      await expect(page.getByText("blog/")).toBeVisible();
-      await expect(page.getByText("contact/")).toBeVisible();
-      await expect(page.getByText("-rw-r--r--  resume.pdf")).toBeVisible();
+      // Scope to the terminal log — `#writing` now paints `// section:blog`
+      // immediately above `// latest`, and Playwright substring-matches that
+      // concatenation as `blog/`, which trips strict mode against the ls row.
+      const log = page.locator(TERMINAL_LOG);
+      await expect(log.getByText("about/")).toBeVisible();
+      await expect(log.getByText("blog/")).toBeVisible();
+      await expect(log.getByText("contact/")).toBeVisible();
+      await expect(log.getByText("-rw-r--r--  resume.pdf")).toBeVisible();
     });
 
     test("ls blog lists post files", async ({ page }) => {

@@ -90,7 +90,7 @@ const BlogPreview = () => {
               <PreviewCard index={0}>
                 <Link
                   to={`/blog/${latest.slug}/`}
-                  className="group block border border-primary/40 bg-card hover:border-primary/70 hover:box-glow transition-all duration-500 overflow-hidden"
+                  className="group block border border-primary/40 print:border-primary bg-card hover:border-primary/70 hover:box-glow transition-all duration-500 overflow-hidden"
                   data-latest-post
                 >
                   {/*
@@ -120,7 +120,7 @@ const BlogPreview = () => {
                         {latest.subtitle}
                       </p>
                     </div>
-                    <div className="w-10 h-10 border border-primary/40 flex items-center justify-center text-primary group-hover:border-primary group-hover:bg-primary/10 transition-all shrink-0">
+                    <div className="w-10 h-10 border border-primary/40 print:border-primary flex items-center justify-center text-primary group-hover:border-primary group-hover:bg-primary/10 transition-all shrink-0">
                       <ArrowUpRight className="w-4 h-4" />
                     </div>
                   </div>
