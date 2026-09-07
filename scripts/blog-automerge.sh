@@ -121,7 +121,7 @@ ci_verdict() {
 }
 
 echo "Checking open blog PRs for $REPO"
-echo "UTC date: $TODAY (merging posts due on or before $TODAY)"
+echo "UTC date: $TODAY (merging posts due today or tomorrow)"
 if (( DRY_RUN )); then
   echo "DRY RUN: no PR will be merged, no issue will be created, and deploy will not be dispatched."
 fi
@@ -297,11 +297,18 @@ while IFS= read -r pr_json; do
     continue
   fi
 
-  # A post publishes on its dateISO, so it merges on the morning of that date --
-  # not the day before. The old `> $TOMORROW` form put every post live a full
-  # day early, which is what this comparison exists to prevent.
-  if [[ "$date_iso" > "$TODAY" ]]; then
-    echo "  Skipping: publish date $date_iso has not arrived yet."
+  # Merge on the publish morning OR the day before. Eve-of-publish merge
+  # (Monday for a Tuesday dateISO) gives Pages a full day before blog-day
+  # promo/syndicate. Farther-future posts stay skipped. The old
+  # `date_iso > TODAY` gate merged only on the day itself and left no buffer
+  # when deploy failed.
+  if date -u -d "$TODAY + 1 day" +%F >/dev/null 2>&1; then
+    TOMORROW="$(date -u -d "$TODAY + 1 day" +%F)"
+  else
+    TOMORROW="$(date -u -j -v+1d -f "%Y-%m-%d" "$TODAY" +%F)"
+  fi
+  if [[ "$date_iso" > "$TOMORROW" ]]; then
+    echo "  Skipping: publish date $date_iso is more than one day out (tomorrow is $TOMORROW)."
     skipped_prs+=("$number|$branch|not_yet_due:$date_iso")
     # The real run stops here to keep a far-future PR free of API calls. A dry
     # run reads the gate anyway, because on most days nothing is due and a dry
@@ -312,6 +319,9 @@ while IFS= read -r pr_json; do
       echo "  Dry run: not due, but reading the CI gate anyway: $(ci_verdict "$number")."
     fi
     continue
+  fi
+  if [[ "$date_iso" > "$TODAY" ]]; then
+    echo "  Eve-of-publish merge: $date_iso is tomorrow ($TOMORROW); merging a day early for Pages buffer."
   fi
 
   # A past-due PR used to land here as `date_not_due` and be skipped forever:
@@ -395,7 +405,7 @@ if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
     echo "## Blog Auto-Merge Routine"
     echo ""
     echo "- UTC date: $TODAY"
-    echo "- Merging posts due on or before: $TODAY"
+    echo "- Merging posts due today or tomorrow (eve-of-publish)"
     if (( DRY_RUN )); then
       echo "- **Dry run**: nothing was merged and no issue was created."
       echo ""
