@@ -87,7 +87,7 @@ const BlogPreview = () => {
             <PreviewCard key={post.slug} index={i}>
               <Link
                 to={`/blog/${post.slug}/`}
-                className="group block border border-border bg-card hover:border-primary/40 transition-all duration-500 p-6 lg:p-8"
+                className="group block border border-border bg-card hover:border-primary/30 transition-all duration-500 p-6 lg:p-8"
               >
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   {/*
