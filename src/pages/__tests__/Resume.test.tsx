@@ -56,8 +56,9 @@ describe("Resume page", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "Pratik Patel" })
     ).toBeInTheDocument();
-    expect(screen.getByText(/CTO & Chief Architect/)).toBeInTheDocument();
-    expect(screen.getByText("Tarobase (poof.new)")).toBeInTheDocument();
+    expect(screen.getByText(/Chief Architect \| AI Agents/)).toBeInTheDocument();
+    expect(screen.getByText("Bounded · OpenApps")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Chief Architect" })).toBeInTheDocument();
     expect(screen.getByText("Amazon Web Services")).toBeInTheDocument();
     const pdf = screen.getByRole("link", { name: /download resume\.pdf/i });
     expect(pdf.getAttribute("href")).toMatch(/resume\.pdf$/);

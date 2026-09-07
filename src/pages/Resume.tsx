@@ -7,7 +7,6 @@ import { RESUME_TITLE } from "@/lib/route-title";
 import { SITE_CARD } from "@/lib/social-cards";
 import { personRef } from "@/lib/person-jsonld";
 import {
-  careerHighlights,
   education,
   executiveSummary,
   experience,
@@ -17,7 +16,7 @@ import {
 } from "@/data/resume";
 
 const RESUME_DESCRIPTION =
-  "HTML resume for Pratik Patel — CTO & Chief Architect. Career across Tarobase, eddii, Dapper Labs, and AWS. Download the PDF anytime.";
+  "HTML resume for Pratik Patel — Chief Architect at Bounded · OpenApps. Career across agent platforms, eddii, Dapper Labs, and AWS. Download the PDF anytime.";
 
 const resumePdfHref = `${import.meta.env.BASE_URL}resume.pdf`;
 
@@ -50,7 +49,7 @@ const Resume = () => {
       url: "https://pratik.pa.tel/resume/",
       mainEntity: {
         ...personRef,
-        jobTitle: "CTO & Chief Architect",
+        jobTitle: "Chief Architect",
         email: resumeMeta.email,
         telephone: resumeMeta.phone,
       },
@@ -82,7 +81,7 @@ const Resume = () => {
         description={RESUME_DESCRIPTION}
         canonical="https://pratik.pa.tel/resume"
         ogImage={SITE_CARD.url}
-        ogImageAlt="Pratik Patel — CTO & Chief Architect — pratik.pa.tel"
+        ogImageAlt="Pratik Patel — Chief Architect — pratik.pa.tel"
         ogImageWidth={SITE_CARD.width}
         ogImageHeight={SITE_CARD.height}
         jsonLd={jsonLd}
@@ -165,31 +164,6 @@ const Resume = () => {
             </div>
           </section>
 
-          <section className="mb-10 resume-block" aria-labelledby="resume-highlights">
-            <SectionLabel>{"// career_highlights"}</SectionLabel>
-            <h2
-              id="resume-highlights"
-              className="font-display text-2xl font-bold mb-6 text-foreground"
-            >
-              Career <span className="text-primary text-glow">highlights</span>
-            </h2>
-            <ul className="space-y-4">
-              {careerHighlights.map((item) => (
-                <li
-                  key={item.title}
-                  className="border border-border bg-card p-4 resume-avoid-break"
-                >
-                  <h3 className="font-mono text-xs text-primary tracking-widest mb-2">
-                    {item.title}
-                  </h3>
-                  <p className="font-mono text-sm text-muted-foreground leading-relaxed">
-                    {item.text}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </section>
-
           <section className="mb-10" aria-labelledby="resume-experience">
             <SectionLabel>{"// professional_experience"}</SectionLabel>
             <h2
@@ -215,6 +189,22 @@ const Resume = () => {
                       </span>
                     </div>
                     <p className="font-mono text-sm text-primary mb-1">{role.org}</p>
+                    {role.orgLinks && role.orgLinks.length > 0 ? (
+                      <ul className="flex flex-wrap gap-x-3 gap-y-1 font-mono text-[10px] tracking-widest text-muted-foreground mb-2">
+                        {role.orgLinks.map((link) => (
+                          <li key={link.href}>
+                            <a
+                              href={link.href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center min-h-6 hover:text-primary transition-colors underline-offset-2 hover:underline"
+                            >
+                              {link.label}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
                     <p className="font-mono text-xs text-muted-foreground mb-4 leading-relaxed">
                       {role.blurb}
                     </p>

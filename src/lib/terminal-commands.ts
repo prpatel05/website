@@ -44,8 +44,9 @@ const ABOUT_TEXT = [
   "and took a healthtech startup from napkin sketch to 50K+ users as",
   "founding CTO.",
   "",
-  "Currently Chief Architect at Tarobase (poof.new), building AI-powered",
-  "tools for vibe-coded dApps.",
+  "Currently Chief Architect at Bounded · OpenApps (bounded.sh,",
+  "openapps.xyz), building the full-stack AI agent app builder and",
+  "policy-enforced runtime.",
 ];
 
 export type CommandResult =
@@ -260,7 +261,7 @@ export function processTerminalCommand(
       return wrapLines([
         { type: "output", text: ASCII_LOGO },
         { type: "system", text: "  Pratik Patel" },
-        { type: "output", text: "  CTO & Chief Architect · 3x Company Builder" },
+        { type: "output", text: "  Chief Architect · Bounded · OpenApps · 3x Company Builder" },
         { type: "output", text: "  11+ years · AI · Cloud · Web3" },
         { type: "output", text: "  Washington, DC | pratik@pa.tel" },
       ]);
