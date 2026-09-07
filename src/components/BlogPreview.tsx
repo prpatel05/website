@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { m } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
-import { posts } from "@/data/blog-posts/registry";
+import { posts, type BlogPost } from "@/data/blog-posts/registry";
 import { resolveSelectedWriting } from "@/data/selected-writing";
 import { SERIES_HREF, SERIES_NAME } from "@/lib/blog-series";
 import { useEntrance, useEntranceGate } from "@/hooks/useEntrance";
@@ -40,12 +40,38 @@ const PreviewCard = ({ index, children }: { index: number; children: ReactNode }
   );
 };
 
+const PostMeta = ({ post, tagLimit = 2 }: { post: BlogPost; tagLimit?: number }) => (
+  <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3">
+    <span className="font-mono text-[10px] text-muted-foreground">{post.date}</span>
+    <span aria-hidden="true" className="text-border hidden sm:inline">
+      |
+    </span>
+    <span className="font-mono text-[10px] text-muted-foreground">{post.readTime}</span>
+    {post.tags.slice(0, tagLimit).map((tag) => (
+      <span
+        key={tag}
+        className="font-mono text-[10px] text-primary/60 print:text-primary border border-primary/20 px-2 py-0.5"
+      >
+        #{tag}
+      </span>
+    ))}
+  </div>
+);
+
 const BlogPreview = () => {
   const { ref, scrollYProgress, sectionOpacity } = useScrollAnimation();
-  const previewPosts = resolveSelectedWriting();
-  // Fall back to newest three only if curation somehow resolves empty — the
-  // homepage should never ship a blank writing block.
-  const cards = previewPosts.length > 0 ? previewPosts : posts.slice(0, 3);
+  const latest = posts[0];
+  const curated = resolveSelectedWriting().filter(
+    (post) => !latest || post.slug !== latest.slug
+  );
+  // Fall back to newest (excluding the featured latest) only if curation
+  // somehow resolves empty — the homepage should never ship a blank Selected
+  // block. Deduping keeps a slug that is both newest and curated from
+  // appearing twice.
+  const cards =
+    curated.length > 0
+      ? curated
+      : posts.filter((post) => !latest || post.slug !== latest.slug).slice(0, 3);
 
   const gridY = useParallax(scrollYProgress, [0, 1], ["0%", "-15%"]);
 
@@ -59,6 +85,50 @@ const BlogPreview = () => {
           titleRight="writing"
           titleRightClass="text-accent text-glow-accent"
         >
+          {latest ? (
+            <div className="mt-2 mb-12">
+              <PreviewCard index={0}>
+                <Link
+                  to={`/blog/${latest.slug}/`}
+                  className="group block border border-primary/40 print:border-primary bg-card hover:border-primary/70 hover:box-glow transition-all duration-500 overflow-hidden"
+                  data-latest-post
+                >
+                  {/*
+                    Terminal window chrome — same traffic-light bar voice as
+                    About's about.md card, so Latest reads as chrome rather than
+                    another Selected row.
+                  */}
+                  <div className="h-8 bg-muted border-b border-border flex items-center px-4 gap-2">
+                    <span aria-hidden="true" className="w-2.5 h-2.5 rounded-full bg-destructive/60" />
+                    <span aria-hidden="true" className="w-2.5 h-2.5 rounded-full bg-primary/40" />
+                    <span aria-hidden="true" className="w-2.5 h-2.5 rounded-full bg-primary/60" />
+                    <span className="font-mono text-[10px] text-primary/70 print:text-primary ml-3 tracking-widest">
+                      // latest
+                    </span>
+                  </div>
+                  <div className="p-6 lg:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    {/*
+                      Same wrap rule as the Selected cards and archive (PRA-977):
+                      post-derived title/subtitle/tags need `anywhere` inside flex.
+                    */}
+                    <div className="flex-1 [overflow-wrap:anywhere]">
+                      <PostMeta post={latest} tagLimit={3} />
+                      <h3 className="font-display text-2xl lg:text-3xl font-bold text-foreground group-hover:text-primary transition-colors">
+                        {latest.title}
+                      </h3>
+                      <p className="font-mono text-sm text-muted-foreground mt-2">
+                        {latest.subtitle}
+                      </p>
+                    </div>
+                    <div className="w-10 h-10 border border-primary/40 print:border-primary flex items-center justify-center text-primary group-hover:border-primary group-hover:bg-primary/10 transition-all shrink-0">
+                      <ArrowUpRight className="w-4 h-4" />
+                    </div>
+                  </div>
+                </Link>
+              </PreviewCard>
+            </div>
+          ) : null}
+
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-12 gap-4">
             <h2 className="font-display text-3xl sm:text-4xl lg:text-6xl font-bold">
               <span className="text-foreground">Selected</span>{" "}
@@ -84,7 +154,7 @@ const BlogPreview = () => {
 
         <div className="space-y-4">
           {cards.map((post, i) => (
-            <PreviewCard key={post.slug} index={i}>
+            <PreviewCard key={post.slug} index={i + 1}>
               <Link
                 to={`/blog/${post.slug}/`}
                 className="group block border border-border bg-card hover:border-primary/30 transition-all duration-500 p-6 lg:p-8"
@@ -104,23 +174,7 @@ const BlogPreview = () => {
                     report it.
                   */}
                   <div className="flex-1 [overflow-wrap:anywhere]">
-                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3">
-                      <span className="font-mono text-[10px] text-muted-foreground">
-                        {post.date}
-                      </span>
-                      <span aria-hidden="true" className="text-border hidden sm:inline">|</span>
-                      <span className="font-mono text-[10px] text-muted-foreground">
-                        {post.readTime}
-                      </span>
-                      {post.tags.slice(0, 2).map((tag) => (
-                        <span
-                          key={tag}
-                          className="font-mono text-[10px] text-primary/60 print:text-primary border border-primary/20 px-2 py-0.5"
-                        >
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
+                    <PostMeta post={post} />
                     <h3 className="font-display text-xl lg:text-2xl font-bold text-foreground group-hover:text-primary transition-colors">
                       {post.title}
                     </h3>
