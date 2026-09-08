@@ -9,6 +9,15 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+  # Publish morning (~8:30am Eastern). Blog automerge runs at 12:00 UTC and
+  # only dispatches deploy when it merged something. Eve-of-publish merges
+  # bake RSS/llms with yesterday's dateISO cutoff, so a day with nothing left
+  # to merge never rebuilds and feeds omit the newly live post. This cron
+  # rebuilds so dateISO=today posts enter rss.xml / llms.txt without loosening
+  # the feed cutoff (still dateISO <= build day).
+  schedule:
+    - cron: '30 12 * * *'
+
 # Sets the GITHUB_TOKEN permissions to allow deployment to GitHub Pages
 permissions:
   contents: read
