@@ -266,12 +266,12 @@ const Resume = () => {
           </section>
 
           <section className="resume-block" aria-labelledby="resume-publications">
-            <SectionLabel>{"// publications_open_source"}</SectionLabel>
+            <SectionLabel>{"// publications"}</SectionLabel>
             <h2
               id="resume-publications"
               className="font-display text-2xl font-bold mb-4 text-foreground"
             >
-              Publications &amp; open source
+              Publications
             </h2>
             <ul className="space-y-3">
               {publications.map((pub) => (

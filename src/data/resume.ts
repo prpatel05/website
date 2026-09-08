@@ -55,8 +55,8 @@ export const experience: readonly ResumeRole[] = [
       { label: "openapps.xyz", href: "https://openapps.xyz" },
     ],
     bullets: [
-      "Own the full-stack architecture for Bounded: agent app builder plus policy-enforced runtime spanning verify/deploy gates, data boundaries and invariants, auth, data/files, server functions, realtime/live state, payments, and hosting.",
-      "Design the agent-runtime contract so coding agents (Claude Code, Codex, and peers) can build while Bounded enforces declared boundaries: refused writes, watched/approved routed actions, and deploy gates that keep apps safe to iterate.",
+      "Own the full-stack architecture for Bounded: agent app builder plus policy-enforced runtime spanning verify/deploy gates, promoted data boundaries and invariants, auth (users, sessions, roles, OAuth, email OTP), data/files, server functions with secrets and hooks, realtime/live queries, live room state, payments, AI services, and hosting.",
+      "Design the agent-runtime contract so coding agents (Claude Code, Codex, and peers) can build while Bounded enforces declared boundaries on every write: refused cross-boundary mutations, watched/approved routed actions, and deploy gates that keep apps safe to iterate (including lock mode so future edits cannot weaken declared invariants).",
       "Carry platform foundations into Bounded: multi-tenant isolation, deployment and edge path (including cold-start work that cut sandbox starts ~60% and supported 5K+ concurrent sessions), agent/MCP test harnesses, and multi-LLM routing by task complexity.",
       "Primary technical voice for architecture, roadmap, and infrastructure cost model across Bounded and OpenApps (alliance-backed apps that outlive their makers, hosted on Bounded).",
     ],
@@ -68,9 +68,10 @@ export const experience: readonly ResumeRole[] = [
     blurb:
       "Seed-stage healthtech building AI-powered diabetes management. Sole technical executive; team of 6.",
     bullets: [
-      "Sole C-level technology leader: defined product and tech strategy, architected the HIPAA-compliant platform from scratch, and delivered on time and 20% under budget.",
-      "Scaled to 50K+ users in under 12 months; forged provider and insurer partnerships for clinical integration.",
-      "Led AI/ML strategy (LLM health insights chatbot; +35% daily active usage in 6 months) and investor-facing technical narrative that helped close $3.5M across rounds.",
+      "Sole C-level technology leader: defined product and tech strategy, architected the full HIPAA-compliant platform from scratch, and delivered to market on time and 20% under budget.",
+      "Scaled the platform to 50K+ users in under 12 months, validating product-market fit and forging strategic partnerships with healthcare providers and insurers.",
+      "Pioneered the AI/ML strategy, integrating LLMs to deliver personalized health insights via an AI-powered chatbot that drove a 35% increase in daily active usage within 6 months.",
+      "Led investor-facing technical demos and narrative that directly contributed to closing $3.5M across multiple venture rounds; managed the full technology P&L and all engineering hiring.",
     ],
   },
   {
@@ -80,10 +81,10 @@ export const experience: readonly ResumeRole[] = [
     blurb:
       "Co-founded blockchain studio; acquired by Dapper Labs; retained to lead technical integration. Team of 15. Overlapped AWS through Mar 2022.",
     bullets: [
-      "Co-founded the company, recruited a 15-person engineering team, and shipped production Flow dApps across 5 client contracts.",
+      "Co-founded the company, recruited and managed a 15-person engineering team, and secured 5 client contracts to design and ship production dApps on the Flow blockchain.",
       "Won $100K+ in hackathon prizes building open-source developer tools, raising brand visibility across the Flow ecosystem and accelerating acquisition interest from Dapper Labs.",
-      "Led P&L and acquisition workstreams end-to-end through the successful acqui-hire by Dapper Labs.",
-      "Built the NFT Catalog (community standard) and the Instagram API integration for Flow-based NFTs; mentored engineers as smart-contract SME post-acquisition.",
+      "Managed full P&L and led all acquisition negotiations and legal workstreams end-to-end, culminating in a successful acqui-hire by Dapper Labs.",
+      "Built the NFT Catalog (adopted as a community-wide standard) and Flow Runner; delivered the API integration used by Instagram to display Flow-based NFTs; mentored engineers as smart-contract SME post-acquisition.",
     ],
   },
   {
@@ -94,7 +95,8 @@ export const experience: readonly ResumeRole[] = [
       "Promoted from Senior SDE to build and lead a new security organization: 4 teams, 30+ engineers; helped scale the broader org from 10 to 100+ engineers across 20+ teams.",
     bullets: [
       "Hand-picked by VP-level leadership to build a new security engineering organization from the ground up: recruited and led 30+ engineers across 4 teams and owned delivery of automation products org-wide.",
-      "Shipped a fuzzing and API-model-driven security testing framework covering all 15K+ AWS public APIs; injected automated security review into the AWS SDLC to accelerate service launches.",
+      "Shipped a fuzzing and API-model-driven security testing framework covering all 15K+ AWS public APIs, eliminating manual test authoring across service launches.",
+      "Injected automated security review into the AWS SDLC, replacing a multi-month manual process and significantly accelerating AWS service launches.",
       "Designed and shipped a web-based SSH client adopted by 15K+ daily users; led an account management platform handling 50K daily users at 300+ TPS.",
       "Drove development of the SSO/MFA authentication service for 1.5M+ Amazon employees; built an operator authorization service used across AWS safety-critical workflows.",
     ],
@@ -104,30 +106,31 @@ export const experience: readonly ResumeRole[] = [
 export const skillGroups = [
   {
     label: "Languages",
-    items: "TypeScript, JavaScript, Python, Go, Bash",
+    items: "TypeScript, JavaScript, Python, Go, Java, Bash",
   },
   {
     label: "Frameworks & Runtime",
-    items: "React, Next.js, Node.js, Bun, Playwright",
+    items: "React, Next.js, Node.js, Bun, Express, Playwright",
   },
   {
     label: "Cloud & Infrastructure",
-    items: "AWS, Docker, Terraform, Cloudflare Workers, CI/CD",
+    items:
+      "AWS (EC2, S3, Lambda, DynamoDB, IAM), Docker, Terraform, Cloudflare Workers, CI/CD",
   },
   {
     label: "AI & Agent Platforms",
     items:
-      "LLM integration (Claude, GPT), agentic workflows (MCP, Claude Code), eval harnesses, multi-model routing, RAG",
+      "LLM integration (Claude, GPT), agentic workflows (MCP, Claude Code), eval harnesses, multi-model routing, RAG, prompt engineering",
   },
   {
     label: "Architecture",
     items:
-      "Platform engineering, multi-tenant SaaS, distributed systems, realtime, security engineering, API-first design",
+      "Platform engineering, multi-tenant SaaS, distributed systems, realtime, security engineering, API-first design, HIPAA/SOC 2",
   },
   {
     label: "Leadership",
     items:
-      "Technical strategy and roadmapping, org building, M&A technical diligence, investor-facing architecture narrative",
+      "Technical strategy and roadmapping, org building, P&L ownership, M&A technical diligence, investor-facing architecture narrative",
   },
 ] as const;
 
@@ -138,10 +141,6 @@ export const education = {
 } as const;
 
 export const publications = [
-  {
-    title: "Vibe Check",
-    text: "Open-source TypeScript framework for testing and evaluating AI agent workflows (github.com/poofdotnew/vibe-check). Originated as Tarobase-era internal tooling; released to the community.",
-  },
   {
     title: "Developing Elastic Software for the Cloud",
     text: "S. Imai, P. Patel, C. Varela. Encyclopedia of Cloud Computing, Ch. 50, Wiley-IEEE Press, 2016.",
