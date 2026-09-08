@@ -10,8 +10,19 @@ import { previewBaseURL } from "./preview-port.mjs";
 const OUT = new URL("../.pr-preview/", import.meta.url);
 
 mkdirSync(OUT, { recursive: true });
+const OWNED = new Set([
+  "resume-desktop.png",
+  "resume-experience.png",
+  "resume-print.png",
+  "resume-mobile.png",
+  "resume-pdf-page1.png",
+  "resume-pdf-page2.png",
+  "about-section.png",
+  "about-print.png",
+  "walkthrough.mp4",
+]);
 for (const name of readdirSync(OUT)) {
-  rmSync(new URL(name, OUT), { force: true, recursive: true });
+  if (OWNED.has(name)) rmSync(new URL(name, OUT), { force: true, recursive: true });
 }
 
 const baseURL = previewBaseURL();
@@ -117,6 +128,27 @@ await browser.close();
   rmSync(src, { force: true });
 }
 
+{
+  const pdf = new URL("../public/resume.pdf", import.meta.url).pathname;
+  const prefix = new URL("../.pr-preview/resume-pdf-page", import.meta.url).pathname;
+  const pages = spawnSync("pdftoppm", ["-png", "-r", "150", pdf, prefix], {
+    stdio: "inherit",
+  });
+  if (pages.status !== 0) {
+    throw new Error(`pdftoppm failed with ${pages.status}`);
+  }
+  // pdftoppm writes resume-pdf-page-1.png / -2.png; normalize to page1/page2.
+  for (const name of readdirSync(OUT)) {
+    const m = /^resume-pdf-page-(\d+)\.png$/.exec(name);
+    if (!m) continue;
+    const dest = `resume-pdf-page${m[1]}.png`;
+    rmSync(new URL(dest, OUT), { force: true });
+    spawnSync("mv", [new URL(name, OUT).pathname, new URL(dest, OUT).pathname], {
+      stdio: "inherit",
+    });
+  }
+}
+
 console.log(
-  "wrote .pr-preview/ resume-desktop.png, resume-experience.png, resume-print.png, resume-mobile.png, about-section.png, about-print.png, walkthrough.mp4"
+  "wrote .pr-preview/ resume-desktop.png, resume-experience.png, resume-print.png, resume-mobile.png, resume-pdf-page1.png, resume-pdf-page2.png, about-section.png, about-print.png, walkthrough.mp4"
 );

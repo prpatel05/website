@@ -81,6 +81,7 @@ export const experience: readonly ResumeRole[] = [
       "Co-founded blockchain studio — acquired by Dapper Labs — retained to lead technical integration — team of 15",
     bullets: [
       "Co-founded the company, recruited a 15-person engineering team, and shipped production Flow dApps across 5 client contracts.",
+      "Won $100K+ in hackathon prizes building open-source developer tools, raising brand visibility across the Flow ecosystem and accelerating acquisition interest from Dapper Labs.",
       "Led P&L and acquisition workstreams end-to-end through the successful acqui-hire by Dapper Labs.",
       "Built the NFT Catalog (community standard) and the Instagram API integration for Flow-based NFTs; mentored engineers as smart-contract SME post-acquisition.",
     ],
@@ -94,7 +95,8 @@ export const experience: readonly ResumeRole[] = [
     bullets: [
       "Hand-picked to build a security engineering org from scratch: recruited and led 30+ engineers across 4 teams and owned org-wide automation delivery.",
       "Shipped fuzzing and API-model-driven security testing covering 15K+ AWS public APIs; injected automated security review into the SDLC to accelerate service launches.",
-      "Designed a web-based SSH client adopted by 15K+ daily users and an account platform handling 50K daily users at 300+ TPS; drove SSO/MFA for 1.5M+ Amazon employees.",
+      "Designed a web-based SSH client adopted by 15K+ daily users and an account platform handling 50K daily users at 300+ TPS.",
+      "Drove SSO/MFA for 1.5M+ Amazon employees; built an operator authorization service used across AWS safety-critical workflows.",
     ],
   },
 ] as const;

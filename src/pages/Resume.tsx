@@ -21,18 +21,18 @@ const RESUME_DESCRIPTION =
 const resumePdfHref = `${import.meta.env.BASE_URL}resume.pdf`;
 
 const WindowChrome = ({ filename }: { filename: string }) => (
-  <div className="absolute top-0 left-0 right-0 h-8 bg-muted border-b border-border flex items-center px-4 gap-2 print:static print:h-auto print:border-0 print:bg-transparent print:px-0 print:mb-2">
-    <span className="w-2.5 h-2.5 rounded-full bg-destructive/60 print:hidden" />
-    <span className="w-2.5 h-2.5 rounded-full bg-primary/40 print:hidden" />
-    <span className="w-2.5 h-2.5 rounded-full bg-primary/60 print:hidden" />
-    <span className="font-mono text-[10px] text-muted-foreground ml-3 print:ml-0 print:text-primary tracking-widest">
+  <div className="absolute top-0 left-0 right-0 h-8 bg-muted border-b border-border flex items-center px-4 gap-2 print:hidden">
+    <span className="w-2.5 h-2.5 rounded-full bg-destructive/60" />
+    <span className="w-2.5 h-2.5 rounded-full bg-primary/40" />
+    <span className="w-2.5 h-2.5 rounded-full bg-primary/60" />
+    <span className="font-mono text-[10px] text-muted-foreground ml-3 tracking-widest">
       {filename}
     </span>
   </div>
 );
 
 const SectionLabel = ({ children }: { children: string }) => (
-  <span className="font-mono text-xs text-primary/60 print:text-primary tracking-widest block mb-3">
+  <span className="font-mono text-xs text-primary/60 tracking-widest block mb-3 print:hidden">
     {children}
   </span>
 );

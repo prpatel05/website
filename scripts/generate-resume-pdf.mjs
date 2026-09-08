@@ -1,6 +1,8 @@
 /**
  * Generate public/resume.pdf from src/data/resume.ts content.
  * Print-friendly, single-column, professional layout (no site chrome).
+ * Target: clean Letter PDF at exactly two pages (experience continues onto
+ * page 2; skills / education / publications land there intentionally).
  *
  *   node scripts/generate-resume-pdf.mjs
  */
@@ -53,7 +55,8 @@ const rolesHtml = experience
     <section class="role">
       <div class="role-head">
         <div>
-          <h3>${esc(role.title)} <span class="sep">|</span> ${esc(role.org)}</h3>
+          <h3>${esc(role.title)}</h3>
+          <div class="org">${esc(role.org)}</div>
           ${links}
         </div>
         <div class="dates">${esc(role.dates)}</div>
@@ -88,12 +91,12 @@ const html = `<!doctype html>
   <meta charset="utf-8" />
   <title>${esc(resumeMeta.name)} — Resume</title>
   <style>
-    @page { size: Letter; margin: 0.55in 0.6in; }
+    @page { size: Letter; margin: 0.6in 0.65in; }
     * { box-sizing: border-box; }
     body {
       font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-      font-size: 9.5pt;
-      line-height: 1.35;
+      font-size: 10pt;
+      line-height: 1.4;
       color: #111;
       margin: 0;
     }
@@ -101,33 +104,35 @@ const html = `<!doctype html>
       font-size: 20pt;
       letter-spacing: 0.04em;
       text-align: center;
-      margin: 0 0 4px;
+      margin: 0 0 6px;
       font-weight: 700;
     }
     .headline {
       text-align: center;
-      font-size: 9.5pt;
+      font-size: 10pt;
       font-weight: 600;
-      margin: 0 0 4px;
+      margin: 0 0 6px;
     }
     .meta, .links {
       text-align: center;
-      font-size: 8.5pt;
+      font-size: 8.75pt;
       color: #333;
-      margin: 0 0 2px;
+      margin: 0 0 3px;
     }
     h2 {
-      font-size: 10pt;
+      font-size: 10.5pt;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       border-bottom: 1.25px solid #222;
-      padding-bottom: 2px;
-      margin: 14px 0 8px;
+      padding-bottom: 3px;
+      margin: 16px 0 10px;
     }
-    .summary p { margin: 0 0 6px; }
-    .skill { margin: 0 0 3px; }
+    .summary p { margin: 0 0 7px; }
+    .skills { margin: 0 0 2px; }
+    .skill { margin: 0 0 4px; }
     .skill .label { font-weight: 700; }
-    .role { margin: 0 0 10px; break-inside: avoid; }
+    /* Keep each role card together; page 2 is intentional continuation. */
+    .role { margin: 0 0 14px; break-inside: avoid; page-break-inside: avoid; }
     .role-head {
       display: flex;
       justify-content: space-between;
@@ -135,31 +140,38 @@ const html = `<!doctype html>
       align-items: baseline;
     }
     .role h3 {
-      font-size: 10pt;
+      font-size: 10.25pt;
       margin: 0;
       font-weight: 700;
     }
-    .role .sep { font-weight: 400; color: #444; }
+    .role .org {
+      font-size: 9.5pt;
+      font-weight: 600;
+      color: #222;
+      margin-top: 1px;
+    }
     .dates {
       white-space: nowrap;
-      font-size: 8.5pt;
+      font-size: 8.75pt;
       font-weight: 600;
       color: #222;
     }
-    .org-links { font-size: 8pt; color: #333; margin-top: 1px; }
+    .org-links { font-size: 8.25pt; color: #333; margin-top: 1px; }
     .blurb {
       font-style: italic;
       color: #333;
-      margin: 2px 0 4px;
-      font-size: 8.75pt;
+      margin: 3px 0 5px;
+      font-size: 9pt;
     }
     ul {
       margin: 0;
       padding-left: 16px;
     }
-    li { margin: 0 0 3px; }
+    li { margin: 0 0 4px; }
+    .edu { margin: 0 0 2px; }
     .edu strong { font-weight: 700; }
     .edu .school { color: #222; }
+    .edu div + div { margin-top: 2px; }
   </style>
 </head>
 <body>
@@ -173,11 +185,11 @@ const html = `<!doctype html>
   <h2>Executive Summary</h2>
   <div class="summary">${summaryHtml}</div>
 
-  <h2>Technical Skills</h2>
-  <div class="skills">${skillsHtml}</div>
-
   <h2>Professional Experience</h2>
   ${rolesHtml}
+
+  <h2>Technical Skills</h2>
+  <div class="skills">${skillsHtml}</div>
 
   <h2>Education</h2>
   <div class="edu">
@@ -201,7 +213,7 @@ await page.pdf({
   path: outPath,
   format: "Letter",
   printBackground: true,
-  margin: { top: "0.55in", bottom: "0.55in", left: "0.6in", right: "0.6in" },
+  margin: { top: "0.6in", bottom: "0.6in", left: "0.65in", right: "0.65in" },
 });
 await browser.close();
 rmSync(tmpHtml, { force: true });
