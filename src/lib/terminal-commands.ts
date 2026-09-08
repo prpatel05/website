@@ -44,7 +44,7 @@ const ABOUT_TEXT = [
   "and took a healthtech startup from napkin sketch to 50K+ users as",
   "founding CTO.",
   "",
-  "Currently Chief Architect at Bounded · OpenApps (bounded.sh,",
+  "Currently Chief Architect at Bounded | OpenApps (bounded.sh,",
   "openapps.xyz), building the full-stack AI agent app builder and",
   "policy-enforced runtime.",
 ];
@@ -261,8 +261,8 @@ export function processTerminalCommand(
       return wrapLines([
         { type: "output", text: ASCII_LOGO },
         { type: "system", text: "  Pratik Patel" },
-        { type: "output", text: "  Chief Architect · Bounded · OpenApps" },
-        { type: "output", text: "  11+ years · AI · Cloud · Web3" },
+        { type: "output", text: "  Chief Architect | Bounded | OpenApps" },
+        { type: "output", text: "  11+ years | AI | Cloud | Web3" },
         { type: "output", text: "  Washington, DC | pratik@pa.tel" },
       ]);
 

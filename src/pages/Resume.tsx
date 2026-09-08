@@ -16,7 +16,7 @@ import {
 } from "@/data/resume";
 
 const RESUME_DESCRIPTION =
-  "HTML resume for Pratik Patel — Chief Architect at Bounded · OpenApps. Career across agent platforms, eddii, Dapper Labs, and AWS. Download the PDF anytime.";
+  "HTML resume for Pratik Patel - Chief Architect at Bounded | OpenApps. Career across agent platforms, eddii, Dapper Labs, and AWS. Download the PDF anytime.";
 
 const resumePdfHref = `${import.meta.env.BASE_URL}resume.pdf`;
 
@@ -81,7 +81,7 @@ const Resume = () => {
         description={RESUME_DESCRIPTION}
         canonical="https://pratik.pa.tel/resume"
         ogImage={SITE_CARD.url}
-        ogImageAlt="Pratik Patel — Chief Architect — pratik.pa.tel"
+        ogImageAlt="Pratik Patel - Chief Architect - pratik.pa.tel"
         ogImageWidth={SITE_CARD.width}
         ogImageHeight={SITE_CARD.height}
         jsonLd={jsonLd}
@@ -103,14 +103,14 @@ const Resume = () => {
             </p>
             <p className="font-mono text-xs text-muted-foreground leading-relaxed mb-2">
               {resumeMeta.location}
-              {" · "}
+              {" | "}
               <a
                 href={resumeMeta.emailHref}
                 className="inline-flex items-center min-h-6 hover:text-primary transition-colors underline-offset-2 hover:underline"
               >
                 {resumeMeta.email}
               </a>
-              {" · "}
+              {" | "}
               <a
                 href={resumeMeta.phoneHref}
                 className="inline-flex items-center min-h-6 hover:text-primary transition-colors underline-offset-2 hover:underline"

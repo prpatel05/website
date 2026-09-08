@@ -8,7 +8,7 @@
 export const resumeMeta = {
   name: "Pratik Patel",
   headline:
-    "Chief Architect | AI Agents · Platforms · Cloud | 3x Company Builder",
+    "Chief Architect | AI Agents | Platforms | Cloud | 3x Company Builder",
   location: "Washington, DC (Open to Remote)",
   email: "pratik@pa.tel",
   phone: "(518) 636-9399",
@@ -24,9 +24,9 @@ export const resumeMeta = {
 } as const;
 
 export const executiveSummary = [
-  "Chief Architect for Bounded and OpenApps — building the full-stack AI agent app builder and policy-enforced runtime that lets coding agents ship real apps with verify/deploy gates, data boundaries, auth, functions, realtime, payments, and hosting.",
+  "Chief Architect for Bounded and OpenApps. Building the full-stack AI agent app builder and policy-enforced runtime so coding agents can ship real apps with verify/deploy gates, data boundaries, auth, functions, realtime, payments, and hosting.",
   "Three-time company builder: grew a 30-person engineering org at AWS, co-founded and sold a blockchain studio via acquisition by Dapper Labs, and took a healthtech startup from napkin sketch to 50K+ users as founding CTO.",
-  "Hands-on platform architect who sets technical strategy, ships the hard seams himself, and partners with founders and investors as the primary technical voice.",
+  "Hands-on platform architect: set technical strategy, ship the hard seams, and speak for the architecture with founders and investors.",
 ] as const;
 
 export type ResumeOrgLink = {
@@ -46,27 +46,27 @@ export type ResumeRole = {
 export const experience: readonly ResumeRole[] = [
   {
     title: "Chief Architect",
-    org: "Bounded · OpenApps",
-    dates: "Aug 2025 – Present",
+    org: "Bounded | OpenApps",
+    dates: "Aug 2025 - Present",
     blurb:
-      "Full-stack AI agent platforms — Bounded runs what agents build; OpenApps hosts autonomously run, openly governed apps on that runtime. Light lineage: OpenApps evolved from Poof; Bounded is the agent-era full-stack runtime (same team continuity).",
+      "Full-stack AI agent platforms. Bounded runs what agents build; OpenApps hosts autonomously run, openly governed apps on that runtime. Light lineage: OpenApps evolved from Poof; Bounded is the agent-era full-stack runtime (same team continuity).",
     orgLinks: [
       { label: "bounded.sh", href: "https://bounded.sh" },
       { label: "openapps.xyz", href: "https://openapps.xyz" },
     ],
     bullets: [
       "Own the full-stack architecture for Bounded: agent app builder plus policy-enforced runtime spanning verify/deploy gates, data boundaries and invariants, auth, data/files, server functions, realtime/live state, payments, and hosting.",
-      "Design the agent–runtime contract so coding agents (Claude Code, Codex, and peers) can build while Bounded enforces declared boundaries — refused writes, watched/approved routed actions, and deploy gates that keep apps safe to iterate.",
-      "Carry platform foundations forward into the Bounded era: multi-tenant isolation, deployment and edge path (including cold-start work that cut sandbox starts ~60% and supported 5K+ concurrent sessions), agent/MCP test harnesses, and multi-LLM routing by task complexity.",
-      "Serve as primary technical voice for architecture, roadmap, and infrastructure cost model across Bounded and OpenApps (alliance-backed apps that outlive their makers — hosted on Bounded).",
+      "Design the agent-runtime contract so coding agents (Claude Code, Codex, and peers) can build while Bounded enforces declared boundaries: refused writes, watched/approved routed actions, and deploy gates that keep apps safe to iterate.",
+      "Carry platform foundations into Bounded: multi-tenant isolation, deployment and edge path (including cold-start work that cut sandbox starts ~60% and supported 5K+ concurrent sessions), agent/MCP test harnesses, and multi-LLM routing by task complexity.",
+      "Primary technical voice for architecture, roadmap, and infrastructure cost model across Bounded and OpenApps (alliance-backed apps that outlive their makers, hosted on Bounded).",
     ],
   },
   {
     title: "Chief Technology Officer",
     org: "eddii",
-    dates: "May 2023 – Aug 2025 (Advisor to Dec 2025)",
+    dates: "May 2023 - Aug 2025 (Advisor to Dec 2025)",
     blurb:
-      "Seed-stage healthtech — AI-powered diabetes management — sole technical executive — team of 6",
+      "Seed-stage healthtech building AI-powered diabetes management. Sole technical executive; team of 6.",
     bullets: [
       "Sole C-level technology leader: defined product and tech strategy, architected the HIPAA-compliant platform from scratch, and delivered on time and 20% under budget.",
       "Scaled to 50K+ users in under 12 months; forged provider and insurer partnerships for clinical integration.",
@@ -76,9 +76,9 @@ export const experience: readonly ResumeRole[] = [
   {
     title: "Co-Founder & CTO -> Senior Software Engineer II",
     org: "Dapper Labs (via Acq. of Zay Codes)",
-    dates: "Jun 2021 – May 2023",
+    dates: "Jun 2021 - May 2023",
     blurb:
-      "Co-founded blockchain studio — acquired by Dapper Labs — retained to lead technical integration — team of 15",
+      "Co-founded blockchain studio; acquired by Dapper Labs; retained to lead technical integration. Team of 15. Overlapped AWS through Mar 2022.",
     bullets: [
       "Co-founded the company, recruited a 15-person engineering team, and shipped production Flow dApps across 5 client contracts.",
       "Won $100K+ in hackathon prizes building open-source developer tools, raising brand visibility across the Flow ecosystem and accelerating acquisition interest from Dapper Labs.",
@@ -89,14 +89,14 @@ export const experience: readonly ResumeRole[] = [
   {
     title: "Senior SDE -> Lead, Proactive Security",
     org: "Amazon Web Services",
-    dates: "Jan 2015 – Mar 2022",
+    dates: "Jan 2015 - Mar 2022",
     blurb:
-      "Built and led a new security organization — 4 teams, 30+ engineers; helped scale the broader org from 10 to 100+ engineers",
+      "Promoted from Senior SDE to build and lead a new security organization: 4 teams, 30+ engineers; helped scale the broader org from 10 to 100+ engineers across 20+ teams.",
     bullets: [
-      "Hand-picked to build a security engineering org from scratch: recruited and led 30+ engineers across 4 teams and owned org-wide automation delivery.",
-      "Shipped fuzzing and API-model-driven security testing covering 15K+ AWS public APIs; injected automated security review into the SDLC to accelerate service launches.",
-      "Designed a web-based SSH client adopted by 15K+ daily users and an account platform handling 50K daily users at 300+ TPS.",
-      "Drove SSO/MFA for 1.5M+ Amazon employees; built an operator authorization service used across AWS safety-critical workflows.",
+      "Hand-picked by VP-level leadership to build a new security engineering organization from the ground up: recruited and led 30+ engineers across 4 teams and owned delivery of automation products org-wide.",
+      "Shipped a fuzzing and API-model-driven security testing framework covering all 15K+ AWS public APIs; injected automated security review into the AWS SDLC to accelerate service launches.",
+      "Designed and shipped a web-based SSH client adopted by 15K+ daily users; led an account management platform handling 50K daily users at 300+ TPS.",
+      "Drove development of the SSO/MFA authentication service for 1.5M+ Amazon employees; built an operator authorization service used across AWS safety-critical workflows.",
     ],
   },
 ] as const;
@@ -127,7 +127,7 @@ export const skillGroups = [
   {
     label: "Leadership",
     items:
-      "Technical strategy & roadmapping, org building, M&A technical diligence, investor-facing architecture narrative",
+      "Technical strategy and roadmapping, org building, M&A technical diligence, investor-facing architecture narrative",
   },
 ] as const;
 
@@ -144,6 +144,6 @@ export const publications = [
   },
   {
     title: "Developing Elastic Software for the Cloud",
-    text: "S. Imai, P. Patel, C. Varela — Encyclopedia of Cloud Computing, Ch. 50, Wiley-IEEE Press, 2016.",
+    text: "S. Imai, P. Patel, C. Varela. Encyclopedia of Cloud Computing, Ch. 50, Wiley-IEEE Press, 2016.",
   },
 ] as const;

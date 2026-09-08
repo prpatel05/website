@@ -1,10 +1,10 @@
 /**
  * Generate public/resume.pdf from src/data/resume.ts content.
- * Print-friendly, single-column, professional layout (no site chrome).
+ * Print-friendly, single-column, ATS-friendly layout (no site chrome).
  * Target: clean Letter PDF at exactly two pages (experience continues onto
  * page 2; skills / education / publications land there intentionally).
  *
- *   node scripts/generate-resume-pdf.mjs
+ *   bun scripts/generate-resume-pdf.mjs
  */
 import { writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -36,9 +36,9 @@ const contactLine = [
   esc(resumeMeta.location),
   esc(resumeMeta.phone),
   esc(resumeMeta.email),
-].join(" · ");
+].join(" | ");
 
-const linksLine = resumeMeta.links.map((l) => esc(l.label)).join(" · ");
+const linksLine = resumeMeta.links.map((l) => esc(l.label)).join(" | ");
 
 const rolesHtml = experience
   .map((role) => {
@@ -46,7 +46,7 @@ const rolesHtml = experience
       role.orgLinks && role.orgLinks.length
         ? `<div class="org-links">${role.orgLinks
             .map((l) => esc(l.label))
-            .join(" · ")}</div>`
+            .join(" | ")}</div>`
         : "";
     const bullets = role.bullets
       .map((b) => `<li>${esc(b)}</li>`)
@@ -79,7 +79,7 @@ const skillsHtml = skillGroups
 const pubsHtml = publications
   .map(
     (p) =>
-      `<li><strong>${esc(p.title)}</strong> — ${esc(p.text)}</li>`
+      `<li><strong>${esc(p.title)}</strong> - ${esc(p.text)}</li>`
   )
   .join("\n");
 
@@ -89,50 +89,51 @@ const html = `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>${esc(resumeMeta.name)} — Resume</title>
+  <title>${esc(resumeMeta.name)} - Resume</title>
   <style>
-    @page { size: Letter; margin: 0.6in 0.65in; }
+    @page { size: Letter; margin: 0.55in 0.6in; }
     * { box-sizing: border-box; }
     body {
-      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-      font-size: 10pt;
-      line-height: 1.4;
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.35;
       color: #111;
       margin: 0;
     }
     h1 {
-      font-size: 20pt;
+      font-size: 18pt;
       letter-spacing: 0.04em;
       text-align: center;
-      margin: 0 0 6px;
+      margin: 0 0 4px;
       font-weight: 700;
     }
     .headline {
       text-align: center;
       font-size: 10pt;
       font-weight: 600;
-      margin: 0 0 6px;
+      margin: 0 0 4px;
     }
     .meta, .links {
       text-align: center;
       font-size: 8.75pt;
       color: #333;
-      margin: 0 0 3px;
+      margin: 0 0 2px;
     }
     h2 {
       font-size: 10.5pt;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
-      border-bottom: 1.25px solid #222;
-      padding-bottom: 3px;
-      margin: 16px 0 10px;
+      border-bottom: 1px solid #222;
+      padding-bottom: 2px;
+      margin: 12px 0 7px;
+      font-weight: 700;
     }
-    .summary p { margin: 0 0 7px; }
+    .summary p { margin: 0 0 5px; }
     .skills { margin: 0 0 2px; }
-    .skill { margin: 0 0 4px; }
+    .skill { margin: 0 0 3px; }
     .skill .label { font-weight: 700; }
     /* Keep each role card together; page 2 is intentional continuation. */
-    .role { margin: 0 0 14px; break-inside: avoid; page-break-inside: avoid; }
+    .role { margin: 0 0 10px; break-inside: avoid; page-break-inside: avoid; }
     .role-head {
       display: flex;
       justify-content: space-between;
@@ -160,14 +161,15 @@ const html = `<!doctype html>
     .blurb {
       font-style: italic;
       color: #333;
-      margin: 3px 0 5px;
+      margin: 2px 0 4px;
       font-size: 9pt;
     }
     ul {
       margin: 0;
       padding-left: 16px;
+      list-style-type: disc;
     }
-    li { margin: 0 0 4px; }
+    li { margin: 0 0 3px; }
     .edu { margin: 0 0 2px; }
     .edu strong { font-weight: 700; }
     .edu .school { color: #222; }
@@ -182,13 +184,13 @@ const html = `<!doctype html>
     <p class="links">${linksLine}</p>
   </header>
 
-  <h2>Executive Summary</h2>
+  <h2>Summary</h2>
   <div class="summary">${summaryHtml}</div>
 
-  <h2>Professional Experience</h2>
+  <h2>Experience</h2>
   ${rolesHtml}
 
-  <h2>Technical Skills</h2>
+  <h2>Skills</h2>
   <div class="skills">${skillsHtml}</div>
 
   <h2>Education</h2>
@@ -199,7 +201,7 @@ const html = `<!doctype html>
     <div>${esc(education.notes)}</div>
   </div>
 
-  <h2>Publications &amp; Open Source</h2>
+  <h2>Publications</h2>
   <ul>${pubsHtml}</ul>
 </body>
 </html>`;
@@ -213,7 +215,7 @@ await page.pdf({
   path: outPath,
   format: "Letter",
   printBackground: true,
-  margin: { top: "0.6in", bottom: "0.6in", left: "0.65in", right: "0.65in" },
+  margin: { top: "0.55in", bottom: "0.55in", left: "0.6in", right: "0.6in" },
 });
 await browser.close();
 rmSync(tmpHtml, { force: true });

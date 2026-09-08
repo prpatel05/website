@@ -67,9 +67,9 @@ const About = () => {
                   </p>
                   <p>
                     Currently Chief Architect at{" "}
-                    <span className="text-primary">Bounded · OpenApps</span>
+                    <span className="text-primary">Bounded | OpenApps</span>
                     {" "}
-                    (bounded.sh · openapps.xyz), building the full-stack AI agent
+                    (bounded.sh | openapps.xyz), building the full-stack AI agent
                     app builder and policy-enforced runtime. Proven ability to set
                     technical strategy, recruit world-class teams, and raise
                     venture capital.
