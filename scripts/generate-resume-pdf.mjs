@@ -91,89 +91,89 @@ const html = `<!doctype html>
   <meta charset="utf-8" />
   <title>${esc(resumeMeta.name)} - Resume</title>
   <style>
-    @page { size: Letter; margin: 0.55in 0.6in; }
+    @page { size: Letter; margin: 0.42in 0.5in; }
     * { box-sizing: border-box; }
     body {
       font-family: Helvetica, Arial, sans-serif;
-      font-size: 10.5pt;
-      line-height: 1.35;
+      font-size: 10pt;
+      line-height: 1.28;
       color: #111;
       margin: 0;
     }
     h1 {
-      font-size: 18pt;
+      font-size: 17pt;
       letter-spacing: 0.04em;
       text-align: center;
-      margin: 0 0 4px;
+      margin: 0 0 2px;
       font-weight: 700;
     }
     .headline {
       text-align: center;
-      font-size: 10pt;
+      font-size: 9.5pt;
       font-weight: 600;
-      margin: 0 0 4px;
+      margin: 0 0 2px;
     }
     .meta, .links {
       text-align: center;
-      font-size: 8.75pt;
+      font-size: 8.5pt;
       color: #333;
-      margin: 0 0 2px;
+      margin: 0 0 1px;
     }
     h2 {
-      font-size: 10.5pt;
+      font-size: 10pt;
       letter-spacing: 0.06em;
       text-transform: uppercase;
       border-bottom: 1px solid #222;
-      padding-bottom: 2px;
-      margin: 12px 0 7px;
+      padding-bottom: 1px;
+      margin: 8px 0 4px;
       font-weight: 700;
     }
-    .summary p { margin: 0 0 5px; }
-    .skills { margin: 0 0 2px; }
-    .skill { margin: 0 0 3px; }
+    .summary p { margin: 0 0 3px; }
+    .skills { margin: 0 0 1px; }
+    .skill { margin: 0 0 2px; }
     .skill .label { font-weight: 700; }
     /* Keep each role card together; page 2 is intentional continuation. */
-    .role { margin: 0 0 10px; break-inside: avoid; page-break-inside: avoid; }
+    .role { margin: 0 0 6px; break-inside: avoid; page-break-inside: avoid; }
     .role-head {
       display: flex;
       justify-content: space-between;
-      gap: 12px;
+      gap: 10px;
       align-items: baseline;
     }
     .role h3 {
-      font-size: 10.25pt;
+      font-size: 10pt;
       margin: 0;
       font-weight: 700;
     }
     .role .org {
-      font-size: 9.5pt;
+      font-size: 9.25pt;
       font-weight: 600;
       color: #222;
-      margin-top: 1px;
+      margin-top: 0;
     }
     .dates {
       white-space: nowrap;
-      font-size: 8.75pt;
+      font-size: 8.5pt;
       font-weight: 600;
       color: #222;
     }
-    .org-links { font-size: 8.25pt; color: #333; margin-top: 1px; }
+    .org-links { font-size: 8pt; color: #333; margin-top: 0; }
     .blurb {
       font-style: italic;
       color: #333;
-      margin: 2px 0 4px;
-      font-size: 9pt;
+      margin: 1px 0 2px;
+      font-size: 8.75pt;
     }
     ul {
       margin: 0;
-      padding-left: 16px;
+      padding-left: 15px;
       list-style-type: disc;
     }
-    li { margin: 0 0 3px; }
-    .edu { margin: 0 0 2px; }
+    li { margin: 0 0 1.5px; }
+    .edu { margin: 0 0 1px; }
     .edu strong { font-weight: 700; }
     .edu .school { color: #222; }
-    .edu div + div { margin-top: 2px; }
+    .edu div + div { margin-top: 1px; }
   </style>
 </head>
 <body>
@@ -215,7 +215,7 @@ await page.pdf({
   path: outPath,
   format: "Letter",
   printBackground: true,
-  margin: { top: "0.55in", bottom: "0.55in", left: "0.6in", right: "0.6in" },
+  margin: { top: "0.42in", bottom: "0.42in", left: "0.5in", right: "0.5in" },
 });
 await browser.close();
 rmSync(tmpHtml, { force: true });
