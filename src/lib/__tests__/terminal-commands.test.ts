@@ -98,7 +98,7 @@ describe("processTerminalCommand", () => {
     if (result.action !== "lines") return;
     const text = result.lines.map((l) => l.text).join("\n");
     expect(text).toContain("Pratik Patel");
-    expect(text).toContain("CTO & Chief Architect");
+    expect(text).toContain("Chief Architect");
     expect(text).toContain("Washington, DC");
   });
 
@@ -290,7 +290,7 @@ describe("processTerminalCommand", () => {
     if (result.action !== "lines") return;
     const text = result.lines.map((l) => l.text).join("\n");
     expect(text).toContain("about.md");
-    expect(text).toContain("Tarobase");
+    expect(text).toContain("Bounded");
   });
 
   it("lists post files for 'ls blog'", () => {
