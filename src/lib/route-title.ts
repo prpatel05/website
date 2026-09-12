@@ -30,6 +30,7 @@ export const HOME_TITLE = `${SITE_NAME} — CTO & Chief Architect`;
 export const BLOG_TITLE = `Blog — ${SITE_NAME}`;
 export const SERIES_TITLE = `${SERIES_NAME} — ${SITE_NAME}`;
 export const RESUME_TITLE = `Resume — ${SITE_NAME}`;
+export const VC_TITLE = `Angel Investing — ${SITE_NAME}`;
 export const NOT_FOUND_TITLE = `404 — Page Not Found | ${SITE_NAME}`;
 
 export const postTitle = (title: string): string => `${title} — ${SITE_NAME}`;
@@ -50,6 +51,7 @@ export const routeTitle = (pathname: string): string => {
   if (matchPath("/", pathname)) return HOME_TITLE;
   if (matchPath("/blog", pathname)) return BLOG_TITLE;
   if (matchPath("/resume", pathname)) return RESUME_TITLE;
+  if (matchPath("/vc", pathname)) return VC_TITLE;
   if (matchPath(SERIES_PATH, pathname)) return SERIES_TITLE;
 
   const match = matchPath(POST_PATH, pathname);

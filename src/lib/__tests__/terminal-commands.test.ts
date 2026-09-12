@@ -58,6 +58,15 @@ describe("processTerminalCommand", () => {
     expect(result.path).toBe("/resume/");
   });
 
+  // --- vc ---
+  it("navigates to the angel investing page for 'vc'", () => {
+    const result = processTerminalCommand("vc", "/base/");
+    expect(result.action).toBe("navigate");
+    if (result.action !== "navigate") return;
+    expect(result.path).toBe("/vc/");
+    expect(result.lines.some((l) => l.text.includes("Opening /vc/"))).toBe(true);
+  });
+
   // --- socials ---
   it("returns social links for 'socials'", () => {
     const result = processTerminalCommand("socials");
@@ -120,6 +129,7 @@ describe("processTerminalCommand", () => {
     expect(text).toContain("blog/");
     expect(text).toContain("contact/");
     expect(text).toContain("resume.pdf");
+    expect(text).toContain("vc/");
   });
 
   // --- pwd ---
@@ -253,6 +263,13 @@ describe("processTerminalCommand", () => {
     expect(result.url).toBe("/base/resume.pdf");
   });
 
+  it("navigates to angel investing for 'open vc'", () => {
+    const result = processTerminalCommand("open vc");
+    expect(result.action).toBe("navigate");
+    if (result.action !== "navigate") return;
+    expect(result.path).toBe("/vc/");
+  });
+
   it("navigates to the archive for 'open blog'", () => {
     const result = processTerminalCommand("open blog");
     expect(result.action).toBe("navigate");
@@ -297,8 +314,8 @@ describe("processTerminalCommand", () => {
   });
 
 describe("COMMANDS constant", () => {
-  it("has 17 commands", () => {
-    expect(Object.keys(COMMANDS).length).toBe(17);
+  it("has 18 commands", () => {
+    expect(Object.keys(COMMANDS).length).toBe(18);
   });
 
   it("includes all documented commands", () => {

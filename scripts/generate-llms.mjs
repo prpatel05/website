@@ -70,6 +70,7 @@ function llmsTxt(posts) {
     `- [Home](${SITE_URL}/): Personal site and writing by ${AUTHOR}.`,
     `- [Blog](${SITE_URL}/blog/): Full archive of published posts.`,
     `- [Resume](${SITE_URL}/resume/): HTML resume (PDF at ${SITE_URL}/resume.pdf).`,
+    `- [Angel investing](${SITE_URL}/vc/): Angel / advisor lens and founder pitch form.`,
     `- [RSS feed](${SITE_URL}/rss.xml): Machine-readable feed of the same posts.`,
   ].join("\n");
 
