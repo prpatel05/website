@@ -89,6 +89,7 @@ test.describe("Interactive terminal", () => {
       await expect(log.getByText("about/")).toBeVisible();
       await expect(log.getByText("blog/")).toBeVisible();
       await expect(log.getByText("contact/")).toBeVisible();
+      await expect(log.getByText("vc/")).toBeVisible();
       await expect(log.getByText("-rw-r--r--  resume.pdf")).toBeVisible();
     });
 

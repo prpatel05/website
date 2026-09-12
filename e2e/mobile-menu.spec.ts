@@ -27,6 +27,7 @@ test.describe("Mobile menu", () => {
     await expect(page.getByText("writing()").nth(1)).toBeVisible();
     await expect(page.getByText("contact()").nth(1)).toBeVisible();
     await expect(page.getByText("resume()").nth(1)).toBeVisible();
+    await expect(page.getByText("vc()").nth(1)).toBeVisible();
   });
 
   test("closes mobile menu when a link is clicked", async ({ page }) => {
