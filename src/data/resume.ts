@@ -8,7 +8,7 @@
 export const resumeMeta = {
   name: "Pratik Patel",
   headline:
-    "Chief Architect | AI Agents | Platforms | Cloud | 3x Company Builder",
+    "Chief Architect | AI Agents & Agentic Platforms | Cloud | 3x Company Builder",
   location: "Washington, DC (Open to Remote)",
   email: "pratik@pa.tel",
   phone: "(518) 636-9399",
@@ -24,9 +24,9 @@ export const resumeMeta = {
 } as const;
 
 export const executiveSummary = [
-  "Chief Architect for OpenApps, Bounded, and poof.new. Building the full-stack AI agent app builder and policy-enforced runtime so coding agents can ship real apps with verify/deploy gates, data boundaries, auth, functions, realtime, payments, and hosting.",
+  "Chief Architect for OpenApps, Bounded, and poof.new. Building AI agent platforms and the policy-enforced agent runtime so coding agents can ship real apps with verify/deploy gates, data boundaries, auth, functions, realtime, payments, and hosting.",
   "Three-time company builder: grew a 30-person engineering org at AWS, co-founded and sold a blockchain studio via acquisition by Dapper Labs, and took a healthtech startup from napkin sketch to 50K+ users as founding CTO.",
-  "Hands-on platform architect: set technical strategy, ship the hard parts of the stack, and speak for the architecture with founders and investors.",
+  "Hands-on platform architect for agentic systems: set technical strategy, ship the hard parts of the stack, and speak for the architecture with founders and investors.",
 ] as const;
 
 export type ResumeOrgLink = {
@@ -109,43 +109,24 @@ export const experience: readonly ResumeRole[] = [
 
 export const skillGroups = [
   {
-    label: "Languages",
-    items: "TypeScript, JavaScript, Python, Go, Java, Bash, SQL",
+    label: "Leadership",
+    items:
+      "Technical strategy and roadmapping, org building, P&L ownership, M&A technical diligence, investor-facing architecture narrative",
   },
   {
-    label: "Frameworks & Runtime",
+    label: "AI & Agents",
     items:
-      "React, React Native, Next.js, Node.js, Bun, Express, Playwright, REST APIs, GraphQL",
-  },
-  {
-    label: "Cloud & Infrastructure",
-    items:
-      "AWS (EC2, S3, Lambda, DynamoDB, IAM, CloudWatch), Docker, Terraform, Cloudflare Workers, edge sandboxes, CI/CD, observability, multi-tenant isolation",
-  },
-  {
-    label: "Data & Storage",
-    items:
-      "DynamoDB, SQL modeling, object storage, governed collections, files/search, realtime and live room state",
-  },
-  {
-    label: "AI & Agent Platforms",
-    items:
-      "LLM integration (Claude, GPT), agentic workflows (MCP, Claude Code, Codex), policy-enforced agent runtimes, eval harnesses, multi-model routing, RAG, prompt engineering",
-  },
-  {
-    label: "Security",
-    items:
-      "Fuzzing, API-model-driven testing, SDLC automation, SSO/MFA, authorization services, policy enforcement",
+      "Agent runtimes, MCP / Claude Code / Codex, policy boundaries, evals, multi-model routing, RAG, LLMs (Claude, GPT)",
   },
   {
     label: "Architecture",
     items:
-      "Platform engineering, multi-tenant SaaS, distributed systems, realtime and live rooms, API-first design, formal policy verify, fail-closed deploy gates, HIPAA/SOC 2",
+      "Multi-tenant platforms, verify/deploy gates, realtime and live rooms, HIPAA / SOC 2",
   },
   {
-    label: "Leadership",
+    label: "Stack",
     items:
-      "Technical strategy and roadmapping, org building, P&L ownership, platform cost modeling, M&A technical diligence, investor-facing architecture narrative",
+      "TypeScript, React / Node, AWS, Terraform / Docker, Cloudflare Workers",
   },
 ] as const;
 
