@@ -48,13 +48,18 @@ export const personJsonLd = [
     worksFor: [
       {
         "@type": "Organization",
+        name: "OpenApps",
+        url: "https://openapps.xyz",
+      },
+      {
+        "@type": "Organization",
         name: "Bounded",
         url: "https://bounded.sh",
       },
       {
         "@type": "Organization",
-        name: "OpenApps",
-        url: "https://openapps.xyz",
+        name: "poof.new",
+        url: "https://poof.new",
       },
     ],
     knowsAbout: [

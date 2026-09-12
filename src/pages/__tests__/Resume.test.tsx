@@ -57,7 +57,7 @@ describe("Resume page", () => {
       screen.getByRole("heading", { level: 1, name: "Pratik Patel" })
     ).toBeInTheDocument();
     expect(screen.getByText(/Chief Architect \| AI Agents/)).toBeInTheDocument();
-    expect(screen.getByText("Bounded | OpenApps")).toBeInTheDocument();
+    expect(screen.getByText("OpenApps | Bounded | poof.new")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Chief Architect" })).toBeInTheDocument();
     expect(screen.getByText("Amazon Web Services")).toBeInTheDocument();
     const pdf = screen.getByRole("link", { name: /download resume\.pdf/i });

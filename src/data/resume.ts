@@ -24,7 +24,7 @@ export const resumeMeta = {
 } as const;
 
 export const executiveSummary = [
-  "Chief Architect for Bounded and OpenApps. Building the full-stack AI agent app builder and policy-enforced runtime so coding agents can ship real apps with verify/deploy gates, data boundaries, auth, functions, realtime, payments, and hosting.",
+  "Chief Architect for OpenApps, Bounded, and poof.new. Building the full-stack AI agent app builder and policy-enforced runtime so coding agents can ship real apps with verify/deploy gates, data boundaries, auth, functions, realtime, payments, and hosting.",
   "Three-time company builder: grew a 30-person engineering org at AWS, co-founded and sold a blockchain studio via acquisition by Dapper Labs, and took a healthtech startup from napkin sketch to 50K+ users as founding CTO.",
   "Hands-on platform architect: set technical strategy, ship the hard seams, and speak for the architecture with founders and investors.",
 ] as const;
@@ -46,19 +46,23 @@ export type ResumeRole = {
 export const experience: readonly ResumeRole[] = [
   {
     title: "Chief Architect",
-    org: "Bounded | OpenApps",
+    org: "OpenApps | Bounded | poof.new",
     dates: "Aug 2025 - Present",
     blurb:
-      "Full-stack AI agent platforms. Bounded runs what agents build; OpenApps hosts autonomously run, openly governed apps on that runtime. Light lineage: OpenApps evolved from Poof; Bounded is the agent-era full-stack runtime (same team continuity).",
+      "Full-stack AI agent platforms. OpenApps hosts autonomously run, openly governed apps that outlive their makers; Bounded is the policy-enforced runtime those apps run on; poof.new is the earlier product line the same team carried forward.",
     orgLinks: [
-      { label: "bounded.sh", href: "https://bounded.sh" },
       { label: "openapps.xyz", href: "https://openapps.xyz" },
+      { label: "bounded.sh", href: "https://bounded.sh" },
+      { label: "poof.new", href: "https://poof.new" },
     ],
     bullets: [
       "Own the full-stack architecture for Bounded: agent app builder plus policy-enforced runtime spanning verify/deploy gates, promoted data boundaries and invariants, auth (users, sessions, roles, OAuth, email OTP), data/files, server functions with secrets and hooks, realtime/live queries, live room state, payments, AI services, and hosting.",
       "Design the agent-runtime contract so coding agents (Claude Code, Codex, and peers) can build while Bounded enforces declared boundaries on every write: refused cross-boundary mutations, watched/approved routed actions, and deploy gates that keep apps safe to iterate (including lock mode so future edits cannot weaken declared invariants).",
+      "Ship the verify/deploy loop agents rely on: policy.json collections, rules, and invariants; bounded verify with concrete counterexamples before deploy; fail-closed server-side proof gates; web and React Native clients via @bounded-sh/client on bounded.page or custom domains.",
+      "Advance OpenApps on that runtime: alliance-backed apps that stay autonomously run and openly governed after their makers step back, with shared hosting, auth, data, payments, and deploy path on Bounded; keep poof.new product lineage clear for the same team.",
+      "Cover the managed app surface agents need in one identity: governed data and files/search, Functions and jobs with secrets, realtime subscriptions and server-authoritative live rooms, managed AI/services, direct USDC or provider card payments, action observability, and team governance with roles and approvals.",
       "Carry platform foundations into Bounded: multi-tenant isolation, deployment and edge path (including cold-start work that cut sandbox starts ~60% and supported 5K+ concurrent sessions), agent/MCP test harnesses, and multi-LLM routing by task complexity.",
-      "Primary technical voice for architecture, roadmap, and infrastructure cost model across Bounded and OpenApps (alliance-backed apps that outlive their makers, hosted on Bounded).",
+      "Primary technical voice for architecture, roadmap, and infrastructure cost model across OpenApps, Bounded, and poof.new.",
     ],
   },
   {
@@ -106,38 +110,49 @@ export const experience: readonly ResumeRole[] = [
 export const skillGroups = [
   {
     label: "Languages",
-    items: "TypeScript, JavaScript, Python, Go, Java, Bash",
+    items: "TypeScript, JavaScript, Python, Go, Java, Bash, SQL",
   },
   {
     label: "Frameworks & Runtime",
-    items: "React, Next.js, Node.js, Bun, Express, Playwright",
+    items:
+      "React, React Native, Next.js, Node.js, Bun, Express, Playwright, REST APIs, GraphQL",
   },
   {
     label: "Cloud & Infrastructure",
     items:
-      "AWS (EC2, S3, Lambda, DynamoDB, IAM), Docker, Terraform, Cloudflare Workers, CI/CD",
+      "AWS (EC2, S3, Lambda, DynamoDB, IAM, CloudWatch), Docker, Terraform, Cloudflare Workers, edge sandboxes, CI/CD, observability, multi-tenant isolation",
+  },
+  {
+    label: "Data & Storage",
+    items:
+      "DynamoDB, SQL modeling, object storage, governed collections, files/search, realtime and live room state",
   },
   {
     label: "AI & Agent Platforms",
     items:
-      "LLM integration (Claude, GPT), agentic workflows (MCP, Claude Code), eval harnesses, multi-model routing, RAG, prompt engineering",
+      "LLM integration (Claude, GPT), agentic workflows (MCP, Claude Code, Codex), policy-enforced agent runtimes, eval harnesses, multi-model routing, RAG, prompt engineering",
+  },
+  {
+    label: "Security",
+    items:
+      "Fuzzing, API-model-driven testing, SDLC automation, SSO/MFA, authorization services, policy enforcement",
   },
   {
     label: "Architecture",
     items:
-      "Platform engineering, multi-tenant SaaS, distributed systems, realtime, security engineering, API-first design, HIPAA/SOC 2",
+      "Platform engineering, multi-tenant SaaS, distributed systems, realtime and live rooms, API-first design, formal policy verify, fail-closed deploy gates, HIPAA/SOC 2",
   },
   {
     label: "Leadership",
     items:
-      "Technical strategy and roadmapping, org building, P&L ownership, M&A technical diligence, investor-facing architecture narrative",
+      "Technical strategy and roadmapping, org building, P&L ownership, platform cost modeling, M&A technical diligence, investor-facing architecture narrative",
   },
 ] as const;
 
 export const education = {
   degree: "M.S., Computer Science & Computer Engineering (Dual Major)",
   school: "Rensselaer Polytechnic Institute",
-  notes: "GPA: 3.8 | Dean's List | RPI Medalist",
+  notes: "GPA: 3.8 | Dean's List | RPI Medalist | Dual major in CS and Computer Engineering",
 } as const;
 
 export const publications = [

@@ -91,12 +91,12 @@ const html = `<!doctype html>
   <meta charset="utf-8" />
   <title>${esc(resumeMeta.name)} - Resume</title>
   <style>
-    @page { size: Letter; margin: 0.42in 0.5in; }
+    @page { size: Letter; margin: 0.5in; }
     * { box-sizing: border-box; }
     body {
       font-family: Helvetica, Arial, sans-serif;
       font-size: 10pt;
-      line-height: 1.28;
+      line-height: 1.32;
       color: #111;
       margin: 0;
     }
@@ -120,25 +120,27 @@ const html = `<!doctype html>
       margin: 0 0 1px;
     }
     h2 {
-      font-size: 10pt;
+      font-size: 10.5pt;
       letter-spacing: 0.06em;
       text-transform: uppercase;
       border-bottom: 1px solid #222;
-      padding-bottom: 1px;
-      margin: 8px 0 4px;
+      padding-bottom: 2px;
+      margin: 10px 0 5px;
       font-weight: 700;
     }
     .summary p { margin: 0 0 3px; }
-    .skills { margin: 0 0 1px; }
-    .skill { margin: 0 0 2px; }
+    .skills { margin: 0 0 2px; }
+    .skill { margin: 0 0 6.5px; }
     .skill .label { font-weight: 700; }
-    /* Keep each role card together; page 2 is intentional continuation. */
-    .role { margin: 0 0 6px; break-inside: avoid; page-break-inside: avoid; }
+    /* Allow long roles to continue across pages so both Letter pages fill. */
+    .role { margin: 0 0 7px; break-inside: auto; page-break-inside: auto; }
     .role-head {
       display: flex;
       justify-content: space-between;
       gap: 10px;
       align-items: baseline;
+      break-after: avoid;
+      page-break-after: avoid;
     }
     .role h3 {
       font-size: 10pt;
@@ -157,20 +159,22 @@ const html = `<!doctype html>
       font-weight: 600;
       color: #222;
     }
-    .org-links { font-size: 8pt; color: #333; margin-top: 0; }
+    .org-links { font-size: 8pt; color: #333; margin-top: 0; break-after: avoid; page-break-after: avoid; }
     .blurb {
       font-style: italic;
       color: #333;
       margin: 1px 0 2px;
       font-size: 8.75pt;
+      break-after: avoid;
+      page-break-after: avoid;
     }
     ul {
       margin: 0;
       padding-left: 15px;
       list-style-type: disc;
     }
-    li { margin: 0 0 1.5px; }
-    .edu { margin: 0 0 1px; }
+    li { margin: 0 0 2.25px; }
+    .edu { margin: 0 0 7px; }
     .edu strong { font-weight: 700; }
     .edu .school { color: #222; }
     .edu div + div { margin-top: 1px; }
@@ -215,7 +219,7 @@ await page.pdf({
   path: outPath,
   format: "Letter",
   printBackground: true,
-  margin: { top: "0.42in", bottom: "0.42in", left: "0.5in", right: "0.5in" },
+  margin: { top: "0.5in", bottom: "0.5in", left: "0.5in", right: "0.5in" },
 });
 await browser.close();
 rmSync(tmpHtml, { force: true });

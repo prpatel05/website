@@ -16,7 +16,7 @@ import {
 } from "@/data/resume";
 
 const RESUME_DESCRIPTION =
-  "HTML resume for Pratik Patel - Chief Architect at Bounded | OpenApps. Career across agent platforms, eddii, Dapper Labs, and AWS. Download the PDF anytime.";
+  "HTML resume for Pratik Patel - Chief Architect at OpenApps | Bounded | poof.new. Career across agent platforms, eddii, Dapper Labs, and AWS. Download the PDF anytime.";
 
 const resumePdfHref = `${import.meta.env.BASE_URL}resume.pdf`;
 
