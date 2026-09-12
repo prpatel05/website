@@ -137,12 +137,12 @@ const html = `<!doctype html>
       text-transform: uppercase;
       border-bottom: 1px solid #222;
       padding-bottom: 2px;
-      margin: 10px 0 5px;
+      margin: 11px 0 6px;
       font-weight: 700;
     }
     .summary p { margin: 0 0 3px; }
     .skills { margin: 0 0 2px; }
-    .skill { margin: 0 0 6.5px; }
+    .skill { margin: 0 0 10px; }
     .skill .label { font-weight: 700; }
     /* Allow long roles to continue across pages so both Letter pages fill. */
     .role { margin: 0 0 7px; break-inside: auto; page-break-inside: auto; }
@@ -185,8 +185,8 @@ const html = `<!doctype html>
       padding-left: 15px;
       list-style-type: disc;
     }
-    li { margin: 0 0 2.25px; }
-    .edu { margin: 0 0 7px; }
+    li { margin: 0 0 2.5px; }
+    .edu { margin: 0 0 12px; }
     .edu strong { font-weight: 700; }
     .edu .school { color: #222; }
     .edu div + div { margin-top: 1px; }
