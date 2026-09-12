@@ -1,6 +1,6 @@
 Jacob Coxon resigned from Anthropic on a Tuesday in September. He had spent three years on pretraining research at OpenAI and then Anthropic. His resignation note was not cryptic. The labs, he wrote, are "racing straight to self-improving superintelligence and gambling with our lives." Hours later, Evan Hubinger (Anthropic's alignment science lead) did not push back. He said Coxon was correct. He put his own number on it: greater than 10% chance AI kills all humans within the next decade. And then the line that should stop a board meeting cold: Anthropic does not yet have a plan to solve alignment for superintelligence, and is not clearly on track to.
 
-I am not writing this to convince you of that 10%. I am writing it because of what happened *after* the number was spoken out loud by the people closest to the work. Nothing about the race changed. The brand stayed "safety." The roadmap stayed "faster." That combination (believe the catastrophic risk, keep shipping harder, call it responsibility) is the story. The probability is the headline. The race logic is the product.
+I am not writing this to convince you of that 10%. I am writing it because of what happened *after* the number was spoken out loud by the people closest to the work. For a few days the brand stayed "safety" and the default stayed "faster." Then the CEOs started talking about pacing. That combination (believe the catastrophic risk, keep shipping harder, call it responsibility, and now say "slow") is the story. The probability is the headline. The race logic is still the product until a tripwire shows up.
 
 ## The Number Is Not the Decision
 
@@ -32,7 +32,28 @@ When the people closest to the work can only escalate by resigning in public, th
 
 That is useful information even if you reject his timelines. Public exits are a control surface of last resort. They tell you what the org could not absorb internally. Hubinger's agreement (on the record, same day) tells you the disagreement is not "is the risk real." The disagreement is "does the risk get to veto the race." One of those is a research question. The other is a governance question. Only one of them currently has a decision owner.
 
-If you are a buyer wiring frontier models into real workflows, treat lab exits the way you treat production incidents at a vendor: not as vibes, as change detection. What changed after the quit? What did not? Was there a new disclosure? A new containment plan? A public pacing commitment? Or did the brand absorb the story and the roadmap stay intact? The answer so far looks a lot like absorb-and-continue. That is data.
+If you are a buyer wiring frontier models into real workflows, treat lab exits the way you treat production incidents at a vendor: not as vibes, as change detection. What changed after the quit? What did not? Was there a new disclosure? A new containment plan? A public pacing commitment? Or did the brand absorb the story and the roadmap stay intact? Through the first news cycle it looked like absorb-and-continue. Then the CEOs spoke. Treat both as data.
+
+## A Press Conference Is Not a Decision Rule
+
+A few days after Coxon quit, the CEO layer answered in public.
+
+Sam Altman told OpenAI staff the company was open to slowing frontier development, ideally alongside other labs, and told Fortune that private talks toward a group safety pact were real enough that he expects them to surface. He also said a double-digit chance of catastrophe is not an acceptable operating number, and that OpenAI should not push capabilities much further without more progress on monitorability and alignment.
+
+Dario Amodei posted *We Must Pace the Frontier*: "We must slow the pace at which we improve the capabilities of AI models." His three-step frame is concrete enough to diligence: permanent employee-level third-party evaluators (Anthropic says it is committing unilaterally), industry coordination in democratic countries, and government-to-government deals. He also named the hard part out loud: some forms of voluntary pacing run into antitrust, so government cover may be load-bearing.
+
+That is not nothing. It is also not yet a control.
+
+A statement that you are open to pacing is a signal. A decision rule is a published tripwire: which capability run stops, who can halt it, what independent evaluators can publish without editorial control, and what other labs have actually signed. Until those are inspectable, treat CEO pacing talk the way you treat a vendor roadmap slide. Useful. Not a release gate.
+
+If you buy these models, the diligence questions get sharper, not softer:
+
+- Did embedded evaluators publish anything you can read, or only get access?
+- Is there a named freeze (or slowdown) on recursive self-improvement / frontier RL, with an owner?
+- Is the "pact" a press hint, or a signed bar with enforcement?
+- If antitrust is the blocker, what government instrument is actually on the table?
+
+Coxon's quit letter made the stakes legible. Altman and Amodei made pacing speakable. Speakable is step one. Inspectable is the bar that matters for anyone shipping on top of this stack.
 
 ## What Bounded Looks Like From Here
 
@@ -49,6 +70,6 @@ None of that requires you to believe humanity ends this decade. It requires you 
 
 ## The Bottom Line
 
-They believe it. They're racing. Those two sentences can both be true, and that is the problem.
+They believe it. They're racing. Now they're also talking about slowing down.
 
-A risk number without a decision rule is branding. A safety lab whose strategy is "win the race responsibly" has already told you which word does the work.
+A risk number without a decision rule is branding. A pacing speech without an inspectable tripwire is the same category. Listen to the CEOs. Diligence the gate.
