@@ -65,7 +65,7 @@ function renderVC(path = "/vc/") {
 }
 
 describe("VC page", () => {
-  it("renders thesis and pitch form wired to FormSubmit", () => {
+  it("renders thesis and pitch form wired for email submit", () => {
     renderVC();
     expect(
       screen.getByRole("heading", { level: 1, name: "Angel investing" })
@@ -87,7 +87,10 @@ describe("VC page", () => {
     expect(honey).toHaveAttribute("autoComplete", "off");
     expect(honey?.className).toMatch(/-left-\[9999px\]/);
     expect(screen.getByRole("button", { name: /submit_pitch/i })).not.toBeDisabled();
-    expect(screen.getByText(/reCAPTCHA and a honeypot/i)).toBeInTheDocument();
+    expect(screen.queryByText(/FormSubmit/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/one-time/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Advisor and angel investing from a builder seat/i)).toBeInTheDocument();
+    expect(screen.queryByText(/angel lens/i)).not.toBeInTheDocument();
   });
 
   it("shows success state when sent=1", () => {

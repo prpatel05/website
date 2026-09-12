@@ -10,7 +10,7 @@ import { SITE_CARD } from "@/lib/social-cards";
 import { personRef } from "@/lib/person-jsonld";
 
 const VC_DESCRIPTION =
-  "Angel investing and advisor lens from Pratik Patel. Builder background across OpenApps, Bounded, and earlier company-building. Pitch via the form on this page.";
+  "Angel investing from Pratik Patel. Builder background across OpenApps, Bounded, and earlier company-building. Pitch via the form on this page.";
 
 // Prefer VITE_FORMSUBMIT_ENDPOINT after first FormSubmit activation: paste their
 // random form URL there to hide the raw inbox email in the HTML source.
@@ -149,7 +149,7 @@ const VC = () => {
               Angel investing
             </h1>
             <p className="font-mono text-sm text-primary mb-4 leading-relaxed">
-              Advisor and angel lens from a builder seat
+              Advisor and angel investing from a builder seat
             </p>
             <p className="font-mono text-sm text-muted-foreground leading-relaxed max-w-2xl">
               I invest and advise selectively as an operator who has built, raised,
@@ -163,11 +163,11 @@ const VC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.08 }}
             className="relative border border-border bg-card mb-8 pt-10 pb-6 px-5 sm:px-6"
-            aria-labelledby="vc-lens-heading"
+            aria-labelledby="vc-approach-heading"
           >
-            <WindowChrome filename="lens.md" />
+            <WindowChrome filename="approach.md" />
             <SectionLabel>{"// how I look at deals"}</SectionLabel>
-            <h2 id="vc-lens-heading" className="font-display text-2xl font-bold text-foreground mb-3">
+            <h2 id="vc-approach-heading" className="font-display text-2xl font-bold text-foreground mb-3">
               Operator first
             </h2>
             <ul className="space-y-3 font-mono text-sm text-muted-foreground leading-relaxed">
@@ -238,10 +238,8 @@ const VC = () => {
                 className="inline-flex items-center min-h-6 text-primary underline underline-offset-2 hover:text-foreground transition-colors"
               >
                 pratik@pa.tel
-              </a>{" "}
-              via FormSubmit (static-site friendly for GitHub Pages), with
-              reCAPTCHA and a honeypot. First live submit may require a one-time
-              FormSubmit confirmation on that inbox.
+              </a>
+              . I read these personally.
             </p>
 
             {sent ? (
