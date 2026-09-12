@@ -26,7 +26,7 @@ export const resumeMeta = {
 export const executiveSummary = [
   "Chief Architect for OpenApps, Bounded, and poof.new. Building the full-stack AI agent app builder and policy-enforced runtime so coding agents can ship real apps with verify/deploy gates, data boundaries, auth, functions, realtime, payments, and hosting.",
   "Three-time company builder: grew a 30-person engineering org at AWS, co-founded and sold a blockchain studio via acquisition by Dapper Labs, and took a healthtech startup from napkin sketch to 50K+ users as founding CTO.",
-  "Hands-on platform architect: set technical strategy, ship the hard seams, and speak for the architecture with founders and investors.",
+  "Hands-on platform architect: set technical strategy, ship the hard parts of the stack, and speak for the architecture with founders and investors.",
 ] as const;
 
 export type ResumeOrgLink = {
@@ -58,9 +58,9 @@ export const experience: readonly ResumeRole[] = [
     bullets: [
       "Own the full-stack architecture for Bounded: agent app builder plus policy-enforced runtime spanning verify/deploy gates, promoted data boundaries and invariants, auth (users, sessions, roles, OAuth, email OTP), data/files, server functions with secrets and hooks, realtime/live queries, live room state, payments, AI services, and hosting.",
       "Design the agent-runtime contract so coding agents (Claude Code, Codex, and peers) can build while Bounded enforces declared boundaries on every write: refused cross-boundary mutations, watched/approved routed actions, and deploy gates that keep apps safe to iterate (including lock mode so future edits cannot weaken declared invariants).",
-      "Ship the verify/deploy loop agents rely on: policy.json collections, rules, and invariants; bounded verify with concrete counterexamples before deploy; fail-closed server-side proof gates; web and React Native clients via @bounded-sh/client on bounded.page or custom domains.",
+      "Ship the verify/deploy loop agents rely on: policy.json collections, rules, and invariants; bounded verify with concrete counterexamples before deploy; fail-closed server-side proof gates; web and React Native clients via the Bounded SDK (@bounded-sh/client) on bounded.page or custom domains.",
       "Advance OpenApps on that runtime: alliance-backed apps that stay autonomously run and openly governed after their makers step back, with shared hosting, auth, data, payments, and deploy path on Bounded; keep poof.new product lineage clear for the same team.",
-      "Cover the managed app surface agents need in one identity: governed data and files/search, Functions and jobs with secrets, realtime subscriptions and server-authoritative live rooms, managed AI/services, direct USDC or provider card payments, action observability, and team governance with roles and approvals.",
+      "Cover the managed operator surface in one identity: files/search, Functions and jobs with secrets, realtime subscriptions and server-authoritative live rooms, managed AI/services, direct USDC or provider card payments, action observability, and team governance with roles and approvals.",
       "Carry platform foundations into Bounded: multi-tenant isolation, deployment and edge path (including cold-start work that cut sandbox starts ~60% and supported 5K+ concurrent sessions), agent/MCP test harnesses, and multi-LLM routing by task complexity.",
       "Primary technical voice for architecture, roadmap, and infrastructure cost model across OpenApps, Bounded, and poof.new.",
     ],
@@ -100,8 +100,8 @@ export const experience: readonly ResumeRole[] = [
     bullets: [
       "Hand-picked by VP-level leadership to build a new security engineering organization from the ground up: recruited and led 30+ engineers across 4 teams and owned delivery of automation products org-wide.",
       "Shipped a fuzzing and API-model-driven security testing framework covering all 15K+ AWS public APIs, eliminating manual test authoring across service launches.",
-      "Injected automated security review into the AWS SDLC, replacing a multi-month manual process and significantly accelerating AWS service launches.",
-      "Designed and shipped a web-based SSH client adopted by 15K+ daily users; led an account management platform handling 50K daily users at 300+ TPS.",
+      "Injected automated security review into the AWS SDLC (Java, Python), replacing a multi-month manual process and significantly accelerating AWS service launches.",
+      "Designed and shipped a web-based SSH client adopted by 15K+ daily users with a 4.4/5 CSAT; led an account management platform handling 50K daily users at 300+ TPS.",
       "Drove development of the SSO/MFA authentication service for 1.5M+ Amazon employees; built an operator authorization service used across AWS safety-critical workflows.",
     ],
   },
@@ -152,7 +152,7 @@ export const skillGroups = [
 export const education = {
   degree: "M.S., Computer Science & Computer Engineering (Dual Major)",
   school: "Rensselaer Polytechnic Institute",
-  notes: "GPA: 3.8 | Dean's List | RPI Medalist | Dual major in CS and Computer Engineering",
+  notes: "GPA: 3.8 | Dean's List | RPI Medalist",
 } as const;
 
 export const publications = [

@@ -32,6 +32,15 @@ function esc(s) {
     .replaceAll('"', "&quot;");
 }
 
+/** Keep hyphenated identifiers intact so ATS paste does not glue "@boundedsh/client". */
+function escKeep(s) {
+  let out = esc(s);
+  for (const token of ["@bounded-sh/client", "policy-enforced", "policy.json", "bounded.page"]) {
+    out = out.replaceAll(token, `<span class="nb">${token}</span>`);
+  }
+  return out;
+}
+
 const contactLine = [
   esc(resumeMeta.location),
   esc(resumeMeta.phone),
@@ -49,7 +58,7 @@ const rolesHtml = experience
             .join(" | ")}</div>`
         : "";
     const bullets = role.bullets
-      .map((b) => `<li>${esc(b)}</li>`)
+      .map((b) => `<li>${escKeep(b)}</li>`)
       .join("\n");
     return `
     <section class="role">
@@ -61,7 +70,7 @@ const rolesHtml = experience
         </div>
         <div class="dates">${esc(role.dates)}</div>
       </div>
-      <p class="blurb">${esc(role.blurb)}</p>
+      <p class="blurb">${escKeep(role.blurb)}</p>
       <ul>${bullets}</ul>
     </section>`;
   })
@@ -83,7 +92,7 @@ const pubsHtml = publications
   )
   .join("\n");
 
-const summaryHtml = executiveSummary.map((p) => `<p>${esc(p)}</p>`).join("\n");
+const summaryHtml = executiveSummary.map((p) => `<p>${escKeep(p)}</p>`).join("\n");
 
 const html = `<!doctype html>
 <html lang="en">
@@ -99,7 +108,10 @@ const html = `<!doctype html>
       line-height: 1.32;
       color: #111;
       margin: 0;
+      hyphens: none;
+      -webkit-hyphens: none;
     }
+    .nb { white-space: nowrap; }
     h1 {
       font-size: 17pt;
       letter-spacing: 0.04em;
