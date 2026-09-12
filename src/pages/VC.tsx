@@ -12,8 +12,14 @@ import { personRef } from "@/lib/person-jsonld";
 const VC_DESCRIPTION =
   "Angel investing and advisor lens from Pratik Patel. Builder background across OpenApps, Bounded, and earlier company-building. Pitch via the form on this page.";
 
-const FORMSUBMIT_ACTION = "https://formsubmit.co/pratik@pa.tel";
+// Prefer VITE_FORMSUBMIT_ENDPOINT after first FormSubmit activation: paste their
+// random form URL there to hide the raw inbox email in the HTML source.
+const FORMSUBMIT_ACTION =
+  import.meta.env.VITE_FORMSUBMIT_ENDPOINT ?? "https://formsubmit.co/pratik@pa.tel";
 const SUCCESS_NEXT = "https://pratik.pa.tel/vc/?sent=1";
+const MESSAGE_MIN_LEN = 20;
+const SPAM_BLACKLIST =
+  "viagra,cialis,crypto airdrop,airdrop,nft giveaway,free money,casino,lottery,seo backlinks,earn from home";
 
 const WindowChrome = ({ filename }: { filename: string }) => (
   <div className="absolute top-0 left-0 right-0 h-8 bg-muted border-b border-border flex items-center px-4 gap-2">
@@ -95,7 +101,25 @@ const VC = () => {
     []
   );
 
-  const onSubmit = (_e: FormEvent<HTMLFormElement>) => {
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+    if (submitting) {
+      e.preventDefault();
+      return;
+    }
+    const form = e.currentTarget;
+    const messageEl = form.elements.namedItem("message") as HTMLTextAreaElement | null;
+    if (messageEl) {
+      const trimmed = messageEl.value.trim();
+      if (trimmed.length > 0 && trimmed.length < MESSAGE_MIN_LEN) {
+        messageEl.setCustomValidity(
+          `If you include a message, use at least ${MESSAGE_MIN_LEN} characters.`
+        );
+        messageEl.reportValidity();
+        e.preventDefault();
+        return;
+      }
+      messageEl.setCustomValidity("");
+    }
     // Native FormSubmit POST; flag UI so a slow redirect does not look stuck.
     setSubmitting(true);
   };
@@ -107,7 +131,7 @@ const VC = () => {
         description={VC_DESCRIPTION}
         canonical="https://pratik.pa.tel/vc"
         ogImage={SITE_CARD.url}
-        ogImageAlt="Pratik Patel — angel investing — pratik.pa.tel"
+        ogImageAlt="Pratik Patel - angel investing - pratik.pa.tel"
         ogImageWidth={SITE_CARD.width}
         ogImageHeight={SITE_CARD.height}
         jsonLd={jsonLd}
@@ -215,8 +239,9 @@ const VC = () => {
               >
                 pratik@pa.tel
               </a>{" "}
-              via FormSubmit (static-site friendly for GitHub Pages). First live
-              submit may require a one-time FormSubmit confirmation on that inbox.
+              via FormSubmit (static-site friendly for GitHub Pages), with
+              reCAPTCHA and a honeypot. First live submit may require a one-time
+              FormSubmit confirmation on that inbox.
             </p>
 
             {sent ? (
@@ -248,12 +273,14 @@ const VC = () => {
                 <input type="hidden" name="_subject" value="Pitch via pratik.pa.tel/vc/" />
                 <input type="hidden" name="_next" value={SUCCESS_NEXT} />
                 <input type="hidden" name="_template" value="table" />
-                <input type="hidden" name="_captcha" value="false" />
-                {/* Honeypot: leave empty. FormSubmit drops submissions that fill it. */}
+                <input type="hidden" name="_captcha" value="true" />
+                <input type="hidden" name="_blacklist" value={SPAM_BLACKLIST} />
+                {/* Honeypot: leave empty. FormSubmit drops submissions that fill it.
+                    Off-screen via CSS (not display:none alone) so scrapers still fill it. */}
                 <input
                   type="text"
                   name="_honey"
-                  className="hidden"
+                  className="absolute -left-[9999px] top-auto h-px w-px overflow-hidden opacity-0"
                   tabIndex={-1}
                   autoComplete="off"
                   aria-hidden="true"
@@ -351,6 +378,9 @@ const VC = () => {
                     rows={5}
                     className={`${fieldClass} resize-y min-h-[7rem]`}
                     placeholder="Why now, what you want from an angel/advisor, anything else useful"
+                    onInput={(ev) => {
+                      (ev.currentTarget as HTMLTextAreaElement).setCustomValidity("");
+                    }}
                   />
                 </div>
 

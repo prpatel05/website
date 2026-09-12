@@ -3,6 +3,8 @@
 interface ImportMetaEnv {
   /** Cloudflare Web Analytics site token (public). Injected at build time; unset = beacon disabled. See PRA-465. */
   readonly VITE_CF_BEACON_TOKEN?: string;
+  /** FormSubmit endpoint for /vc/ pitch form. Prefer the random form URL after first activation to hide the inbox email in HTML. */
+  readonly VITE_FORMSUBMIT_ENDPOINT?: string;
 }
 
 interface ImportMeta {

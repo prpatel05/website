@@ -79,6 +79,15 @@ describe("VC page", () => {
     const form = screen.getByRole("button", { name: /submit_pitch/i }).closest("form");
     expect(form).toHaveAttribute("action", "https://formsubmit.co/pratik@pa.tel");
     expect(form).toHaveAttribute("method", "POST");
+    expect(form?.querySelector('input[name="_captcha"]')).toHaveAttribute("value", "true");
+    expect(form?.querySelector('input[name="_blacklist"]')).toBeTruthy();
+    const honey = form?.querySelector('input[name="_honey"]') as HTMLInputElement | null;
+    expect(honey).toBeTruthy();
+    expect(honey).toHaveAttribute("tabIndex", "-1");
+    expect(honey).toHaveAttribute("autoComplete", "off");
+    expect(honey?.className).toMatch(/-left-\[9999px\]/);
+    expect(screen.getByRole("button", { name: /submit_pitch/i })).not.toBeDisabled();
+    expect(screen.getByText(/reCAPTCHA and a honeypot/i)).toBeInTheDocument();
   });
 
   it("shows success state when sent=1", () => {
