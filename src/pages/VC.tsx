@@ -129,10 +129,8 @@ const VC = () => {
             </p>
             <p className="font-mono text-sm text-muted-foreground leading-relaxed max-w-2xl">
               I invest and advise selectively as an operator who has built, raised,
-              shipped, and sold. Current lens is OpenApps | Bounded and a broader
-              builder background across AWS, acquired studio work, and founding CTO
-              roles. This page is for founders who want a direct pitch, not a
-              manufactured portfolio wall.
+              shipped, and sold. This page is for founders who want a direct pitch,
+              not a manufactured portfolio wall.
             </p>
           </m.header>
 
