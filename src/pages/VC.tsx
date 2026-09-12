@@ -213,7 +213,7 @@ const VC = () => {
               Submits by email to{" "}
               <a
                 href="mailto:pratik@pa.tel"
-                className="text-primary hover:underline underline-offset-2"
+                className="inline-flex items-center min-h-6 text-primary underline underline-offset-2 hover:text-foreground transition-colors"
               >
                 pratik@pa.tel
               </a>{" "}
@@ -235,7 +235,7 @@ const VC = () => {
                 </p>
                 <a
                   href="/vc/"
-                  className="inline-flex mt-4 font-mono text-xs text-muted-foreground hover:text-primary transition-colors underline-offset-2 hover:underline"
+                  className="inline-flex items-center min-h-6 mt-4 font-mono text-xs text-muted-foreground underline underline-offset-2 hover:text-primary transition-colors"
                 >
                   send another
                 </a>
