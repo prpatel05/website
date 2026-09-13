@@ -4,6 +4,8 @@ import {
   BLOG_TITLE,
   HOME_TITLE,
   NOT_FOUND_TITLE,
+  RESUME_TITLE,
+  VC_TITLE,
   SERIES_TITLE,
   postTitle,
   routeTitle,
@@ -18,6 +20,10 @@ describe("routeTitle", () => {
   it("names the static routes", () => {
     expect(routeTitle("/")).toBe(HOME_TITLE);
     expect(routeTitle("/blog")).toBe(BLOG_TITLE);
+    expect(routeTitle("/resume")).toBe(RESUME_TITLE);
+    expect(routeTitle("/resume/")).toBe(RESUME_TITLE);
+    expect(routeTitle("/vc")).toBe(VC_TITLE);
+    expect(routeTitle("/vc/")).toBe(VC_TITLE);
     expect(routeTitle("/blog/series/agent-reliability")).toBe(SERIES_TITLE);
     expect(routeTitle("/blog/series/agent-reliability/")).toBe(SERIES_TITLE);
   });

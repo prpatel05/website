@@ -24,7 +24,7 @@ test.describe("blog share and subscribe row", () => {
       "href",
       linkedInShareUrl(CANONICAL)
     );
-    await expect(page.getByRole("link", { name: "rss" })).toHaveAttribute("href", RSS_URL);
+    await expect(page.getByRole("main").getByRole("link", { name: "rss" })).toHaveAttribute("href", RSS_URL);
     await expect(page.getByRole("link", { name: "substack" })).toHaveAttribute(
       "href",
       "https://prpatel05.substack.com"

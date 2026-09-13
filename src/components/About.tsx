@@ -31,7 +31,7 @@ const About = () => {
 
   return (
     <section ref={ref} id="about" className="py-16 sm:py-24 lg:py-40 relative overflow-hidden">
-      <m.div className="absolute inset-0 scanline pointer-events-none" style={{ y: scanlineY }} />
+      <m.div className="absolute inset-0 scanline pointer-events-none print:hidden" style={{ y: scanlineY }} />
       <m.div className="container relative z-10" style={{ opacity: sectionOpacity }}>
         <SectionHeader label="// section:about" titleLeft="About" titleRight="me" />
 
@@ -67,8 +67,10 @@ const About = () => {
                   </p>
                   <p>
                     Currently Chief Architect at{" "}
-                    <span className="text-primary">Tarobase (poof.new)</span>,
-                    building AI-powered tools for vibe-coded dApps. Proven ability
+                    <span className="text-primary">OpenApps | Bounded | poof.new</span>
+                    {" "}
+                    (openapps.xyz | bounded.sh | poof.new), building the full-stack
+                    AI agent app builder and policy-enforced runtime. Proven ability
                     to set technical strategy, recruit world-class teams, and raise
                     venture capital.
                   </p>

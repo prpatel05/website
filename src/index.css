@@ -143,6 +143,27 @@
     );
   }
 
+  /*
+    Optional full-viewport CRT overlay (off by default; toggled from StatusBar).
+    CSS-only — no images — so enabling it cannot contend for LCP. Scanlines are
+    a cheap repeating gradient; the noise is a tiny inline SVG turbulence tile
+    at very low opacity. pointer-events stay none in the component.
+  */
+  .crt-noise {
+    background:
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        hsl(160 100% 50% / 0.035) 2px,
+        hsl(160 100% 50% / 0.035) 4px
+      ),
+      url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E");
+    background-size: auto, 180px 180px;
+    opacity: 0.18;
+    mix-blend-mode: soft-light;
+  }
+
   .grid-bg {
     background-image:
       linear-gradient(hsl(160 100% 50% / 0.04) 1px, transparent 1px),
@@ -190,6 +211,10 @@
   .cursor-blink,
   .glitch-hover:hover {
     animation: none;
+  }
+
+  .crt-noise {
+    display: none;
   }
 }
 
@@ -301,8 +326,13 @@
   }
 
   .grid-bg,
-  .scanline {
+  .scanline,
+  .crt-noise {
     background-image: none;
+  }
+
+  .crt-noise {
+    display: none;
   }
 
   /*
@@ -311,7 +341,113 @@
    * pages of an 8-minute post — dead ink, and a control nothing on paper can
    * follow.
    */
-  nav[aria-label="Main"] {
-    display: none;
+  nav[aria-label="Main"],
+  nav[aria-label="On this page"],
+  nav[aria-label="Sitemap"],
+  [role="status"][aria-live],
+  .status-bar,
+  button[title*="terminal" i],
+  button[title*="CRT" i] {
+    display: none !important;
+  }
+
+  /*
+   * Resume + About print polish: keep role cards, skill groups, and the About
+   * bio/skills windows from splitting mid-card. About starts on a fresh sheet
+   * when the homepage is printed so the bio is not glued under the hero CTAs.
+   */
+  .resume-block,
+  .resume-avoid-break,
+  #about .border.bg-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  #about {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  /*
+   * /resume/ print aims ~2 Letter pages: large role/skills cards must be
+   * allowed to split (otherwise AWS fills page 2 and skills/edu/pubs orphan
+   * onto a third sheet). Keep .resume-avoid-break for skill rows and pubs.
+   */
+  main:has(#resume-summary) .resume-block {
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  main:has(#resume-summary) {
+    padding-top: 0.35rem !important;
+    padding-bottom: 0.35rem !important;
+  }
+
+  main:has(#resume-summary) .mb-10,
+  main:has(#resume-summary) .mb-6,
+  main:has(#resume-summary) .mb-4 {
+    margin-bottom: 0.45rem !important;
+  }
+
+  main:has(#resume-summary) .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.45rem !important;
+  }
+
+  main:has(#resume-summary) .space-y-3 > :not([hidden]) ~ :not([hidden]),
+  main:has(#resume-summary) .space-y-2 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.2rem !important;
+  }
+
+  main:has(#resume-summary) .p-6,
+  main:has(#resume-summary) .p-5,
+  main:has(#resume-summary) .p-4,
+  main:has(#resume-summary) .lg\:p-8 {
+    padding: 0.4rem 0.55rem !important;
+  }
+
+  main:has(#resume-summary) .mt-8 {
+    margin-top: 0 !important;
+  }
+
+  /* Drop window-window chrome + // labels on paper; PDF is the designed artifact. */
+  main:has(#resume-summary) .font-mono.text-xs.text-primary\/60,
+  main:has(#resume-summary) .font-mono.text-xs.tracking-widest.block,
+  main:has(#resume-summary) [class*="tracking-widest"].block.mb-3 {
+    display: none !important;
+  }
+
+  main:has(#resume-summary) .font-display.text-4xl,
+  main:has(#resume-summary) .font-display.text-5xl,
+  main:has(#resume-summary) .lg\:text-5xl {
+    font-size: 1.45rem !important;
+    line-height: 1.1 !important;
+    margin-bottom: 0.15rem !important;
+  }
+
+  main:has(#resume-summary) .font-display.text-2xl,
+  main:has(#resume-summary) .font-display.text-xl {
+    font-size: 1rem !important;
+    margin-bottom: 0.35rem !important;
+  }
+
+  main:has(#resume-summary) .font-display.text-lg {
+    font-size: 0.95rem !important;
+  }
+
+  main:has(#resume-summary) .font-mono.text-sm {
+    font-size: 0.68rem !important;
+    line-height: 1.3 !important;
+  }
+
+  main:has(#resume-summary) .font-mono.text-xs,
+  main:has(#resume-summary) .font-mono.text-\[10px\] {
+    font-size: 0.6rem !important;
+    line-height: 1.25 !important;
+  }
+
+  body:has(#resume-summary) footer,
+  body:has(#resume-summary) .status-bar {
+    display: none !important;
   }
 }
+

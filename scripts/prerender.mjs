@@ -17,6 +17,8 @@ const DIST = join(__dirname, "..", "dist");
 const ROUTES = [
   "/",
   "/blog",
+  "/resume",
+  "/vc",
   // Hub for the agent-reliability arc. Nested under /blog/series/ so it does
   // not collide with a post slug, and listed before the per-post routes only
   // for readability — order here is write order, not match order.
@@ -116,6 +118,13 @@ async function prerender() {
   const { server, port } = await startServer(shell);
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext();
+
+  // Keep status-bar fetches out of the snapshot. useBuildInfo skips work when
+  // this flag is set, so the baked HTML stays on the first-paint placeholder
+  // (`main @ …`) that the hydrating client also renders before its own fetch.
+  await context.addInitScript(() => {
+    window.__PRERENDER__ = true;
+  });
 
   // The app's analytics beacon injects a real <script src> tag, which this
   // browser would otherwise fetch and execute, reporting a pageview per route

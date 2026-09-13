@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import { m } from "framer-motion";
-import { ArrowLeft, ArrowUpRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { posts } from "@/data/blog-posts/registry";
+import PageShell from "@/components/chrome/PageShell";
 import SEO from "@/components/SEO";
 import { AllPostsChip, TagChip } from "@/components/TagChip";
 import { SITE_CARD } from "@/lib/social-cards";
@@ -106,7 +107,7 @@ const Blog = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <PageShell breadcrumbs={[{ label: "blog" }]}>
       <SEO
         title={BLOG_TITLE}
         description={BLOG_DESCRIPTION}
@@ -117,18 +118,6 @@ const Blog = () => {
         ogImageHeight={SITE_CARD.height}
         jsonLd={blogJsonLd}
       />
-      <nav aria-label="Main" className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
-        <div className="container flex items-center h-16">
-          <Link
-            to="/"
-            className="font-mono text-xs text-primary flex items-center gap-2 py-1 hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            cd ~
-          </Link>
-        </div>
-      </nav>
-
       <main {...mainContentProps} className="pt-28 pb-24">
         <div className="container">
           <m.div
@@ -283,7 +272,7 @@ const Blog = () => {
           )}
         </div>
       </main>
-    </div>
+    </PageShell>
   );
 };
 

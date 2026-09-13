@@ -14,6 +14,8 @@ import Index from "./pages/Index.tsx";
 import Blog from "./pages/Blog.tsx";
 import BlogSeries from "./pages/BlogSeries.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import Resume from "./pages/Resume.tsx";
+import VC from "./pages/VC.tsx";
 import { SERIES_PATH } from "@/lib/blog-series";
 
 /* ---------- Error Boundary ---------- */
@@ -183,11 +185,15 @@ const AnimatedRoutes = () => {
           }
         />
         {/*
-          No `/resume` route. public/resume/index.html is the redirect, and on
-          GitHub Pages it always wins: /resume 301s to /resume/, which is a real
-          file, so a router-side redirect could never run there. It works for
-          readers with JS off and for crawlers, which a route cannot.
+          Trailing-slash directory route. Vite/Pages serve the prerendered
+          dist/resume/index.html; the PDF remains at /resume.pdf.
         */}
+        <Route path="/resume" element={<PageTransition><Resume /></PageTransition>} />
+        {/*
+          Trailing-slash directory route. Vite/Pages serve the prerendered
+          dist/vc/index.html. Pitch form posts to FormSubmit (static-host safe).
+        */}
+        <Route path="/vc" element={<PageTransition><VC /></PageTransition>} />
         <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
       </Routes>
     </AnimatePresence>

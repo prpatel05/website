@@ -396,6 +396,8 @@ const REQUIRED_EDGES: Record<string, string[]> = {
     "a border-left",
   ],
   "/blog/": ["a border-left"],
+  "/resume/": ["a border-left"],
+  "/vc/": ["a border-left"],
   "/": ["a border-left"],
 };
 
@@ -821,7 +823,7 @@ test(`print media: decorative glows are not ink on ${route}`, async ({ page }) =
 
 /*
  * A `position: fixed` element paints on every sheet, not just the first. The
- * navbar put `← cd ~` and a rule across the top of all five pages of an
+ * navbar put breadcrumbs and a rule across the top of all five pages of an
  * 8-minute post.
  *
  * Run across every route, and not just the post, because the first version of
@@ -865,6 +867,8 @@ const TERMINAL_TOGGLE = 'button[title="Open terminal (Ctrl+K)"]';
 const FIXED_CHROME: Record<string, string[]> = {
   "/blog/your-eval-suite-measures-the-wrong-thing/": [NAV],
   "/blog/": [NAV],
+  "/resume/": [NAV],
+  "/vc/": [NAV],
   "/": [NAV, TERMINAL_TOGGLE],
 };
 

@@ -10,7 +10,7 @@ test.describe("Blog listing and post navigation", () => {
   test("blog listing shows all posts", async ({ page }) => {
     await page.goto("/blog");
 
-    await expect(page.getByText("Blog")).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Blog/ })).toBeVisible();
     await expect(page.getByText("archive")).toBeVisible();
 
     // Verify all blog posts are listed
@@ -76,13 +76,13 @@ test.describe("Blog listing and post navigation", () => {
   test("blog post has back navigation to blog listing", async ({ page }) => {
     await page.goto("/blog/ship-it-yourself");
 
-    const backLink = page.locator("text=cd ~");
-    await expect(backLink).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Home" })).toBeVisible();
+    await expect(page.getByText("ship-it-yourself").first()).toBeVisible();
   });
 
   test("non-existent blog slug shows 404", async ({ page }) => {
     await page.goto("/blog/this-post-does-not-exist");
     await expect(page.getByRole("heading", { name: "404" })).toBeVisible();
-    await expect(page.getByText("Page not found")).toBeVisible();
+    await expect(page.getByText(/command not found/i)).toBeVisible();
   });
 });

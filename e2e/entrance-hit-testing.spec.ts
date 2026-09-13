@@ -26,7 +26,7 @@ import { settleFrames } from "./frame-time";
  * The entrance only runs on a client-side navigation — `useEntrance` suppresses
  * `initial` on the entry the document loaded with, so a first load mounts every
  * card already readable. Every case here therefore arrives at "/" by clicking
- * `cd ~` on the archive, which is how a reader gets here from a post.
+ * Home on the archive, which is how a reader gets here from a post.
  */
 
 const PHONE = { width: 393, height: 852 };
@@ -77,11 +77,17 @@ type Reading = {
 async function sampleLinks(page: Page): Promise<Reading[]> {
   return page.evaluate(() => {
     const out: Reading[] = [];
+    // Only fixed/sticky chrome overlays the viewport. An in-flow footer
+    // <nav> (sitemap) would otherwise report a bottom thousands of px down
+    // the document and wipe every on-screen link out of this sample.
     const navBottom = Math.max(
       0,
-      ...Array.from(document.querySelectorAll("nav, header")).map(
-        (el) => el.getBoundingClientRect().bottom,
-      ),
+      ...Array.from(document.querySelectorAll("nav, header"))
+        .filter((el) => {
+          const pos = getComputedStyle(el).position;
+          return pos === "fixed" || pos === "sticky";
+        })
+        .map((el) => el.getBoundingClientRect().bottom),
     );
 
     for (const el of Array.from(document.querySelectorAll<HTMLElement>("a[href]"))) {
@@ -176,7 +182,7 @@ async function linkTops(
 async function navigateHome(page: Page) {
   await page.goto("/blog/");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await page.getByRole("link", { name: "cd ~" }).click();
+  await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Home" }).click();
   await page.waitForURL((url) => url.pathname === "/");
   await expect(page.locator("#writing")).toBeAttached();
 }

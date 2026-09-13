@@ -40,6 +40,7 @@ describe("Navbar", () => {
     expect(screen.getByText("writing()")).toBeInTheDocument();
     expect(screen.getByText("contact()")).toBeInTheDocument();
     expect(screen.getByText("resume()")).toBeInTheDocument();
+    expect(screen.getByText("vc()")).toBeInTheDocument();
   });
 
   it("renders correct href attributes for links", () => {
@@ -47,13 +48,22 @@ describe("Navbar", () => {
     expect(screen.getByText("about()").closest("a")).toHaveAttribute("href", "#about");
     expect(screen.getByText("writing()").closest("a")).toHaveAttribute("href", "#writing");
     expect(screen.getByText("contact()").closest("a")).toHaveAttribute("href", "#contact");
+    expect(screen.getByText("resume()").closest("a")).toHaveAttribute("href", "/resume/");
+    expect(screen.getByText("vc()").closest("a")).toHaveAttribute("href", "/vc/");
   });
 
-  it("marks resume link as external", () => {
+  it("points resume() at the HTML resume page", () => {
     render(<Navbar />);
     const resumeLink = screen.getByText("resume()").closest("a");
-    expect(resumeLink).toHaveAttribute("target", "_blank");
-    expect(resumeLink).toHaveAttribute("rel", "noopener noreferrer");
+    expect(resumeLink).toHaveAttribute("href", "/resume/");
+    expect(resumeLink).not.toHaveAttribute("target");
+  });
+
+  it("points vc() at the angel investing page", () => {
+    render(<Navbar />);
+    const vcLink = screen.getByText("vc()").closest("a");
+    expect(vcLink).toHaveAttribute("href", "/vc/");
+    expect(vcLink).not.toHaveAttribute("target");
   });
 
   it("does not apply scrolled styles initially", () => {

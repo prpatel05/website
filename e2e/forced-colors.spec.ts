@@ -82,7 +82,7 @@ test.describe("forced colours", () => {
   test("the 404 route's only control keeps a visible boundary", async ({ page }) => {
     await forced(page, "/this-route-does-not-exist/");
 
-    const cta = page.getByRole("link", { name: /cd ~/ });
+    const cta = page.getByRole("link", { name: "cd ~", exact: true });
     await expect(cta).toBeVisible();
 
     const width = await cta.evaluate((el) => parseFloat(getComputedStyle(el).borderTopWidth));

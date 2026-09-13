@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
@@ -129,8 +129,9 @@ describe("BlogSeries hub", () => {
     const titles = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
     expect(titles).toEqual(["Series A", "Series B", "Series C"]);
 
-    expect(screen.queryByText("Hiring Post")).toBeNull();
-    expect(screen.queryByText("Permissions Only")).toBeNull();
+    const main = screen.getByRole("main");
+    expect(within(main).queryByText("Hiring Post")).toBeNull();
+    expect(within(main).queryByText("Permissions Only")).toBeNull();
 
     expect(screen.getByRole("link", { name: "Series A" })).toHaveAttribute(
       "href",

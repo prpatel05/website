@@ -10,7 +10,18 @@ import { test, expect } from "./fixtures";
  * because the markup is what was wrong while looking right.
  */
 
+
 const ROUTES = ["/", "/blog/", "/blog/series/agent-reliability/", "/blog/agents-fail-quietly/"];
+
+/**
+ * Wait until sitewide chrome has finished its one-shot build-info fetch.
+ * Tabbing before that settles races a StatusBar re-render that can drop focus
+ * off the skip link mid-assertion.
+ */
+const settleChrome = async (page: import("@playwright/test").Page) => {
+  await expect(page.getByRole("navigation", { name: "Main" })).toBeVisible();
+  await expect(page.getByLabel("Build status")).not.toContainText("…");
+};
 
 /**
  * Every point of `selector`'s own rect at which `selector` is the topmost paint.
@@ -60,6 +71,7 @@ test.describe("Skip to main content", () => {
      */
     test(`is not painted under the navbar on ${route}`, async ({ page }) => {
       await page.goto(route);
+      await settleChrome(page);
 
       await page.keyboard.press("Tab");
       const skip = page.getByRole("link", { name: "Skip to main content" });
@@ -106,6 +118,7 @@ test.describe("Skip to main content", () => {
   for (const route of ROUTES) {
     test(`moves focus past the navigation on ${route}`, async ({ page }) => {
       await page.goto(route);
+      await settleChrome(page);
 
       // The skip link is the first thing in the tab order.
       await page.keyboard.press("Tab");
@@ -153,7 +166,7 @@ test.describe("Skip to main content", () => {
    * under test — it is what leaves focus on a doomed element.
    */
   const CLIENT_NAVIGATIONS = [
-    { name: "/blog/ -> /", from: "/blog/", click: "text=cd ~", url: "/" },
+    { name: "/blog/ -> /", from: "/blog/", click: 'a[aria-label="Home"]', url: "/" },
     { name: "/blog/ -> a post", from: "/blog/", click: "article h2 a", url: /\/blog\/.+/ },
     { name: "/ -> /blog/", from: "/", click: 'a[href="/blog/"]', url: "/blog/" },
   ];
@@ -169,6 +182,7 @@ test.describe("Skip to main content", () => {
       );
 
       await page.goto(nav.from);
+      await settleChrome(page);
 
       // Positive control, on the same page and in the same run: the skip link is
       // reachable *before* the navigation. Without this a broken selector or a
@@ -177,7 +191,7 @@ test.describe("Skip to main content", () => {
       await expect(page.getByRole("link", { name: "Skip to main content" })).toBeFocused();
 
       // Blurred before the click, because a focused skip link is a 224x40 panel
-      // pinned to the top-left corner and `cd ~` sits underneath it. That is the
+      // pinned to the top-left corner and the Home breadcrumb sits underneath it. That is the
       // fix working — the link is supposed to be in front of the navbar while it
       // holds focus — but it makes Playwright's actionability check retry the
       // click forever. Reaching for the mouse is what blurs it for a real reader

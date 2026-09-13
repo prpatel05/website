@@ -11,8 +11,11 @@ const links = [
   { label: "contact()", href: "#contact" },
   {
     label: "resume()",
-    href: `${import.meta.env.BASE_URL}resume.pdf`,
-    external: true,
+    href: "/resume/",
+  },
+  {
+    label: "vc()",
+    href: "/vc/",
   },
 ];
 

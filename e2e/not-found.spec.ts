@@ -5,13 +5,13 @@ test.describe("404 page", () => {
     await page.goto("/some-nonexistent-page");
 
     await expect(page.getByRole("heading", { name: "404" })).toBeVisible();
-    await expect(page.getByText("Page not found")).toBeVisible();
+    await expect(page.getByText(/command not found/i)).toBeVisible();
   });
 
   test("404 page has link back to home", async ({ page }) => {
     await page.goto("/does-not-exist");
 
-    const homeLink = page.getByText("cd ~");
+    const homeLink = page.getByRole("link", { name: "cd ~", exact: true });
     await expect(homeLink).toBeVisible();
 
     await homeLink.click();
@@ -24,3 +24,13 @@ test.describe("404 page", () => {
     await expect(page.getByRole("heading", { name: "404" })).toBeVisible();
   });
 });
+
+  test("404 offers blog, latest post, and series escapes", async ({ page }) => {
+    await page.goto("/does-not-exist");
+
+    await expect(page.getByRole("link", { name: "cd ~/blog", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: /open ~\/blog\// })).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "cd ~/blog/series/agent-reliability", exact: true })
+    ).toBeVisible();
+  });

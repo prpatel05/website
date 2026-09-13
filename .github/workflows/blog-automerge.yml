@@ -2,7 +2,11 @@ name: Blog auto-merge
 
 on:
   schedule:
+    # Daily ~8am Eastern. GitHub often delays this hours; keep as safety net.
     - cron: "0 12 * * *"
+    # Explicit Monday 8:05am Eastern (12:05 UTC): eve-of-publish merge for
+    # tomorrow's Tuesday dateISO, so Pages has a full day before blog day.
+    - cron: "5 12 * * 1"
   workflow_dispatch:
     inputs:
       dry_run:

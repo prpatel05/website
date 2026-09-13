@@ -43,18 +43,28 @@ describe("processTerminalCommand", () => {
   });
 
   // --- resume ---
-  it("returns open action with resume URL for 'resume'", () => {
+  it("navigates to the HTML resume for 'resume'", () => {
     const result = processTerminalCommand("resume", "/base/");
-    expect(result.action).toBe("open");
-    if (result.action !== "open") return;
-    expect(result.url).toBe("/base/resume.pdf");
-    expect(result.lines.some((l) => l.text.includes("Downloading resume.pdf"))).toBe(true);
+    expect(result.action).toBe("navigate");
+    if (result.action !== "navigate") return;
+    expect(result.path).toBe("/resume/");
+    expect(result.lines.some((l) => l.text.includes("Opening /resume/"))).toBe(true);
   });
 
-  it("uses default baseUrl for resume", () => {
+  it("navigates to /resume/ without needing a baseUrl", () => {
     const result = processTerminalCommand("resume");
-    if (result.action !== "open") return;
-    expect(result.url).toBe("/resume.pdf");
+    expect(result.action).toBe("navigate");
+    if (result.action !== "navigate") return;
+    expect(result.path).toBe("/resume/");
+  });
+
+  // --- vc ---
+  it("navigates to the angel investing page for 'vc'", () => {
+    const result = processTerminalCommand("vc", "/base/");
+    expect(result.action).toBe("navigate");
+    if (result.action !== "navigate") return;
+    expect(result.path).toBe("/vc/");
+    expect(result.lines.some((l) => l.text.includes("Opening /vc/"))).toBe(true);
   });
 
   // --- socials ---
@@ -88,7 +98,7 @@ describe("processTerminalCommand", () => {
     if (result.action !== "lines") return;
     const text = result.lines.map((l) => l.text).join("\n");
     expect(text).toContain("Pratik Patel");
-    expect(text).toContain("CTO & Chief Architect");
+    expect(text).toContain("Chief Architect");
     expect(text).toContain("Washington, DC");
   });
 
@@ -119,6 +129,7 @@ describe("processTerminalCommand", () => {
     expect(text).toContain("blog/");
     expect(text).toContain("contact/");
     expect(text).toContain("resume.pdf");
+    expect(text).toContain("vc/");
   });
 
   // --- pwd ---
@@ -236,14 +247,81 @@ describe("processTerminalCommand", () => {
   });
 });
 
+
+  // --- open / cd / cat / ls blog (terminal 2.0) ---
+  it("navigates to the HTML resume for 'open resume'", () => {
+    const result = processTerminalCommand("open resume", "/base/");
+    expect(result.action).toBe("navigate");
+    if (result.action !== "navigate") return;
+    expect(result.path).toBe("/resume/");
+  });
+
+  it("opens the PDF for 'open resume.pdf'", () => {
+    const result = processTerminalCommand("open resume.pdf", "/base/");
+    expect(result.action).toBe("open");
+    if (result.action !== "open") return;
+    expect(result.url).toBe("/base/resume.pdf");
+  });
+
+  it("navigates to angel investing for 'open vc'", () => {
+    const result = processTerminalCommand("open vc");
+    expect(result.action).toBe("navigate");
+    if (result.action !== "navigate") return;
+    expect(result.path).toBe("/vc/");
+  });
+
+  it("navigates to the archive for 'open blog'", () => {
+    const result = processTerminalCommand("open blog");
+    expect(result.action).toBe("navigate");
+    if (result.action !== "navigate") return;
+    expect(result.path).toBe("/blog/");
+  });
+
+  it("navigates to the archive for 'cd blog'", () => {
+    const result = processTerminalCommand("cd blog");
+    expect(result.action).toBe("navigate");
+    if (result.action !== "navigate") return;
+    expect(result.path).toBe("/blog/");
+  });
+
+  it("prints the about bio for 'cat about'", () => {
+    const result = processTerminalCommand("cat about");
+    expect(result.action).toBe("lines");
+    if (result.action !== "lines") return;
+    const text = result.lines.map((l) => l.text).join("\n");
+    expect(text).toContain("about.md");
+    expect(text).toContain("Bounded");
+  });
+
+  it("lists post files for 'ls blog'", () => {
+    const result = processTerminalCommand("ls blog", "/", [
+      { slug: "the-handoff-is-where-agents-break" },
+      { slug: "give-your-agent-an-undo-button" },
+    ]);
+    expect(result.action).toBe("lines");
+    if (result.action !== "lines") return;
+    const text = result.lines.map((l) => l.text).join("\n");
+    expect(text).toContain("./blog");
+    expect(text).toContain("the-handoff-is-where-agents-break.md");
+    expect(text).toContain("give-your-agent-an-undo-button.md");
+  });
+
+  it("errors on unknown ls targets", () => {
+    const result = processTerminalCommand("ls nowhere");
+    expect(result.action).toBe("lines");
+    if (result.action !== "lines") return;
+    expect(result.lines.some((l) => l.type === "error")).toBe(true);
+  });
+
 describe("COMMANDS constant", () => {
-  it("has 14 commands", () => {
-    expect(Object.keys(COMMANDS).length).toBe(14);
+  it("has 18 commands", () => {
+    expect(Object.keys(COMMANDS).length).toBe(18);
   });
 
   it("includes all documented commands", () => {
     const expected = [
       "help", "about", "blog", "contact", "resume",
+      "open", "cd", "cat",
       "socials", "skills", "clear", "whoami", "neofetch",
       "ls", "pwd", "date", "echo",
     ];

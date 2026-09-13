@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
@@ -109,8 +109,9 @@ function blogJsonLd(container: HTMLElement) {
 describe("Blog archive", () => {
   it("renders every post in the registry", () => {
     renderBlog();
-    expect(screen.getByText("Second Post")).toBeInTheDocument();
-    expect(screen.getByText("First Post")).toBeInTheDocument();
+    const main = screen.getByRole("main");
+    expect(within(main).getByText("Second Post")).toBeInTheDocument();
+    expect(within(main).getByText("First Post")).toBeInTheDocument();
   });
 
   // The href counterpart of the structured-data rule below: the archive is the
@@ -132,7 +133,10 @@ describe("Blog archive", () => {
     }
     for (const href of hrefs) {
       const path = href.split("?")[0];
-      if (path !== "/") {
+      // File resources (rss.xml, llms.txt, resume.pdf) are not HTML routes and
+      // must not grow a trailing slash GitHub Pages would 404.
+      const last = path.split("/").pop() ?? "";
+      if (path !== "/" && !last.includes(".")) {
         expect(path.endsWith("/")).toBe(true);
       }
     }
@@ -317,9 +321,10 @@ describe("Blog archive", () => {
 
   it("filters the archive when the URL carries ?tag=", async () => {
     renderBlog("/blog/?tag=agents");
+    const main = () => screen.getByRole("main");
     await waitFor(() => {
-      expect(screen.getByText("Second Post")).toBeInTheDocument();
-      expect(screen.queryByText("First Post")).not.toBeInTheDocument();
+      expect(within(main()).getByText("Second Post")).toBeInTheDocument();
+      expect(within(main()).queryByText("First Post")).not.toBeInTheDocument();
     });
     const filter = screen.getByRole("navigation", { name: "Filter by tag" });
     expect(filter.querySelector('[aria-current="page"]')?.textContent).toBe("#agents");
@@ -327,11 +332,12 @@ describe("Blog archive", () => {
 
   it("shows an empty state and a clear link for an unknown tag", async () => {
     renderBlog("/blog/?tag=not-a-tag");
+    const main = () => screen.getByRole("main");
     await waitFor(() => {
-      expect(screen.getByText("No posts tagged #not-a-tag.")).toBeInTheDocument();
+      expect(within(main()).getByText("No posts tagged #not-a-tag.")).toBeInTheDocument();
     });
-    expect(screen.queryByText("Second Post")).not.toBeInTheDocument();
-    expect(screen.queryByText("First Post")).not.toBeInTheDocument();
+    expect(within(main()).queryByText("Second Post")).not.toBeInTheDocument();
+    expect(within(main()).queryByText("First Post")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "show all posts" })).toHaveAttribute(
       "href",
       "/blog/"

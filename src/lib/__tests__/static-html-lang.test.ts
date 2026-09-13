@@ -3,33 +3,42 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * Every page the site serves needs a `lang` (WCAG 3.1.1) or a screen reader
- * falls back to the system voice. The 26 routed pages inherit it from
- * `index.html` via the prerenderer; hand-written files under `public/` are
- * copied verbatim and inherit nothing, so they are the ones that can drift.
- * `/resume/index.html` did exactly that and was the only page on the site
- * shipping without one.
+ * Hand-written files under `public/` are copied verbatim and inherit nothing
+ * from `index.html`, so they are the ones that can ship without `lang`
+ * (WCAG 3.1.1). Routed pages get `lang` via the prerenderer.
  *
- * Read off disk rather than through any loader: Vite copies `public/`
- * byte-for-byte, so the file here is what the browser gets.
+ * The former `public/resume/index.html` redirect was the original offender;
+ * that path is now an app route. Any future static HTML still has to declare
+ * a language.
  */
 function htmlFilesUnder(dir: string): string[] {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) return htmlFilesUnder(path);
-    return entry.name.endsWith(".html") ? [path] : [];
-  });
+  try {
+    return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) return htmlFilesUnder(path);
+      return entry.name.endsWith(".html") ? [path] : [];
+    });
+  } catch {
+    return [];
+  }
 }
 
 const staticPages = htmlFilesUnder("public");
 
 describe("static HTML under public/", () => {
-  it("has pages to check, so the suite cannot pass by finding nothing", () => {
-    expect(staticPages).toContain(join("public", "resume", "index.html"));
+  it("does not resurrect the resume redirect stub", () => {
+    expect(staticPages).not.toContain(join("public", "resume", "index.html"));
   });
 
-  it.each(staticPages)("%s declares a document language", (path) => {
-    const html = readFileSync(path, "utf8");
-    expect(html).toMatch(/<html[^>]*\slang="en"/);
-  });
+  it.each(staticPages.length ? staticPages : ["(none)"])(
+    "%s declares a document language when present",
+    (path) => {
+      if (path === "(none)") {
+        expect(staticPages).toEqual([]);
+        return;
+      }
+      const html = readFileSync(path, "utf8");
+      expect(html).toMatch(/<html[^>]*\slang="en"/);
+    }
+  );
 });

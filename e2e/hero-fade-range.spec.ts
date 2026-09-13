@@ -2,7 +2,7 @@ import { test, expect, type Page } from "./fixtures";
 
 /**
  * The hero fade has to spend itself over the hero's own height, on the arrival
- * a reader actually gets by clicking `cd ~` from a post.
+ * a reader actually gets by clicking Home from a post.
  *
  * Two defects hid behind each other here, and neither is visible on a fresh
  * load (PRA-979):
@@ -55,7 +55,7 @@ async function heroOpacity(page: Page): Promise<number> {
 /** Arrive at "/" the way the defect requires — a client-side navigation. */
 async function navigateToHome(page: Page) {
   await page.goto("/blog/");
-  const home = page.getByRole("link", { name: "cd ~" });
+  const home = page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Home" });
   await expect(home).toBeVisible();
   await page.evaluate(() => {
     (window as unknown as { __sameDocument: boolean }).__sameDocument = true;

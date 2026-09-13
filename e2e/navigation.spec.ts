@@ -17,13 +17,13 @@ test.describe("Navigation between routes", () => {
 
   test("navigates from blog listing back to homepage", async ({ page }) => {
     await page.goto("/blog");
-    await page.locator("text=cd ~").click();
+    await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Home" }).click();
     await expect(page).toHaveURL("/");
   });
 
   test("navigates from blog post back to homepage", async ({ page }) => {
     await page.goto("/blog/ship-it-yourself");
-    await page.locator("text=cd ~").click();
+    await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Home" }).click();
     await expect(page).toHaveURL("/");
   });
 
