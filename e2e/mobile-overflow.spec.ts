@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "./fixtures";
+import { test, expect, type Page, openTerminalByClick } from "./fixtures";
 import { htmlRoutesFromSitemap } from "./sitemap-routes";
 
 /**
@@ -83,5 +83,60 @@ for (const width of WIDTHS) {
         ).toBeLessThanOrEqual(0);
       });
     }
+  });
+}
+
+/**
+ * The closed-page sweep above never opens the terminal. Long unbroken output
+ * (`echo` of a URL, box-drawing that overshoots at 320) used `pre-wrap` without
+ * `overflow-wrap`, so the log grew a horizontal scroller; on a phone that pan
+ * reads as the page stretching. Cover the open dialog at both widths with the
+ * commands that produced the widest scrollback.
+ */
+
+const LONG_ECHO = `echo ${"https://example.com/".padEnd(160, "x")}`;
+
+for (const width of WIDTHS) {
+  test.describe(`open terminal does not scroll sideways at ${width}px`, () => {
+    test.use({ viewport: { width, height: 851 } });
+
+    test(`home with skills + long echo fits at ${width}px`, async ({ page }) => {
+      await page.goto("/");
+      await openTerminalByClick(page);
+
+      const input = page.getByPlaceholder('type "help" to get started...');
+      for (const cmd of ["skills", "help", LONG_ECHO]) {
+        await input.fill(cmd);
+        await input.press("Enter");
+      }
+
+      const { viewport, overflow, offenders } = await overflowOf(page);
+      expect(viewport).toBe(width);
+      expect(
+        overflow,
+        `open terminal overflows the page by ${overflow}px at ${width}px:\n  ${offenders.join("\n  ")}`
+      ).toBeLessThanOrEqual(0);
+
+      // The log itself must not grow a sideways scroller either. Page-level
+      // scrollWidth can stay clean while overflow-x:auto on the log still lets
+      // a thumb drag the scrollback sideways.
+      const log = await page.evaluate(() => {
+        const el = document.querySelector<HTMLElement>('[role="log"]');
+        if (!el) return null;
+        const sample = el.querySelector<HTMLElement>(":scope > div");
+        return {
+          scrollWidth: el.scrollWidth,
+          clientWidth: el.clientWidth,
+          overflowWrap: sample ? getComputedStyle(sample).overflowWrap : null,
+        };
+      });
+      expect(log, "terminal log missing").not.toBeNull();
+      expect(
+        log!.scrollWidth - log!.clientWidth,
+        `terminal log has ${log!.scrollWidth - log!.clientWidth}px of horizontal overflow ` +
+          `(overflow-wrap: ${log!.overflowWrap})`
+      ).toBeLessThanOrEqual(1);
+      expect(log!.overflowWrap).toMatch(/anywhere|break-word/);
+    });
   });
 }
