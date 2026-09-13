@@ -13,6 +13,10 @@ const links = [
     label: "resume()",
     href: "/resume/",
   },
+  {
+    label: "vc()",
+    href: "/vc/",
+  },
 ];
 
 const Navbar = () => {

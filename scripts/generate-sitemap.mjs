@@ -25,6 +25,11 @@ const STATIC_ROUTES = [
     changefreq: "monthly",
     priority: "0.8",
   },
+  {
+    loc: "https://pratik.pa.tel/vc/",
+    changefreq: "monthly",
+    priority: "0.7",
+  },
 ];
 
 // Discover blog posts from the dist/blog directory

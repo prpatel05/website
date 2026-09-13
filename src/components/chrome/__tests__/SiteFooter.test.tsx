@@ -25,5 +25,6 @@ describe("SiteFooter", () => {
       "/resume/"
     );
     expect(screen.getByRole("link", { name: "resume.pdf" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "vc" })).toHaveAttribute("href", "/vc/");
   });
 });

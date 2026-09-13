@@ -4,7 +4,7 @@ import { chromeLink, chromeMeta, chromeSep } from "./chrome-tokens";
 
 /**
  * Sitewide tiny mono sitemap. Shared so blog / series / post / 404 / home /
- * resume do not each invent a footer. RSS and llms.txt are visible here — not
+ * resume / vc do not each invent a footer. RSS and llms.txt are visible here — not
  * only in `<head>` — so a reader (or an agent) can find them without viewing
  * source. The HTML resume is the primary link; the PDF stays as a secondary
  * download.
@@ -78,6 +78,14 @@ const SiteFooter = () => {
               >
                 resume.pdf
               </a>
+            </li>
+            <li aria-hidden="true" className={chromeSep}>
+              |
+            </li>
+            <li>
+              <Link to="/vc/" className={chromeLink}>
+                vc
+              </Link>
             </li>
           </ul>
         </nav>

@@ -367,4 +367,87 @@
     break-before: page;
     page-break-before: always;
   }
+
+  /*
+   * /resume/ print aims ~2 Letter pages: large role/skills cards must be
+   * allowed to split (otherwise AWS fills page 2 and skills/edu/pubs orphan
+   * onto a third sheet). Keep .resume-avoid-break for skill rows and pubs.
+   */
+  main:has(#resume-summary) .resume-block {
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  main:has(#resume-summary) {
+    padding-top: 0.35rem !important;
+    padding-bottom: 0.35rem !important;
+  }
+
+  main:has(#resume-summary) .mb-10,
+  main:has(#resume-summary) .mb-6,
+  main:has(#resume-summary) .mb-4 {
+    margin-bottom: 0.45rem !important;
+  }
+
+  main:has(#resume-summary) .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.45rem !important;
+  }
+
+  main:has(#resume-summary) .space-y-3 > :not([hidden]) ~ :not([hidden]),
+  main:has(#resume-summary) .space-y-2 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.2rem !important;
+  }
+
+  main:has(#resume-summary) .p-6,
+  main:has(#resume-summary) .p-5,
+  main:has(#resume-summary) .p-4,
+  main:has(#resume-summary) .lg\:p-8 {
+    padding: 0.4rem 0.55rem !important;
+  }
+
+  main:has(#resume-summary) .mt-8 {
+    margin-top: 0 !important;
+  }
+
+  /* Drop window-window chrome + // labels on paper; PDF is the designed artifact. */
+  main:has(#resume-summary) .font-mono.text-xs.text-primary\/60,
+  main:has(#resume-summary) .font-mono.text-xs.tracking-widest.block,
+  main:has(#resume-summary) [class*="tracking-widest"].block.mb-3 {
+    display: none !important;
+  }
+
+  main:has(#resume-summary) .font-display.text-4xl,
+  main:has(#resume-summary) .font-display.text-5xl,
+  main:has(#resume-summary) .lg\:text-5xl {
+    font-size: 1.45rem !important;
+    line-height: 1.1 !important;
+    margin-bottom: 0.15rem !important;
+  }
+
+  main:has(#resume-summary) .font-display.text-2xl,
+  main:has(#resume-summary) .font-display.text-xl {
+    font-size: 1rem !important;
+    margin-bottom: 0.35rem !important;
+  }
+
+  main:has(#resume-summary) .font-display.text-lg {
+    font-size: 0.95rem !important;
+  }
+
+  main:has(#resume-summary) .font-mono.text-sm {
+    font-size: 0.68rem !important;
+    line-height: 1.3 !important;
+  }
+
+  main:has(#resume-summary) .font-mono.text-xs,
+  main:has(#resume-summary) .font-mono.text-\[10px\] {
+    font-size: 0.6rem !important;
+    line-height: 1.25 !important;
+  }
+
+  body:has(#resume-summary) footer,
+  body:has(#resume-summary) .status-bar {
+    display: none !important;
+  }
 }
+

@@ -11,7 +11,8 @@ export const COMMANDS: Record<string, string> = {
   blog: "Open blog archive",
   contact: "Navigate to contact section",
   resume: "Open HTML resume",
-  open: "open resume | open resume.pdf | open blog",
+  vc: "Open angel investing / pitch page",
+  open: "open resume | open resume.pdf | open blog | open vc",
   cd: "cd blog — open the archive",
   cat: "cat about — read the bio",
   socials: "List social links",
@@ -44,8 +45,9 @@ const ABOUT_TEXT = [
   "and took a healthtech startup from napkin sketch to 50K+ users as",
   "founding CTO.",
   "",
-  "Currently Chief Architect at Tarobase (poof.new), building AI-powered",
-  "tools for vibe-coded dApps.",
+  "Currently Chief Architect at OpenApps | Bounded | poof.new",
+  "(openapps.xyz, bounded.sh, poof.new), building the full-stack",
+  "AI agent app builder and policy-enforced runtime.",
 ];
 
 export type CommandResult =
@@ -146,6 +148,13 @@ export function processTerminalCommand(
         lines: wrapLines([{ type: "system", text: "-> Opening /resume/..." }]).lines,
       };
 
+    case "vc":
+      return {
+        action: "navigate" as const,
+        path: "/vc/",
+        lines: wrapLines([{ type: "system", text: "-> Opening /vc/..." }]).lines,
+      };
+
     case "open": {
       if (pathArg === "resume.pdf") {
         return {
@@ -168,15 +177,22 @@ export function processTerminalCommand(
           lines: wrapLines([{ type: "system", text: "-> Opening /blog/..." }]).lines,
         };
       }
+      if (pathArg === "vc") {
+        return {
+          action: "navigate" as const,
+          path: "/vc/",
+          lines: wrapLines([{ type: "system", text: "-> Opening /vc/..." }]).lines,
+        };
+      }
       if (!pathArg) {
         return wrapLines([
           { type: "error", text: "  open: missing operand" },
-          { type: "output", text: "  usage: open resume | open blog" },
+          { type: "output", text: "  usage: open resume | open blog | open vc" },
         ]);
       }
       return wrapLines([
         { type: "error", text: `  open: ${args}: nothing to open` },
-        { type: "output", text: "  try: open resume | open blog" },
+        { type: "output", text: "  try: open resume | open blog | open vc" },
       ]);
     }
 
@@ -260,8 +276,8 @@ export function processTerminalCommand(
       return wrapLines([
         { type: "output", text: ASCII_LOGO },
         { type: "system", text: "  Pratik Patel" },
-        { type: "output", text: "  CTO & Chief Architect · 3x Company Builder" },
-        { type: "output", text: "  11+ years · AI · Cloud · Web3" },
+        { type: "output", text: "  Chief Architect | OpenApps | Bounded | poof.new" },
+        { type: "output", text: "  11+ years | AI | Cloud | Web3" },
         { type: "output", text: "  Washington, DC | pratik@pa.tel" },
       ]);
 
@@ -306,6 +322,8 @@ export function processTerminalCommand(
         { type: "output", text: "  drwxr-xr-x  about/" },
         { type: "output", text: "  drwxr-xr-x  blog/" },
         { type: "output", text: "  drwxr-xr-x  contact/" },
+        { type: "output", text: "  drwxr-xr-x  resume/" },
+        { type: "output", text: "  drwxr-xr-x  vc/" },
         { type: "output", text: "  -rw-r--r--  resume.pdf" },
         { type: "output", text: "  -rw-r--r--  about.md" },
       ]);

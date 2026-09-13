@@ -18,6 +18,7 @@ const ROUTES = [
   "/",
   "/blog",
   "/resume",
+  "/vc",
   // Hub for the agent-reliability arc. Nested under /blog/series/ so it does
   // not collide with a post slug, and listed before the per-post routes only
   // for readability — order here is write order, not match order.

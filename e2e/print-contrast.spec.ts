@@ -397,6 +397,7 @@ const REQUIRED_EDGES: Record<string, string[]> = {
   ],
   "/blog/": ["a border-left"],
   "/resume/": ["a border-left"],
+  "/vc/": ["a border-left"],
   "/": ["a border-left"],
 };
 
@@ -867,6 +868,7 @@ const FIXED_CHROME: Record<string, string[]> = {
   "/blog/your-eval-suite-measures-the-wrong-thing/": [NAV],
   "/blog/": [NAV],
   "/resume/": [NAV],
+  "/vc/": [NAV],
   "/": [NAV, TERMINAL_TOGGLE],
 };
 

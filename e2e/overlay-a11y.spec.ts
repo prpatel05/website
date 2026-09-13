@@ -123,21 +123,22 @@ test.describe("Mobile menu accessibility", () => {
   });
 
   test("Tab stays inside the dialog", async ({ page }) => {
-    // Close button plus four links; 12 presses is two and a bit laps.
-    await expectTabStaysInside(page, "Site menu", 12);
+    // Close button plus five links; 15 presses is two and a bit laps.
+    await expectTabStaysInside(page, "Site menu", 15);
   });
 
   test("Shift+Tab stays inside the dialog", async ({ page }) => {
-    await expectTabStaysInside(page, "Site menu", 12, "Shift+Tab");
+    await expectTabStaysInside(page, "Site menu", 15, "Shift+Tab");
   });
 
   test("focus wraps at both boundaries", async ({ page }) => {
-    await page.getByRole("link", { name: "resume()" }).focus();
+    // Last item in the mobile menu link list (currently vc()).
+    await page.getByRole("link", { name: "vc()" }).focus();
     await page.keyboard.press("Tab");
     await expect(page.getByRole("button", { name: "Close menu" })).toBeFocused();
 
     await page.keyboard.press("Shift+Tab");
-    await expect(page.getByRole("link", { name: "resume()" })).toBeFocused();
+    await expect(page.getByRole("link", { name: "vc()" })).toBeFocused();
   });
 
   test("closing returns focus to the button that opened the menu", async ({ page }) => {

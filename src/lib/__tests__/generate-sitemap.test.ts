@@ -84,6 +84,7 @@ describe("generate-sitemap", () => {
       "https://pratik.pa.tel/blog/ship-it-yourself/",
       "https://pratik.pa.tel/blog/taste-is-your-moat/",
       "https://pratik.pa.tel/resume/",
+      "https://pratik.pa.tel/vc/",
     ]);
   });
 
@@ -98,13 +99,14 @@ describe("generate-sitemap", () => {
 
     expect(Object.fromEntries(entries)).toEqual({
       // Homepage and archive both list posts, so they move with the newest one.
-      // The series hub and resume page are static and follow the same newest-post lastmod.
+      // The series hub, resume, and vc pages are static and follow the same newest-post lastmod.
       "https://pratik.pa.tel/": "2026-06-11",
       "https://pratik.pa.tel/blog/": "2026-06-11",
       "https://pratik.pa.tel/blog/series/agent-reliability/": "2026-06-11",
       "https://pratik.pa.tel/blog/ship-it-yourself/": "2026-06-11",
       "https://pratik.pa.tel/blog/taste-is-your-moat/": "2026-05-04",
       "https://pratik.pa.tel/resume/": "2026-06-11",
+      "https://pratik.pa.tel/vc/": "2026-06-11",
     });
   });
 
@@ -146,6 +148,7 @@ describe("generate-sitemap", () => {
       "https://pratik.pa.tel/blog/taste-is-your-moat.md",
       "https://pratik.pa.tel/blog/taste-is-your-moat/",
       "https://pratik.pa.tel/resume/",
+      "https://pratik.pa.tel/vc/",
     ]);
   });
 
@@ -204,6 +207,7 @@ describe("generate-sitemap", () => {
         // Already in the past, so it passes through untouched.
         "https://pratik.pa.tel/blog/taste-is-your-moat/": "2026-05-04",
         "https://pratik.pa.tel/resume/": TODAY,
+        "https://pratik.pa.tel/vc/": TODAY,
       });
     });
 

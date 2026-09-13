@@ -260,7 +260,7 @@ const InteractiveTerminal = () => {
               role="dialog"
               aria-modal="true"
               aria-label="Interactive terminal"
-              className="fixed inset-x-2 sm:inset-x-4 bottom-2 sm:bottom-4 top-auto z-[201] max-w-2xl mx-auto sm:inset-x-auto sm:bottom-8 sm:w-full"
+              className="fixed inset-x-2 sm:inset-x-4 bottom-2 sm:bottom-4 top-auto z-[201] max-w-2xl mx-auto min-w-0 overflow-hidden sm:inset-x-auto sm:bottom-8 sm:w-full"
               /*
                 Click anywhere in the terminal to get the caret back — except
                 when that click is the end of a drag over the output. `click`
@@ -277,7 +277,7 @@ const InteractiveTerminal = () => {
                 inputRef.current?.focus();
               }}
             >
-              <div className="border border-border bg-card shadow-2xl overflow-hidden flex flex-col max-h-[60vh] sm:max-h-[70vh]">
+              <div className="border border-border bg-card shadow-2xl overflow-hidden flex flex-col min-w-0 w-full max-h-[60vh] sm:max-h-[70vh]">
                 {/* Title bar */}
                 <div className="h-9 bg-muted border-b border-border flex items-center px-4 gap-2 shrink-0">
                   {/* Redundant mouse-only affordance mirroring the macOS traffic
@@ -287,9 +287,9 @@ const InteractiveTerminal = () => {
                   <button onClick={() => setOpen(false)} aria-hidden="true" tabIndex={-1} className="w-3 h-3 rounded-full bg-destructive/60 hover:bg-destructive transition-colors" />
                   <span aria-hidden="true" className="w-3 h-3 rounded-full bg-primary/40" />
                   <span aria-hidden="true" className="w-3 h-3 rounded-full bg-primary/60" />
-                   <span className="font-mono text-[10px] text-muted-foreground ml-3 flex-1 text-center">
-                     pratik.pa.tel — bash
-                   </span>
+                  <span className="font-mono text-[10px] text-muted-foreground ml-3 flex-1 min-w-0 truncate text-center">
+                    pratik.pa.tel — bash
+                  </span>
                   <button
                     onClick={() => setOpen(false)}
                     aria-label="Close terminal"
@@ -353,8 +353,20 @@ const InteractiveTerminal = () => {
                     is indefinite against this panel, so today the log grows to its
                     content up to the cap, and a definite basis would have started
                     scrolling output that used to simply fit.
+
+                    Horizontal: `white-space: pre-wrap` alone keeps newlines but
+                    will not break a long token, so `echo` of a URL (or any
+                    unbroken run) grew this log past the dialog. Setting only
+                    `overflow-y: auto` promotes `overflow-x` to `auto` too, which
+                    on a phone turns into a sideways pan that feels like the
+                    page itself is stretching. `min-w-0` lets the flex item
+                    shrink below that min-content width, `overflow-wrap: anywhere`
+                    on each line breaks the token, and `overflow-x-hidden` clips
+                    any residual (box-drawing that still overshoots by a few px
+                    at the 320 reflow floor) so neither the log nor the document
+                    gains a horizontal scrollbar.
                   */
-                  className="flex-1 overflow-y-auto p-4 font-mono text-xs leading-relaxed min-h-[200px] [@media(max-height:30rem)]:min-h-0"
+                  className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto p-4 font-mono text-xs leading-relaxed min-h-[200px] [@media(max-height:30rem)]:min-h-0"
                 >
                   {lines.map((line, i) => (
                     <div
@@ -368,7 +380,7 @@ const InteractiveTerminal = () => {
                           ? "text-primary"
                           : "text-muted-foreground"
                       }
-                      style={{ whiteSpace: "pre-wrap" }}
+                      style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
                     >
                       {line.text}
                     </div>
@@ -376,7 +388,7 @@ const InteractiveTerminal = () => {
                 </div>
 
                 {/* Input */}
-                <form onSubmit={handleSubmit} className="border-t border-border px-4 py-3 flex items-center gap-2 shrink-0">
+                <form onSubmit={handleSubmit} className="border-t border-border px-4 py-3 flex items-center gap-2 shrink-0 min-w-0">
                   <span aria-hidden="true" className="text-primary font-mono text-xs">$</span>
                   <input
                     ref={inputRef}
@@ -384,7 +396,7 @@ const InteractiveTerminal = () => {
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                     aria-label="Terminal command"
-                    className="flex-1 bg-transparent font-mono text-xs text-foreground outline-none placeholder:text-muted-foreground/80 caret-primary"
+                    className="flex-1 min-w-0 bg-transparent font-mono text-xs text-foreground outline-none placeholder:text-muted-foreground/80 caret-primary"
                     placeholder='type "help" to get started...'
                     autoComplete="off"
                     spellCheck={false}

@@ -67,8 +67,10 @@ const About = () => {
                   </p>
                   <p>
                     Currently Chief Architect at{" "}
-                    <span className="text-primary">Tarobase (poof.new)</span>,
-                    building AI-powered tools for vibe-coded dApps. Proven ability
+                    <span className="text-primary">OpenApps | Bounded | poof.new</span>
+                    {" "}
+                    (openapps.xyz | bounded.sh | poof.new), building the full-stack
+                    AI agent app builder and policy-enforced runtime. Proven ability
                     to set technical strategy, recruit world-class teams, and raise
                     venture capital.
                   </p>

@@ -23,7 +23,7 @@ import { test, expect, type Page,
  *
  * Runs under both Playwright projects, and both breakpoints carry links the
  * other cannot see: the breadcrumb/`ls` nav is the mobile surface, while Navbar's
- * `about()`/`writing()`/`contact()`/`resume()` row is `hidden md:flex` and only
+ * `about()`/`writing()`/`contact()`/`resume()`/`vc()` row is `hidden md:flex` and only
  * exists on desktop. A mobile-only assertion would have reported this clean
  * while four desktop nav links sat at 16px.
  *
