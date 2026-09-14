@@ -44,7 +44,7 @@ export const personJsonLd = [
     image: HEADSHOT_URL,
     jobTitle: "Chief Architect",
     description:
-      "Technology executive and hands-on architect with 11+ years building and scaling engineering organizations. Three-time company builder with a successful acquisition.",
+      "Technology executive and hands-on architect focused on building and scaling engineering organizations. Three-time company builder with a successful acquisition.",
     worksFor: [
       {
         "@type": "Organization",

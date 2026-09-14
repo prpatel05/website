@@ -19,7 +19,7 @@ const Index = () => {
     <PageShell jumpRail terminal>
       <SEO
         title={HOME_TITLE}
-        description="Technology executive and 3x company builder with 11+ years scaling engineering orgs across AI, Cloud, and Web3. Currently Chief Architect at OpenApps | Bounded | poof.new."
+        description="Technology executive and 3x company builder focused on scaling engineering orgs across AI, Cloud, and Web3. Currently Chief Architect at OpenApps | Bounded | poof.new."
         canonical="https://pratik.pa.tel/"
         ogImage={SITE_CARD.url}
         ogImageAlt="Pratik Patel - Chief Architect - pratik.pa.tel"

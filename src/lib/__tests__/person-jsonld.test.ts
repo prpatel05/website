@@ -12,4 +12,10 @@ describe("person JSON-LD", () => {
     const person = personJsonLd.find((n) => n["@type"] === "Person");
     expect(person?.sameAs).toEqual(personSameAs);
   });
+
+  it("describes the Person without a years count", () => {
+    const person = personJsonLd.find((n) => n["@type"] === "Person");
+    expect(person?.description).toMatch(/focused on building/);
+    expect(String(person?.description)).not.toMatch(/11\+\s*years/i);
+  });
 });
