@@ -15,7 +15,7 @@ const skills = [
 ];
 
 const stats = [
-  { value: "11+", label: "years_exp" },
+  { value: "30+", label: "eng_led" },
   { value: "3x", label: "companies_built" },
   { value: "1", label: "acquisition" },
   { value: "50K+", label: "users_shipped" },
@@ -53,7 +53,7 @@ const About = () => {
                 </div>
                 <div className="mt-8 font-mono text-sm text-muted-foreground leading-relaxed space-y-4">
                   <p>
-                    Technology executive and hands-on architect with 11+ years
+                    Technology executive and hands-on architect focused on
                     building and scaling engineering organizations and shipping
                     products to hundreds of thousands of users.
                   </p>

@@ -13,7 +13,7 @@ vi.mock("@/hooks/useBuildInfo", () => ({
 }));
 
 describe("PageShell foot chrome", () => {
-  it("keeps footer and status under one border and wash so they read as one block", () => {
+  it("keeps one footer under one border and wash with status folded in", () => {
     const { container } = render(
       <MemoryRouter>
         <PageShell breadcrumbs={[{ label: "blog", to: "/blog/" }]}>
@@ -24,6 +24,7 @@ describe("PageShell foot chrome", () => {
 
     expect(screen.getByRole("navigation", { name: "Sitemap" })).toBeInTheDocument();
     expect(screen.getByLabelText("Build status")).toBeInTheDocument();
+    expect(screen.getAllByRole("contentinfo")).toHaveLength(1);
 
     const foot = container.querySelector(".border-t.border-border");
     expect(foot).not.toBeNull();
