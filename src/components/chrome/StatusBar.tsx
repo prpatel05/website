@@ -36,7 +36,7 @@ const StatusBar = () => {
             <Link
               to={`/blog/${newestSlug}/`}
               title={newestLabel}
-              className="min-w-0 max-w-[14ch] sm:max-w-[28ch] truncate text-primary/80 hover:text-foreground transition-colors"
+              className="inline-flex items-center min-h-6 min-w-0 max-w-[14ch] sm:max-w-[28ch] truncate text-primary/80 hover:text-foreground transition-colors"
             >
               {newestLabel}
             </Link>

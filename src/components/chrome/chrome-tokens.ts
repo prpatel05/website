@@ -21,7 +21,7 @@ export const chromeMeta =
 
 /** Sitemap / jump / CRT interactive chrome. */
 export const chromeLink =
-  "inline-flex items-center justify-center min-h-6 px-1 text-muted-foreground hover:text-primary transition-colors";
+  "inline-flex items-center justify-center min-h-6 min-w-6 px-1 text-muted-foreground hover:text-primary transition-colors";
 
 /** Active jump / CRT-on / status SHA accent — related primary family. */
 export const chromeAccent = "text-primary";
