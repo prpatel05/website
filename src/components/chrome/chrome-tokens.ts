@@ -5,8 +5,6 @@
  */
 export const chromeSep = "text-border/80 select-none";
 
-/** Quiet middot between meta chips (lighter than pipe walls). */
-export const chromeDot = "text-border/70 select-none px-0.5";
 
 /** `// section` / jump-rail voice — matches PostToc + SectionHeader. */
 export const chromeLabel =

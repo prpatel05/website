@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useBuildInfo } from "@/hooks/useBuildInfo";
 import { useCrtNoise } from "@/hooks/useCrtNoise";
-import { chromeAccent, chromeAccentSoft, chromeDot, chromeMeta } from "./chrome-tokens";
+import { chromeAccent, chromeAccentSoft, chromeMeta } from "./chrome-tokens";
 
 /**
  * Quiet secondary meta for the site foot: build sha, truncated newest post,
@@ -9,6 +9,8 @@ import { chromeAccent, chromeAccentSoft, chromeDot, chromeMeta } from "./chrome-
  * contentinfo region. Hidden in print — chrome, not content.
  *
  * No own border or wash; PageShell paints one muted block for the whole foot.
+ * Separators are gaps only (no pipe/middot glyphs) so axe can measure contrast
+ * on every route that is not pixel-gated.
  */
 const StatusBar = () => {
   const { shortSha, newestTitle, newestSlug } = useBuildInfo();
@@ -20,32 +22,24 @@ const StatusBar = () => {
   return (
     <div
       aria-label="Build status"
-      className={`status-bar flex flex-wrap items-center gap-x-1.5 gap-y-0.5 min-w-0 ${chromeMeta} print:hidden`}
+      className={`status-bar flex flex-wrap items-center gap-x-2.5 gap-y-0.5 min-w-0 ${chromeMeta} print:hidden`}
     >
       <span className="shrink-0">
         main@
         <span className={chromeAccentSoft}>{shortSha || "…"}</span>
       </span>
       {newestSlug ? (
-        <>
-          <span aria-hidden="true" className={chromeDot}>
-            ·
-          </span>
-          <span className="min-w-0 inline-flex items-center gap-1">
-            <span className="shrink-0">newest:</span>
-            <Link
-              to={`/blog/${newestSlug}/`}
-              title={newestLabel}
-              className="inline-flex items-center min-h-6 min-w-0 max-w-[14ch] sm:max-w-[28ch] truncate text-primary/80 hover:text-foreground transition-colors"
-            >
-              {newestLabel}
-            </Link>
-          </span>
-        </>
+        <span className="min-w-0 inline-flex items-center gap-1">
+          <span className="shrink-0">newest:</span>
+          <Link
+            to={`/blog/${newestSlug}/`}
+            title={newestLabel}
+            className="inline-flex items-center min-h-6 min-w-0 max-w-[14ch] sm:max-w-[28ch] truncate text-primary hover:text-foreground transition-colors"
+          >
+            {newestLabel}
+          </Link>
+        </span>
       ) : null}
-      <span aria-hidden="true" className={chromeDot}>
-        ·
-      </span>
       <button
         type="button"
         onClick={toggle}
