@@ -10,10 +10,7 @@
  * Cloudflare's beacon auto-tracks SPA route changes once loaded, so a single
  * injection covers every route including /blog/*.
  */
-export function initAnalytics(): void {
-  const token = import.meta.env.VITE_CF_BEACON_TOKEN;
-  if (!token) return;
-
+function injectBeacon(token: string): void {
   // Avoid double-injecting (e.g. across hot reloads or repeat calls).
   if (document.querySelector('script[data-cf-beacon]')) return;
 
@@ -22,4 +19,20 @@ export function initAnalytics(): void {
   script.src = "https://static.cloudflareinsights.com/beacon.min.js";
   script.setAttribute("data-cf-beacon", JSON.stringify({ token }));
   document.body.appendChild(script);
+}
+
+export function initAnalytics(): void {
+  const token = import.meta.env.VITE_CF_BEACON_TOKEN;
+  if (!token) return;
+
+  // Wait for window load so the beacon does not share the LCP bandwidth race
+  // with the preloaded display face. Lab 2026-09-14 showed the beacon on the
+  // home mobile critical path next to Space Grotesk; pageviews still record
+  // after load, and Cloudflare's SPA hook covers later route changes.
+  const start = () => injectBeacon(token);
+  if (document.readyState === "complete") {
+    start();
+  } else {
+    window.addEventListener("load", start, { once: true });
+  }
 }

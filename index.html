@@ -16,19 +16,26 @@
          every route -- latin-ext and the italic are left to unicode-range to
          fetch on demand. `crossorigin` is required even same-origin: font
          requests are CORS-mode, and without it the preload is discarded and the
-         file fetched twice. -->
-    <link
-      rel="preload"
-      as="font"
-      type="font/woff2"
-      href="/fonts/jetbrains-mono-latin.woff2"
-      crossorigin
-    />
+         file fetched twice.
+
+         Space Grotesk ships first with fetchpriority=high because the home LCP
+         element is the hero h1.font-display. JetBrains Mono is also above the
+         fold (body chrome) but must not win the bandwidth race on slow mobile:
+         measured 2026-09-14, home mobile LCP was ~2.9s with ~75% render delay
+         while JetBrains (31KB) preloaded ahead of Space Grotesk (13KB). -->
     <link
       rel="preload"
       as="font"
       type="font/woff2"
       href="/fonts/space-grotesk-latin.woff2"
+      crossorigin
+      fetchpriority="high"
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/jetbrains-mono-latin.woff2"
       crossorigin
     />
     <title data-rh="true">Pratik Patel — CTO & Chief Architect</title>
