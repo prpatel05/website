@@ -35,7 +35,7 @@ import { test, expect, type Page } from "./fixtures";
  */
 
 /** The stat labels `About.tsx` renders, longest-first in painted width. */
-const STAT_LABELS = ["companies_built", "users_shipped", "acquisition", "years_exp"];
+const STAT_LABELS = ["companies_built", "users_shipped", "acquisition", "eng_led"];
 
 /**
  * 640 and 1000 bracket the four-up band below `lg`, where the tiles are 132px

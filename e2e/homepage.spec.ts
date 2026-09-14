@@ -25,7 +25,7 @@ test.describe("Homepage", () => {
     const about = page.locator("#about");
     await expect(about).toBeAttached();
     await about.scrollIntoViewIfNeeded();
-    await expect(page.getByText("years_exp")).toBeVisible();
+    await expect(page.getByText("eng_led")).toBeVisible();
     await expect(page.getByText("companies_built")).toBeVisible();
   });
 
