@@ -35,6 +35,7 @@ const mount = () => {
 // to mount, so the ErrorBoundary can show the reader something.
 preloadRoute(window.location.pathname).then(mount, mount);
 
-// Load the privacy-friendly Cloudflare Web Analytics beacon (no-op until a
-// VITE_CF_BEACON_TOKEN is configured). See PRA-465.
+// Schedule the privacy-friendly Cloudflare Web Analytics beacon (no-op until a
+// VITE_CF_BEACON_TOKEN is configured). inject waits for window load so it stays
+// off the font/LCP bandwidth race. See PRA-465 and src/lib/analytics.ts.
 initAnalytics();

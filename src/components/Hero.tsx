@@ -245,10 +245,6 @@ const Hero = () => {
             <span className="w-1.5 h-1.5 bg-accent rounded-full" />
             <span>WASHINGTON, DC</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 bg-primary/50 rounded-full" />
-            <span>11+ YRS EXP</span>
-          </div>
         </m.div>
       </m.div>
 

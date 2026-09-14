@@ -36,12 +36,30 @@ describe("font loading", () => {
     expect(srcs.filter((u) => !u.startsWith("/fonts/"))).toEqual([]);
   });
 
-  it("swaps rather than blocking on every face", () => {
-    // Without this a face is invisible for up to 3s while its file loads (FOIT),
-    // which would hand back the delay self-hosting exists to remove.
+  it("never blocks first paint on a face download", () => {
+    // `block` FOITs for up to 3s and would hand back the delay self-hosting
+    // exists to remove. JetBrains Mono (body chrome) stays on `swap` so late
+    // bytes still paint the brand face. Space Grotesk 700 (home LCP / headings)
+    // uses `optional`: a late display-face swap was rewriting LCP after FCP
+    // on throttled mobile (lab 2026-09-14: ~2.9s LCP, ~75% render delay on the
+    // hero h1). Optional keeps that update from happening. Weight 400 stays on
+    // swap: it is not preloaded, and optional made glyph-coverage e2e paint the
+    // system stack for characters the subset has.
     const faces = fonts.match(/@font-face\s*\{[^}]*\}/g) ?? [];
     expect(faces.length).toBeGreaterThan(0);
-    expect(faces.filter((f) => !/font-display:\s*swap/.test(f))).toEqual([]);
+    expect(faces.filter((f) => /font-display:\s*block/.test(f))).toEqual([]);
+
+    const space = faces.filter((f) => /font-family:\s*'Space Grotesk'/.test(f));
+    const mono = faces.filter((f) => /font-family:\s*'JetBrains Mono'/.test(f));
+    expect(space.length).toBeGreaterThan(0);
+    expect(mono.length).toBeGreaterThan(0);
+    const space700 = space.filter((f) => /font-weight:\s*700/.test(f));
+    const space400 = space.filter((f) => /font-weight:\s*400/.test(f));
+    expect(space700.length).toBeGreaterThan(0);
+    expect(space400.length).toBeGreaterThan(0);
+    expect(space700.filter((f) => !/font-display:\s*optional/.test(f))).toEqual([]);
+    expect(space400.filter((f) => !/font-display:\s*swap/.test(f))).toEqual([]);
+    expect(mono.filter((f) => !/font-display:\s*swap/.test(f))).toEqual([]);
   });
 
   it("preloads the two files that paint above the fold, with crossorigin", () => {
@@ -54,6 +72,21 @@ describe("font loading", () => {
       expect(tag![0]).toMatch(/as="font"/);
       expect(tag![0]).toMatch(/crossorigin/);
     }
+  });
+
+  it("gives the LCP display face first dibs on the preload scanner", () => {
+    // Home LCP is h1.font-display (Space Grotesk). Preloading JetBrains Mono
+    // first let the larger mono file win bandwidth on slow mobile and delayed
+    // the face LCP was waiting on. Order + fetchpriority are the fix; see the
+    // index.html comment.
+    const preloads = [
+      ...html.matchAll(/<link\s[^>]*rel="preload"[^>]*href="([^"]+\.woff2)"[^>]*>/gs),
+    ].map((m) => m[0]);
+    expect(preloads.length).toBe(2);
+    expect(preloads[0]).toContain("/fonts/space-grotesk-latin.woff2");
+    expect(preloads[0]).toMatch(/fetchpriority="high"/);
+    expect(preloads[1]).toContain("/fonts/jetbrains-mono-latin.woff2");
+    expect(preloads[1]).not.toMatch(/fetchpriority=/);
   });
 
   it("preloads only what every route paints above the fold", () => {

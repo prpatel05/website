@@ -24,7 +24,9 @@ type PageShellProps = {
  * page content, sitemap footer, and status strip. Keeps breadcrumbs / footer /
  * status out of every page file as copy-paste.
  *
- * Footer + status share one top border so mobile does not stack two rules.
+ * Footer + status share one top border and one muted wash so mobile reads a
+ * single bottom chrome block instead of a sitemap strip plus a second status
+ * footer.
  */
 const PageShell = ({
   children,
@@ -38,7 +40,7 @@ const PageShell = ({
       {jumpRail ? <SectionJumpRail /> : null}
       <div className="flex-1">{children}</div>
       {terminal ? <InteractiveTerminal /> : null}
-      <div className="border-t border-border print:border-border">
+      <div className="border-t border-border bg-muted/20 print:border-border">
         <SiteFooter />
         <StatusBar />
       </div>
