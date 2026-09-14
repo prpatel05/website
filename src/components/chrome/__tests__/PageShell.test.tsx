@@ -24,7 +24,6 @@ describe("PageShell foot chrome", () => {
 
     expect(screen.getByRole("navigation", { name: "Sitemap" })).toBeInTheDocument();
     expect(screen.getByLabelText("Build status")).toBeInTheDocument();
-    expect(screen.getByRole("status", { name: "Build status" })).toBeInTheDocument();
 
     const foot = container.querySelector(".border-t.border-border");
     expect(foot).not.toBeNull();

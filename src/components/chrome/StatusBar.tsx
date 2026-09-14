@@ -25,7 +25,6 @@ const StatusBar = () => {
 
   return (
     <div
-      role="status"
       aria-label="Build status"
       className="status-bar pb-3 pt-0.5 sm:pb-3.5 print:hidden"
     >
