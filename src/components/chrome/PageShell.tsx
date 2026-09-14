@@ -4,7 +4,6 @@ import InteractiveTerminal from "@/components/InteractiveTerminal";
 import { CrtNoiseProvider } from "./CrtNoiseProvider";
 import SiteTopBar from "./SiteTopBar";
 import SiteFooter from "./SiteFooter";
-import StatusBar from "./StatusBar";
 import SectionJumpRail from "./SectionJumpRail";
 import CrtNoise from "./CrtNoise";
 import type { BreadcrumbSegment } from "./Breadcrumbs";
@@ -21,12 +20,11 @@ type PageShellProps = {
 
 /**
  * Shared outer chrome: top bar (nav or breadcrumbs), optional jump rail,
- * page content, sitemap footer, and status strip. Keeps breadcrumbs / footer /
- * status out of every page file as copy-paste.
+ * page content, and one compact footer (sitemap + quiet status meta). Keeps
+ * breadcrumbs / footer / status out of every page file as copy-paste.
  *
- * Footer + status share one top border and one muted wash so mobile reads a
- * single bottom chrome block instead of a sitemap strip plus a second status
- * footer.
+ * Single top border and muted wash on the foot wrapper so mobile reads one
+ * bottom chrome block.
  */
 const PageShell = ({
   children,
@@ -42,7 +40,6 @@ const PageShell = ({
       {terminal ? <InteractiveTerminal /> : null}
       <div className="border-t border-border bg-muted/20 print:border-border">
         <SiteFooter />
-        <StatusBar />
       </div>
       <CrtNoise />
     </div>

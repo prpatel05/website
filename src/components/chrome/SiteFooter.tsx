@@ -1,101 +1,58 @@
 import { Link } from "react-router-dom";
-import { SERIES_HREF, SERIES_NAME } from "@/lib/blog-series";
-import { chromeLink, chromeMeta, chromeSep } from "./chrome-tokens";
+import { SERIES_HREF } from "@/lib/blog-series";
+import { chromeLink, chromeMeta } from "./chrome-tokens";
+import StatusBar from "./StatusBar";
 
 /**
- * Sitewide tiny mono sitemap. Shared so blog / series / post / 404 / home /
- * resume / vc do not each invent a footer. RSS and llms.txt are visible here — not
- * only in `<head>` — so a reader (or an agent) can find them without viewing
- * source. The HTML resume is the primary link; the PDF stays as a secondary
- * download.
+ * Sitewide compact mono foot. One contentinfo: restrained sitemap row plus a
+ * quiet meta line (copyright + build/newest/crt). Shared so blog / series /
+ * post / 404 / home / resume / vc do not each invent a footer.
  *
- * Border and muted wash live on PageShell's foot wrapper with StatusBar so the
- * two strips read as one bottom chrome block instead of stacked footers.
+ * RSS stays visible for feed discovery (llms.txt remains in <head>). HTML
+ * resume is the footer link; PDF lives on the resume page. Border and muted
+ * wash live on PageShell's foot wrapper.
  */
 const SiteFooter = () => {
   const year = new Date().getFullYear();
-  const resumePdfHref = `${import.meta.env.BASE_URL}resume.pdf`;
+
+  const links: { to?: string; href?: string; label: string; ariaLabel?: string }[] = [
+    { to: "/", label: "home", ariaLabel: "home (sitemap)" },
+    { to: "/blog/", label: "blog" },
+    { to: SERIES_HREF, label: "series" },
+    { to: "/resume/", label: "resume" },
+    { to: "/vc/", label: "vc" },
+    { href: "/rss.xml", label: "rss" },
+  ];
 
   return (
-    <footer className="pt-4 pb-1 sm:pt-5 sm:pb-1">
-      <div className="container flex flex-col gap-2">
+    <footer className="py-2.5 sm:py-3">
+      <div className="container flex flex-col gap-1.5 sm:gap-2">
         <nav aria-label="Sitemap" className="print:hidden">
-          <ul className={`flex flex-wrap items-center gap-x-1 gap-y-1 ${chromeMeta}`}>
-            <li>
-              <Link to="/" className={chromeLink} aria-label="home (sitemap)">
-                home
-              </Link>
-            </li>
-            <li aria-hidden="true" className={chromeSep}>
-              |
-            </li>
-            <li>
-              <Link to="/blog/" className={chromeLink}>
-                blog
-              </Link>
-            </li>
-            <li aria-hidden="true" className={chromeSep}>
-              |
-            </li>
-            <li>
-              <Link to={SERIES_HREF} className={chromeLink}>
-                series ({SERIES_NAME})
-              </Link>
-            </li>
-            <li aria-hidden="true" className={chromeSep}>
-              |
-            </li>
-            <li>
-              <a href="/rss.xml" className={chromeLink}>
-                rss
-              </a>
-            </li>
-            <li aria-hidden="true" className={chromeSep}>
-              |
-            </li>
-            <li>
-              <a href="/llms.txt" className={chromeLink}>
-                llms.txt
-              </a>
-            </li>
-            <li aria-hidden="true" className={chromeSep}>
-              |
-            </li>
-            <li>
-              <Link to="/resume/" className={chromeLink}>
-                resume
-              </Link>
-            </li>
-            <li aria-hidden="true" className={chromeSep}>
-              |
-            </li>
-            <li>
-              <a
-                href={resumePdfHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={chromeLink}
-              >
-                resume.pdf
-              </a>
-            </li>
-            <li aria-hidden="true" className={chromeSep}>
-              |
-            </li>
-            <li>
-              <Link to="/vc/" className={chromeLink}>
-                vc
-              </Link>
-            </li>
+          <ul className={`flex flex-wrap items-center gap-x-2.5 gap-y-0.5 ${chromeMeta}`}>
+            {links.map((item) => (
+              <li key={item.label}>
+                {item.to ? (
+                  <Link
+                    to={item.to}
+                    className={chromeLink}
+                    aria-label={item.ariaLabel}
+                  >
+                    {item.label}
+                  </Link>
+                ) : (
+                  <a href={item.href} className={chromeLink}>
+                    {item.label}
+                  </a>
+                )}
+              </li>
+            ))}
           </ul>
         </nav>
         <div
-          className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 ${chromeMeta}`}
+          className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-3 min-w-0 ${chromeMeta}`}
         >
-          <span>© {year} PRATIK PATEL</span>
-          <span className="text-primary/60 print:text-primary">
-            BUILT WITH PURPOSE // v3.0
-          </span>
+          <span className="shrink-0">© {year} PRATIK PATEL</span>
+          <StatusBar />
         </div>
       </div>
     </footer>

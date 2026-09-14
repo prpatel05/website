@@ -183,11 +183,12 @@ describe("Hero – static content", () => {
     expect(screen.getByText("Patel")).toBeInTheDocument();
   });
 
-  it("renders the bio paragraph", () => {
+  it("renders the bio paragraph without a years count", () => {
     renderHero();
-    expect(
-      screen.getByText(/Technology executive and hands-on architect/i)
-    ).toBeInTheDocument();
+    const bio = screen.getByText(/Technology executive and hands-on architect/i);
+    expect(bio).toBeInTheDocument();
+    expect(bio.textContent).toMatch(/focused on building/);
+    expect(bio.textContent).not.toMatch(/11\+\s*years/i);
   });
 
   it("renders CTA links", () => {
