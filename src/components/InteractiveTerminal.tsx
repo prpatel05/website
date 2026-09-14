@@ -387,16 +387,22 @@ const InteractiveTerminal = () => {
                   ))}
                 </div>
 
-                {/* Input */}
+                {/* Input
+                    iOS Safari zooms when a focused <input> is under 16px.
+                    `text-xs` is 12px, so autofocus on open zoomed phone readers
+                    in and hid the full terminal width until they pinched out.
+                    `text-base` (16px) below `sm`, denser mono from `sm` up —
+                    CSS only; no maximum-scale viewport hack.
+                */}
                 <form onSubmit={handleSubmit} className="border-t border-border px-4 py-3 flex items-center gap-2 shrink-0 min-w-0">
-                  <span aria-hidden="true" className="text-primary font-mono text-xs">$</span>
+                  <span aria-hidden="true" className="text-primary font-mono text-base sm:text-xs">$</span>
                   <input
                     ref={inputRef}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                     aria-label="Terminal command"
-                    className="flex-1 min-w-0 bg-transparent font-mono text-xs text-foreground outline-none placeholder:text-muted-foreground/80 caret-primary"
+                    className="flex-1 min-w-0 bg-transparent font-mono text-base sm:text-xs text-foreground outline-none placeholder:text-muted-foreground/80 caret-primary"
                     placeholder='type "help" to get started...'
                     autoComplete="off"
                     spellCheck={false}
