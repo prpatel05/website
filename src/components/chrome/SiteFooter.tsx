@@ -9,16 +9,16 @@ import { chromeLink, chromeMeta, chromeSep } from "./chrome-tokens";
  * source. The HTML resume is the primary link; the PDF stays as a secondary
  * download.
  *
- * Border lives on PageShell's foot wrapper with StatusBar so the two strips
- * share one rule instead of fighting on mobile.
+ * Border and muted wash live on PageShell's foot wrapper with StatusBar so the
+ * two strips read as one bottom chrome block instead of stacked footers.
  */
 const SiteFooter = () => {
   const year = new Date().getFullYear();
   const resumePdfHref = `${import.meta.env.BASE_URL}resume.pdf`;
 
   return (
-    <footer className="pt-5 pb-3 sm:pt-6 sm:pb-4">
-      <div className="container flex flex-col gap-2.5">
+    <footer className="pt-4 pb-1 sm:pt-5 sm:pb-1">
+      <div className="container flex flex-col gap-2">
         <nav aria-label="Sitemap" className="print:hidden">
           <ul className={`flex flex-wrap items-center gap-x-1 gap-y-1 ${chromeMeta}`}>
             <li>
@@ -90,7 +90,7 @@ const SiteFooter = () => {
           </ul>
         </nav>
         <div
-          className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 ${chromeMeta}`}
+          className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 ${chromeMeta}`}
         >
           <span>© {year} PRATIK PATEL</span>
           <span className="text-primary/60 print:text-primary">

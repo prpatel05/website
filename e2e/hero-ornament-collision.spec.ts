@@ -3,8 +3,7 @@ import { test, expect } from "./fixtures";
 /**
  * The hero's gutter ornament never paints on top of the hero copy.
  *
- * `Hero.tsx` pins a status block ("SYSTEM ONLINE" / "WASHINGTON, DC" / "11+ YRS
- * EXP") to the section at `absolute top-24 left-8`, outside the centred content
+ * `Hero.tsx` pins a status block ("SYSTEM ONLINE" / "WASHINGTON, DC") to the section at `absolute top-24 left-8`, outside the centred content
  * column. That only works while the column has actually left a gutter wide
  * enough to hold it, and the reveal breakpoint is the only thing enforcing it.
  * It shipped as `lg` (1024px), where there is no gutter — the column starts at

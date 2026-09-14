@@ -13,8 +13,9 @@ import { chromeAccent, chromeAccentSoft, chromeMeta, chromeSep } from "./chrome-
  * Also hosts the CRT noise toggle: off by default, remembered in localStorage,
  * forced off under prefers-reduced-motion.
  *
- * Lives under SiteFooter inside PageShell's single foot border so mobile does
- * not stack two competing `border-t` rules.
+ * Lives under SiteFooter inside PageShell's single foot border and muted wash.
+ * No second background or top border — a separate wash was what made mobile
+ * read this as a second footer under the sitemap.
  */
 const StatusBar = () => {
   const { shortSha, deployed, newestTitle, newestSlug } = useBuildInfo();
@@ -24,11 +25,12 @@ const StatusBar = () => {
 
   return (
     <div
+      role="status"
       aria-label="Build status"
-      className="status-bar bg-muted/25 print:hidden"
+      className="status-bar pb-3 pt-0.5 sm:pb-3.5 print:hidden"
     >
       <div
-        className={`container min-h-8 py-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 ${chromeMeta}`}
+        className={`container min-h-7 flex flex-wrap items-center gap-x-2 gap-y-0.5 ${chromeMeta}`}
       >
         <span className="shrink-0">
           main @{" "}

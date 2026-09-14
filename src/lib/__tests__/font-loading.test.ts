@@ -39,10 +39,12 @@ describe("font loading", () => {
   it("never blocks first paint on a face download", () => {
     // `block` FOITs for up to 3s and would hand back the delay self-hosting
     // exists to remove. JetBrains Mono (body chrome) stays on `swap` so late
-    // bytes still paint the brand face. Space Grotesk (home LCP / headings)
+    // bytes still paint the brand face. Space Grotesk 700 (home LCP / headings)
     // uses `optional`: a late display-face swap was rewriting LCP after FCP
     // on throttled mobile (lab 2026-09-14: ~2.9s LCP, ~75% render delay on the
-    // hero h1). Optional keeps that update from happening.
+    // hero h1). Optional keeps that update from happening. Weight 400 stays on
+    // swap: it is not preloaded, and optional made glyph-coverage e2e paint the
+    // system stack for characters the subset has.
     const faces = fonts.match(/@font-face\s*\{[^}]*\}/g) ?? [];
     expect(faces.length).toBeGreaterThan(0);
     expect(faces.filter((f) => /font-display:\s*block/.test(f))).toEqual([]);
@@ -51,7 +53,12 @@ describe("font loading", () => {
     const mono = faces.filter((f) => /font-family:\s*'JetBrains Mono'/.test(f));
     expect(space.length).toBeGreaterThan(0);
     expect(mono.length).toBeGreaterThan(0);
-    expect(space.filter((f) => !/font-display:\s*optional/.test(f))).toEqual([]);
+    const space700 = space.filter((f) => /font-weight:\s*700/.test(f));
+    const space400 = space.filter((f) => /font-weight:\s*400/.test(f));
+    expect(space700.length).toBeGreaterThan(0);
+    expect(space400.length).toBeGreaterThan(0);
+    expect(space700.filter((f) => !/font-display:\s*optional/.test(f))).toEqual([]);
+    expect(space400.filter((f) => !/font-display:\s*swap/.test(f))).toEqual([]);
     expect(mono.filter((f) => !/font-display:\s*swap/.test(f))).toEqual([]);
   });
 
