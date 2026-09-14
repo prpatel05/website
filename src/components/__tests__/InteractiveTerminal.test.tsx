@@ -79,6 +79,21 @@ describe("InteractiveTerminal – UI interactions", () => {
     expect(screen.getByText("$")).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/type "help"/i)).toBeInTheDocument();
   });
+
+  /**
+   * iOS Safari zooms focused inputs under 16px. The command line must carry
+   * `text-base` (16px) on small screens; denser `sm:text-xs` is fine above that.
+   * jsdom does not apply Tailwind, so this asserts the classes the stylesheet
+   * will resolve — the e2e suite checks computed px at a phone width.
+   */
+  it("keeps the command input at least text-base on small screens", () => {
+    renderTerminal();
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+    const input = screen.getByPlaceholderText(/type "help"/i);
+    expect(input.className.split(/\s+/)).toEqual(
+      expect.arrayContaining(["text-base", "sm:text-xs"]),
+    );
+  });
 });
 
 /**

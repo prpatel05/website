@@ -666,3 +666,30 @@ test.describe("terminal chrome on a 400%-zoom viewport", () => {
       .toBeLessThanOrEqual(1);
   });
 });
+
+/**
+ * iOS Safari autofocus-zooms when a focused <input> is under 16px. Opening the
+ * terminal focuses the command line; at phone widths that used to be `text-xs`
+ * (12px), so Safari zoomed in and hid the full terminal width until the reader
+ * pinched out. Assert computed font-size at a typical phone CSS width (393 —
+ * iPhone 14/15 logical width) so a regression back under 16px fails here
+ * instead of on a device. No maximum-scale viewport hack is involved.
+ */
+test.describe("terminal command input on a phone-width viewport", () => {
+  test.use({ viewport: { width: 393, height: 851 } });
+
+  test("command input stays >= 16px so iOS Safari does not autofocus-zoom", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await openTerminalByClick(page);
+
+    const fontPx = await commandLine(page).evaluate((el) =>
+      parseFloat(getComputedStyle(el).fontSize),
+    );
+
+    expect(fontPx, "command input font-size must be >= 16px below sm").toBeGreaterThanOrEqual(
+      16,
+    );
+  });
+});
