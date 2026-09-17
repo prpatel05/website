@@ -1,10 +1,10 @@
 I unblocked a three-day agent from a phone while waiting for coffee, and the fix was not typing code on glass.
 
-The agent had stalled on a staging-only settings bug. Same loop from [Let It Run for Days](https://pratik.pa.tel/blog/let-it-run-for-days/): reproduce, trace, fix, verify. The log was fine. The stop condition was fine. What it needed was a one-line decision I had been avoiding: empty string is omit, not clear. I approved the smallest reversible patch, kicked verify, and put the phone away. By the time I sat down at the desk, CI was green and Antigravity had already walked the reload path. Twelve minutes of steering. Zero lines typed with my thumbs.
+The agent had stalled on a staging-only settings bug. Same loop from **Let It Run for Days**: reproduce, trace, fix, verify. The log was fine. The stop condition was fine. What it needed was a one-line decision I had been avoiding: empty string is omit, not clear. I approved the smallest reversible patch, kicked verify, and put the phone away. By the time I sat down at the desk, CI was green and Antigravity had already walked the reload path. Twelve minutes of steering. Zero lines typed with my thumbs.
 
 The usual story says a phone is too small for real work. The inversion is quieter. Screen size is not the bottleneck. The seam between pocket and desk is. If your stack only works when you are at a keyboard, you do not have a shipping system. You have a desk ritual. A phone is a valid place to steer agents, review evidence, unblock a stuck loop, and kick the next job, as long as blast radius and contracts travel with you.
 
-This is the third post in **Ship With Agents**. The first was about long runs that stay bounded. The second was about treating [your stack as a team, not a subscription](https://pratik.pa.tel/blog/your-stack-is-a-team-not-a-subscription/). This one is about the control surface you already carry.
+This is the third post in **Ship With Agents**. The first was about long runs that stay bounded. The second was about treating **your stack as a team, not a subscription**. This one is about the control surface you already carry.
 
 ## The Desk Myth Is a Latency Tax
 
