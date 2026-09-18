@@ -1,21 +1,35 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { initAnalytics } from "../analytics";
 
-const BEACON_SELECTOR = 'script[data-cf-beacon]';
+const BEACON_SELECTOR = "script[data-cf-beacon]";
 
 describe("initAnalytics", () => {
   beforeEach(() => {
     document.body.innerHTML = "";
+    delete window.__PRERENDER__;
   });
 
   afterEach(() => {
     vi.unstubAllEnvs();
     document.body.innerHTML = "";
+    delete window.__PRERENDER__;
     vi.restoreAllMocks();
   });
 
   it("does not inject the beacon when no token is configured", () => {
     vi.stubEnv("VITE_CF_BEACON_TOKEN", "");
+    initAnalytics();
+    expect(document.querySelector(BEACON_SELECTOR)).toBeNull();
+  });
+
+  it("does not inject during prerender even when the document is complete", () => {
+    vi.stubEnv("VITE_CF_BEACON_TOKEN", "test-token-123");
+    window.__PRERENDER__ = true;
+    Object.defineProperty(document, "readyState", {
+      configurable: true,
+      get: () => "complete",
+    });
+
     initAnalytics();
     expect(document.querySelector(BEACON_SELECTOR)).toBeNull();
   });

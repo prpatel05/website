@@ -126,9 +126,10 @@ async function prerender() {
     window.__PRERENDER__ = true;
   });
 
-  // The app's analytics beacon injects a real <script src> tag, which this
-  // browser would otherwise fetch and execute, reporting a pageview per route
-  // per deploy into the live read-out. Keep the tag, drop the hit.
+  // initAnalytics skips inject while __PRERENDER__ is set so the beacon is not
+  // baked into static HTML (a deferred script in the snapshot races fonts on
+  // real visits and undoes the load-gated inject). The route below is the
+  // belt-and-suspenders network guard if a future change reintroduces a fetch.
   let blockedTelemetry = 0;
   await context.route("**/*", (route) => {
     if (isTelemetryRequest(route.request().url())) {
@@ -228,6 +229,16 @@ async function prerender() {
     // is injected during hydration, though, so this waits for it rather than
     // sampling — see prerender-readiness.mjs.
     await stripMotionPreload(page, route);
+
+    // Defense in depth: if a beacon script somehow lands in the DOM (older
+    // bundle, or a future inject that forgets the __PRERENDER__ guard), drop it
+    // before serializing. Real visits get the load-deferred inject from the
+    // hydrating client instead.
+    await page.evaluate(() => {
+      for (const el of document.querySelectorAll("script[data-cf-beacon]")) {
+        el.remove();
+      }
+    });
 
     const html = await page.content();
 
