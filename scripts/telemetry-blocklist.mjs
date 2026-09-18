@@ -3,23 +3,16 @@
  *
  * `scripts/prerender.mjs` drives a real Chromium against a local server and
  * serializes the post-JS DOM, so any analytics code the app runs on load also
- * runs — and fires — inside CI. The Cloudflare beacon is injected by
- * `initAnalytics()` as a real <script src> tag, which Chromium then fetches and
- * executes, reporting a pageview whose `location.host` is `127.0.0.1`. That is
- * one synthetic hit per prerendered route per deploy, recorded under the site
- * token and visible in the Cloudflare Web Analytics dashboard.
+ * runs inside CI. `initAnalytics()` skips inject while `window.__PRERENDER__`
+ * is set so the beacon is not baked into static HTML (a deferred script in the
+ * snapshot would race fonts on real visits and undo the load-gated inject).
+ * This network blocklist is the second, independent guard: if a future change
+ * reintroduces a beacon fetch during prerender, Chromium still cannot contact
+ * Cloudflare and invent synthetic pageviews under the site token.
  *
- * It does not corrupt the traffic read-out, which filters the RUM dataset on
- * `requestHost: pratik.pa.tel`; a hit from `127.0.0.1` cannot match. Merging
- * this guard is therefore not an ordering prerequisite for setting
- * `CF_BEACON_TOKEN` — it keeps CI out of the dashboard a human reads.
- *
- * We block at the network layer rather than guarding `initAnalytics()` on the
- * production hostname, because the injected tag must still be serialized into
- * the static HTML: that is what makes the beacon visible to
- * `curl -s https://pratik.pa.tel/... | grep data-cf-beacon`, and what lets it
- * load for real visitors without waiting on the JS bundle. Blocking the request
- * keeps the tag and drops the hit.
+ * Hits from `127.0.0.1` would not match the traffic read-out filter on
+ * `requestHost: pratik.pa.tel` either way; this keeps CI out of the dashboard
+ * a human reads.
  */
 
 /** Hosts whose requests are aborted during prerender. */

@@ -9,10 +9,18 @@
  *
  * Cloudflare's beacon auto-tracks SPA route changes once loaded, so a single
  * injection covers every route including /blog/*.
+ *
+ * Injection waits for `window` `load` so the beacon does not share the home
+ * mobile LCP bandwidth race with the preloaded display face (lab 2026-09-14).
+ * Prerender must not run that inject: `document.readyState` is already
+ * `complete` in the snapshot browser, so the "after load" path would bake a
+ * deferred `<script src=beacon>` into every route's HTML and put the beacon
+ * back on the critical path for real visitors — undoing the deferral. Skip
+ * while `window.__PRERENDER__` is set; the hydrating client injects after load.
  */
 function injectBeacon(token: string): void {
   // Avoid double-injecting (e.g. across hot reloads or repeat calls).
-  if (document.querySelector('script[data-cf-beacon]')) return;
+  if (document.querySelector("script[data-cf-beacon]")) return;
 
   const script = document.createElement("script");
   script.defer = true;
@@ -25,10 +33,9 @@ export function initAnalytics(): void {
   const token = import.meta.env.VITE_CF_BEACON_TOKEN;
   if (!token) return;
 
-  // Wait for window load so the beacon does not share the LCP bandwidth race
-  // with the preloaded display face. Lab 2026-09-14 showed the beacon on the
-  // home mobile critical path next to Space Grotesk; pageviews still record
-  // after load, and Cloudflare's SPA hook covers later route changes.
+  // See file header: baking the tag into prerendered HTML races fonts on visit.
+  if (typeof window !== "undefined" && window.__PRERENDER__) return;
+
   const start = () => injectBeacon(token);
   if (document.readyState === "complete") {
     start();
