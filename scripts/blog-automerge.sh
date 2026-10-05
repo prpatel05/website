@@ -20,8 +20,8 @@ TODAY="${AUTOMERGE_TODAY:-$(date -u +%F)}"
 TODAY_EPOCH="$(iso_epoch "$TODAY")"
 
 # GitHub computes `mergeable` lazily and reports UNKNOWN until it has built the
-# test merge commit. Any push to main invalidates it for every open PR, so the
-# 08:30 cron routinely races a freshly-invalidated cache.
+# test merge commit. Any push to main invalidates it for every open PR, so a
+# scheduled morning run routinely races a freshly-invalidated cache.
 MERGEABLE_RETRIES="${AUTOMERGE_MERGEABLE_RETRIES:-5}"
 MERGEABLE_RETRY_SLEEP="${AUTOMERGE_MERGEABLE_RETRY_SLEEP:-2}"
 
@@ -34,13 +34,12 @@ GRACE_SECONDS=$(( PUBLISH_GRACE_DAYS * 86400 ))
 # publishes a real post -- the one thing you cannot undo -- so until now nobody
 # could run it to find out whether it works. The test suite drives this script
 # against a stubbed `gh`, so it proves the logic and nothing at all about the
-# real API or the token the workflow runs as. The first dry run earned its keep
-# immediately: it showed the CI gate reads GREEN with `checks: none` as readily
-# as with `checks: read`, because this repo is public. See the note in
-# blog-automerge.yml.
+# real API or the token the Grok routine runs as. The first dry run earned its
+# keep immediately: it showed the CI gate reads GREEN with `checks: none` as
+# readily as with `checks: read`, because this repo is public (check-runs on a
+# public repo are world-readable).
 #
-# `true` and `1` both count, because a workflow_dispatch boolean arrives as the
-# string "true".
+# `true` and `1` both count as dry; anything else is a real run.
 DRY_RUN=0
 case "${AUTOMERGE_DRY_RUN:-}" in
   1 | true | TRUE | yes) DRY_RUN=1 ;;
@@ -182,7 +181,7 @@ create_blocked_merge_issue() {
   if gh issue create \
     --repo "$REPO" \
     --title "$issue_title" \
-    --body "$(printf 'The blog auto-merge routine could not merge this PR on or before its publish date.\n\n- PR: https://github.com/%s/pull/%s\n- Date (dateISO): %s\n- Branch: %s\n- Reason: %s\n- Action: unblock the merge, then re-run the blog auto-merge workflow.\n' "$REPO" "$number" "$date_iso" "$branch" "$reason")" >/dev/null; then
+    --body "$(printf 'The blog auto-merge routine could not merge this PR on or before its publish date.\n\n- PR: https://github.com/%s/pull/%s\n- Date (dateISO): %s\n- Branch: %s\n- Reason: %s\n- Action: unblock the merge, then re-run the Grok Blog auto-merge routine (scripts/blog-automerge.sh).\n' "$REPO" "$number" "$date_iso" "$branch" "$reason")" >/dev/null; then
     echo "    Created blocked-merge issue for $branch ($reason)."
   else
     echo "    Failed to create blocked-merge issue for $branch."
