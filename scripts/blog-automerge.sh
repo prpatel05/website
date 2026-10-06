@@ -218,17 +218,19 @@ open_prs="$(gh pr list --repo "$REPO" --state open --json number,title,headRefNa
 blog_prs="$(echo "$open_prs" | jq -c '[.[] | select(.headRefName | startswith("blog/"))]')"
 blog_count="$(echo "$blog_prs" | jq 'length')"
 
-if [[ "$blog_count" -eq 0 ]]; then
-  echo "No open blog PRs found."
-  echo "No blog PRs were due for merge."
-  exit 0
-fi
-
 merged_prs=()
 would_merge_prs=()
 skipped_prs=()
 conflict_prs=()
 missed_publish_prs=()
+
+# No early exit here: an empty queue is the normal state on a publish morning
+# whose post merged the evening before, and that is exactly the morning the
+# publish-day deploy check below exists for. The loop simply has nothing to do.
+if [[ "$blog_count" -eq 0 ]]; then
+  echo "No open blog PRs found."
+  echo "No blog PRs were due for merge."
+fi
 
 while IFS= read -r pr_json; do
   number="$(jq -r '.number' <<<"$pr_json")"
@@ -372,19 +374,101 @@ while IFS= read -r pr_json; do
   fi
 done < <(echo "$blog_prs" | jq -c '.[]')
 
-# GITHUB_TOKEN push events do not start other workflows -- that is why #102
-# merged onto main on 2026-08-25 and the live site stayed on the previous SHA.
-# `workflow_dispatch` is the documented exception: GITHUB_TOKEN *can* trigger
-# it. One dispatch after the last successful merge is enough; Pages deploys
-# whatever is on main. Dry-run never populates merged_prs, so it cannot reach
-# this call.
-if (( ${#merged_prs[@]} > 0 )); then
-  echo "Dispatching deploy workflow so the merge reaches Pages."
-  if gh workflow run "Deploy static content to Pages" --repo "$REPO" --ref main; then
-    echo "Dispatched deploy workflow on main."
+# Is a post dated today already on main? Prints the first matching path and
+# returns 0, returns 1 when none is, and returns 2 when main could not be read.
+# Only the top-level data files carry dateISO; `content/` holds the bodies and
+# is skipped. Stops at the first match, so a publish day costs a few reads.
+publish_day_post_on_main() {
+  local listing path content date_iso
+  local err
+  err="$(mktemp)"
+
+  listing="$(gh api "repos/$REPO/contents/src/data/blog-posts?ref=main" \
+    --jq '.[] | select(.type == "file" and (.name | endswith(".ts"))) | .path' 2>"$err")" || {
+    echo "  Publish-day check: could not list src/data/blog-posts on main: $(tr '\n' ' ' <"$err")" >&2
+    rm -f "$err"
+    return 2
+  }
+
+  while IFS= read -r path; do
+    [[ -z "$path" ]] && continue
+    content="$(gh api "repos/$REPO/contents/$path?ref=main" --jq '.content // empty' 2>"$err")" || {
+      echo "  Publish-day check: could not read $path on main: $(tr '\n' ' ' <"$err")" >&2
+      rm -f "$err"
+      return 2
+    }
+    date_iso="$(printf "%s" "$content" | base64 -d 2>/dev/null \
+      | sed -n 's/^[[:space:]]*dateISO:[[:space:]]*"\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\)".*/\1/p' | head -n 1 || true)"
+    if [[ "$date_iso" == "$TODAY" ]]; then
+      rm -f "$err"
+      printf '%s' "$path"
+      return 0
+    fi
+  done <<<"$listing"
+
+  rm -f "$err"
+  return 1
+}
+
+# Deploy dispatch: at most one per run, for either of two reasons.
+#
+# 1. This run merged something. GITHUB_TOKEN push events do not start other
+#    workflows -- that is why #102 merged onto main on 2026-08-25 and the live
+#    site stayed on the previous SHA. `workflow_dispatch` is the documented
+#    exception. One dispatch after the last successful merge is enough; Pages
+#    deploys whatever is on main.
+#
+# 2. A post dated today is already on main. The eve-of-publish merge (above)
+#    lands a post the day before its dateISO, and that day's build bakes
+#    rss.xml / llms.txt / the .md mirrors with a `dateISO <= build day` cutoff
+#    that excludes it. On publish morning there is then nothing left to merge,
+#    so reason 1 never fires and the feeds stay stale while the HTML and
+#    sitemap are live. Deploy used to carry a `schedule` cron for this, but
+#    GitHub ran it hours late on 9/15, 9/22 and 10/06, so the rebuild lives
+#    here now. The feed cutoff is unchanged; this only rebuilds on the day it
+#    already admits the post.
+#
+# The main scan only runs when reason 1 has not already decided, so a merge
+# day costs no extra reads. A dry run never dispatches; it reports which
+# reason, if any, a real run would have dispatched for.
+deploy_reason=""
+if (( ${#merged_prs[@]} > 0 || (DRY_RUN && ${#would_merge_prs[@]} > 0) )); then
+  deploy_reason="merge"
+else
+  publish_day_status=0
+  publish_day_path="$(publish_day_post_on_main)" || publish_day_status=$?
+  case "$publish_day_status" in
+    0)
+      echo "Publish day: $publish_day_path on main is dated $TODAY."
+      deploy_reason="publish_day_on_main"
+      ;;
+    1)
+      echo "Publish day: no post on main is dated $TODAY."
+      ;;
+    *)
+      # Unknown is unsafe here too: a scan that cannot read main cannot say the
+      # feeds are current, and a stale feed on publish day is silent.
+      echo "Publish day: could not scan main for a post dated $TODAY."
+      hard_failures+=("-|main|publish_day_scan_failed")
+      ;;
+  esac
+fi
+
+if [[ -n "$deploy_reason" ]]; then
+  if (( DRY_RUN )); then
+    echo "Dry run: would dispatch deploy workflow on main ($deploy_reason)."
   else
-    echo "Failed to dispatch deploy workflow."
-    hard_failures+=("-|deploy|deploy_dispatch_failed")
+    if [[ "$deploy_reason" == "merge" ]]; then
+      echo "Dispatching deploy workflow so the merge reaches Pages."
+    else
+      echo "Dispatching deploy workflow so today's post on main reaches the feeds."
+    fi
+    if gh workflow run "Deploy static content to Pages" --repo "$REPO" --ref main; then
+      echo "Dispatched deploy workflow on main."
+    else
+      echo "Failed to dispatch deploy workflow."
+      hard_failures+=("-|deploy|deploy_dispatch_failed")
+    fi
   fi
 fi
 
@@ -398,6 +482,7 @@ echo "Skipped: ${#skipped_prs[@]}"
 echo "Blocked by conflict: ${#conflict_prs[@]}"
 echo "Missed publish date: ${#missed_publish_prs[@]}"
 echo "Failed operations: ${#hard_failures[@]}"
+echo "Deploy dispatch: ${deploy_reason:-none}$( (( DRY_RUN )) && [[ -n "$deploy_reason" ]] && echo ' (dry run -- not dispatched)')"
 
 if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
   {
@@ -405,6 +490,7 @@ if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
     echo ""
     echo "- UTC date: $TODAY"
     echo "- Merging posts due today or tomorrow (eve-of-publish)"
+    echo "- Deploy dispatch: ${deploy_reason:-none}"
     if (( DRY_RUN )); then
       echo "- **Dry run**: nothing was merged and no issue was created."
       echo ""

@@ -9,15 +9,15 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-  # Publish morning (~8:30am Eastern). The Grok "Blog auto-merge" routine
-  # (scripts/blog-automerge.sh) merges due posts around then and only
-  # dispatches deploy when it merged something. Eve-of-publish merges bake
-  # RSS/llms with yesterday's dateISO cutoff, so a day with nothing left to
-  # merge never rebuilds and feeds omit the newly live post. This cron
-  # rebuilds so dateISO=today posts enter rss.xml / llms.txt without loosening
-  # the feed cutoff (still dateISO <= build day).
-  schedule:
-    - cron: '30 12 * * *'
+  # No `schedule` here on purpose. Publish-morning rebuilds (an eve-of-publish
+  # merge bakes rss.xml / llms.txt with yesterday's dateISO cutoff, so the
+  # feeds omit the post until the next build) come from the Grok "Blog
+  # auto-merge" routine (scripts/blog-automerge.sh). It dispatches this
+  # workflow when it merges a post AND when a post dated today is already on
+  # main, so a publish day with nothing left to merge still rebuilds. The old
+  # `cron: '30 12 * * *'` ran hours late on 9/15, 9/22 and 10/06, leaving the
+  # feeds stale for most of the morning. The feed cutoff is unchanged (still
+  # dateISO <= build day).
 
 # Sets the GITHUB_TOKEN permissions to allow deployment to GitHub Pages
 permissions:

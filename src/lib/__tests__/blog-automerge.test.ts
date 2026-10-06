@@ -66,6 +66,12 @@ else:
  * the sentinel "error" (the API call fails) or "malformed" (it returns
  * unparseable bytes). Defaults to a single green `ci` run, so the tests that
  * are about date and conflict logic keep merging without restating CI.
+ *
+ * fixture.mainPosts maps a slug to the dateISO of a post already on main; the
+ * shim serves it as src/data/blog-posts/{slug}.ts at ref=main, alongside the
+ * `content/` dir and a dateISO-less registry.ts the real listing also has.
+ * fixture.mainScan = "listError" fails the directory listing, and
+ * "fileError" fails every file read on main.
  */
 const GH_SHIM = `#!/usr/bin/env python3
 import sys, json, os, base64, subprocess
@@ -124,7 +130,34 @@ elif argv[:2] == ["workflow", "run"]:
 elif argv[0] == "api":
     path = argv[1]
 
-    if "/contents/" in path:
+    if path.endswith("/contents/src/data/blog-posts?ref=main"):
+        # the publish-day scan's directory listing of main
+        record({"mainList": True})
+        if fixture.get("mainScan") == "listError":
+            sys.stderr.write("HTTP 502\\n")
+            sys.exit(1)
+        payload = [{"name": "content", "path": "src/data/blog-posts/content", "type": "dir"},
+                   {"name": "registry.ts", "path": "src/data/blog-posts/registry.ts", "type": "file"}]
+        payload += [{"name": slug + ".ts", "path": "src/data/blog-posts/%s.ts" % slug, "type": "file"}
+                    for slug in fixture.get("mainPosts", {})]
+
+    elif "/contents/" in path and path.endswith("?ref=main"):
+        # repos/{repo}/contents/src/data/blog-posts/{slug}.ts?ref=main
+        name = path.split("/contents/src/data/blog-posts/")[1].split("?")[0]
+        record({"mainRead": name})
+        if fixture.get("mainScan") == "fileError":
+            sys.stderr.write("HTTP 502\\n")
+            sys.exit(1)
+        if name == "registry.ts":
+            body = "export const blogPosts = [];\\n"
+        else:
+            date_iso = fixture.get("mainPosts", {}).get(name[: -len(".ts")])
+            if date_iso is None:
+                sys.exit(1)
+            body = 'export const post = {\\n  dateISO: "%s",\\n};\\n' % date_iso
+        payload = {"content": base64.b64encode(body.encode()).decode()}
+
+    elif "/contents/" in path:
         # repos/{repo}/contents/src/data/blog-posts/{slug}.ts?ref={branch}
         branch = path.split("ref=")[1]
         date_iso = fixture.get("files", {}).get(branch)
@@ -205,6 +238,8 @@ type Fixture = {
   existingIssues?: string[];
   checks?: Record<string, unknown>;
   workflowRunResult?: string;
+  mainPosts?: Record<string, string>;
+  mainScan?: "listError" | "fileError";
 };
 
 type Run = {
@@ -217,6 +252,7 @@ type Run = {
   polls: number;
   checkCalls: string[];
   dispatches: Array<{ workflow: string; ref: string; repo: string }>;
+  mainLists: number;
 };
 
 let runSeq = 0;
@@ -277,6 +313,7 @@ function run(
     dispatches: actions
       .filter((a) => a.workflow)
       .map((a) => ({ workflow: a.workflow, ref: a.ref, repo: a.repo })),
+    mainLists: actions.filter((a) => a.mainList).length,
   };
 }
 
@@ -657,6 +694,87 @@ describe("blog auto-merge routine", () => {
       expect(r.stdout).toContain("Dry run: would merge #31");
       expect(r.status).toBe(0);
     });
+  });
+
+  // The eve-of-publish merge lands a post the day before its dateISO, and that
+  // build's feeds cut it off (dateISO <= build day). On publish morning there
+  // is nothing left to merge, so a merge-only dispatch never rebuilt the feeds:
+  // HTML and sitemap live, RSS / llms / .md stale on 9/15, 9/22 and 10/06,
+  // because the Deploy cron that was meant to cover it ran hours late.
+  describe("deploy dispatch for a publish-day post already on main", () => {
+    const DEPLOY = {
+      workflow: "Deploy static content to Pages",
+      ref: "main",
+      repo: REPO,
+    };
+    const YESTERDAY = "2026-07-08";
+    const LIVE = "the-phone-is-a-valid-dev-machine";
+
+    it("dispatches deploy once when nothing merged but today's post is on main", () => {
+      const r = run({ prs: [], mainPosts: { "old-post": "2026-06-01", [LIVE]: TODAY } });
+      expect(r.merges).toEqual([]);
+      expect(r.dispatches).toEqual([DEPLOY]);
+      expect(r.stdout).toContain(`Publish day: src/data/blog-posts/${LIVE}.ts on main is dated ${TODAY}.`);
+      expect(r.summary).toContain("Deploy dispatch: publish_day_on_main");
+      expect(r.status).toBe(0);
+    });
+
+    it("also dispatches when open blog PRs exist but none is due", () => {
+      const r = run({
+        prs: [pr()],
+        files: { [BRANCH]: "2026-07-28" },
+        mainPosts: { [LIVE]: TODAY },
+      });
+      expect(r.merges).toEqual([]);
+      expect(r.dispatches).toEqual([DEPLOY]);
+      expect(r.status).toBe(0);
+    });
+
+    it("does not dispatch when main only has posts dated yesterday or tomorrow", () => {
+      const r = run({ prs: [], mainPosts: { [LIVE]: YESTERDAY, "next-post": TOMORROW } });
+      expect(r.mainLists).toBe(1);
+      expect(r.dispatches).toEqual([]);
+      expect(r.stdout).toContain(`Publish day: no post on main is dated ${TODAY}.`);
+      expect(r.status).toBe(0);
+    });
+
+    it("dispatches exactly once when a merge and a publish-day post on main coincide", () => {
+      const r = run({ prs: [pr()], files: { [BRANCH]: TODAY }, mainPosts: { [LIVE]: TODAY } });
+      expect(r.merges).toEqual(["31"]);
+      expect(r.dispatches).toEqual([DEPLOY]);
+      // The merge already decided; main is not scanned for a second reason.
+      expect(r.mainLists).toBe(0);
+      expect(r.status).toBe(0);
+    });
+
+    it("does not dispatch on a dry run, but says it would", () => {
+      const r = run({ prs: [], mainPosts: { [LIVE]: TODAY } }, TODAY, () => binDir, {
+        AUTOMERGE_DRY_RUN: "true",
+      });
+      expect(r.dispatches).toEqual([]);
+      expect(r.stdout).toContain("Dry run: would dispatch deploy workflow on main (publish_day_on_main).");
+      expect(r.status).toBe(0);
+    });
+
+    it("fails the run when the publish-day dispatch fails, like the merge path", () => {
+      const r = run({ prs: [], mainPosts: { [LIVE]: TODAY }, workflowRunResult: "fail" });
+      expect(r.dispatches).toEqual([DEPLOY]);
+      expect(r.stdout).toContain("Failed to dispatch deploy workflow");
+      expect(r.stdout).toContain("::error::Blog PR #- (deploy): deploy_dispatch_failed");
+      expect(r.status).toBe(1);
+    });
+
+    // A scan that cannot read main cannot say the feeds are current.
+    it.each(["listError", "fileError"] as const)(
+      "fails the run, without dispatching, when the main scan hits %s",
+      (mainScan) => {
+        const r = run({ prs: [], mainPosts: { [LIVE]: TODAY }, mainScan });
+        expect(r.dispatches).toEqual([]);
+        expect(r.stderr).toContain("Publish-day check: could not");
+        expect(r.stdout).toContain("publish_day_scan_failed");
+        expect(r.status).toBe(1);
+      },
+    );
   });
 
   // A dry run is the only way to run this routine without publishing a post,
