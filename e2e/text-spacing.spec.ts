@@ -116,6 +116,18 @@ const measure = (page: Page): Promise<Reading> =>
       const overY = hidesY ? el.scrollHeight - el.clientHeight : 0;
       if (overX <= 1 && overY <= 1) continue;
 
+      // Deliberate single-line truncation is not a loss: Tailwind's `truncate`
+      // (overflow hidden + text-overflow: ellipsis) shows the cut, and a `title`
+      // carrying the full text keeps it reachable. Without this, a label that
+      // exactly fits its cap at normal spacing (a 27-char newest-post title in
+      // the StatusBar's 28ch link) reads as "clipped only under the override",
+      // while a longer one, already truncated in the control pass, does not.
+      // Only the horizontal ellipsis case is exempt; vertical clipping and
+      // truncation with no title still fail.
+      const fullText = (el.textContent ?? "").trim().replace(/\s+/g, " ");
+      const title = (el.getAttribute("title") ?? "").trim().replace(/\s+/g, " ");
+      if (overY <= 1 && cs.textOverflow === "ellipsis" && title && title === fullText) continue;
+
       const cls = typeof el.className === "string" ? el.className : "";
       const text = (el.textContent ?? "").trim().replace(/\s+/g, " ").slice(0, 60);
       clipped.push({
