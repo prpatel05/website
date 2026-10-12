@@ -4,13 +4,16 @@ import { useCrtNoise } from "@/hooks/useCrtNoise";
 import { chromeAccent, chromeAccentSoft, chromeMeta } from "./chrome-tokens";
 
 /**
- * Quiet secondary meta for the site foot: build sha, truncated newest post,
+ * Quiet secondary meta for the site foot: build sha, newest post link,
  * CRT toggle. Rendered inside SiteFooter's <footer> so the page keeps a single
  * contentinfo region. Hidden in print — chrome, not content.
  *
  * No own border or wash; PageShell paints one muted block for the whole foot.
  * Separators are gaps only (no pipe/middot glyphs) so axe can measure contrast
  * on every route that is not pixel-gated.
+ *
+ * The newest title wraps rather than truncates so WCAG 1.4.12 text spacing
+ * never clips medium-length titles that fit at default spacing.
  */
 const StatusBar = () => {
   const { shortSha, newestTitle, newestSlug } = useBuildInfo();
@@ -29,12 +32,12 @@ const StatusBar = () => {
         <span className={chromeAccentSoft}>{shortSha || "…"}</span>
       </span>
       {newestSlug ? (
-        <span className="min-w-0 inline-flex items-center gap-1">
+        <span className="min-w-0 inline-flex items-center gap-1 flex-wrap">
           <span className="shrink-0">newest:</span>
           <Link
             to={`/blog/${newestSlug}/`}
             title={newestLabel}
-            className="inline-flex items-center min-h-6 min-w-0 max-w-[14ch] sm:max-w-[28ch] truncate text-primary hover:text-foreground transition-colors"
+            className="inline-flex items-center min-h-6 min-w-0 break-words text-primary hover:text-foreground transition-colors"
           >
             {newestLabel}
           </Link>
