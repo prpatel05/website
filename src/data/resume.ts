@@ -81,7 +81,7 @@ export const experience: readonly ResumeRole[] = [
   {
     title: "Senior Software Engineer II",
     org: "Dapper Labs",
-    dates: "Acquisition - May 2023",
+    dates: "Apr 2022 - May 2023",
     blurb: "Joined through the acquisition of Zay Codes; retained to lead technical integration.",
     bullets: [
       "Led post-acquisition technical integration and mentored engineers as the Flow smart-contract SME.",
@@ -91,7 +91,7 @@ export const experience: readonly ResumeRole[] = [
   {
     title: "Co-Founder & CTO",
     org: "Zay Codes",
-    dates: "Jun 2021 - Acquisition",
+    dates: "Jun 2021 - Apr 2022",
     blurb:
       "Blockchain engineering studio, acquired by Dapper Labs. Team of 15. Overlapped AWS through Mar 2022.",
     bullets: [
