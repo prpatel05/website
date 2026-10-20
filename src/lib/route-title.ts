@@ -29,7 +29,7 @@ const SITE_NAME = "Pratik Patel";
 export const HOME_TITLE = `${SITE_NAME} — CTO & Chief Architect`;
 export const BLOG_TITLE = `Blog — ${SITE_NAME}`;
 export const SERIES_TITLE = `${SERIES_NAME} — ${SITE_NAME}`;
-export const RESUME_TITLE = `Resume — ${SITE_NAME}`;
+export const RESUME_TITLE = `Resume | ${SITE_NAME}`;
 export const VC_TITLE = `Angel Investing — ${SITE_NAME}`;
 export const NOT_FOUND_TITLE = `404 — Page Not Found | ${SITE_NAME}`;
 

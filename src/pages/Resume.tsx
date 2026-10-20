@@ -17,7 +17,7 @@ import {
 } from "@/data/resume";
 
 const RESUME_DESCRIPTION =
-  "HTML resume for Pratik Patel, engineering and AI executive: Chief Architect at Bounded, former CTO of eddii, co-founder of Zay Codes (acquired by Dapper Labs), and builder of a 30+ engineer security org at AWS. Download the PDF anytime.";
+  "Pratik Patel, engineering and AI executive: Chief Architect at Bounded, former CTO of eddii, co-founder of Zay Codes (acquired by Dapper Labs), and builder of a 30+ engineer security org at AWS.";
 
 const resumePdfHref = `${import.meta.env.BASE_URL}resume.pdf`;
 
@@ -51,6 +51,8 @@ const Resume = () => {
       mainEntity: {
         ...personRef,
         jobTitle: "Chief Architect",
+        worksFor: { "@type": "Organization", name: "Bounded", url: "https://bounded.sh" },
+        alumniOf: { "@type": "CollegeOrUniversity", name: "Rensselaer Polytechnic Institute" },
         email: resumeMeta.email,
         telephone: resumeMeta.phone,
       },

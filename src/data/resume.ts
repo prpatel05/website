@@ -50,17 +50,17 @@ export const experience: readonly ResumeRole[] = [
     org: "Bounded",
     dates: "Aug 2025 - Present",
     blurb:
-      "AI agent platform. OpenApps runs on Bounded; poof.new is the team's earlier product line.",
+      "AI agent platform: a runtime and hosting layer for apps built by AI coding agents. OpenApps runs on Bounded; poof.new was the team's earlier product.",
     orgLinks: [
       { label: "bounded.sh", href: "https://bounded.sh" },
       { label: "openapps.xyz", href: "https://openapps.xyz" },
       { label: "poof.new", href: "https://poof.new" },
     ],
     bullets: [
-      "Architected Bounded, a runtime that lets AI coding agents (Claude Code, Codex) build and deploy full-stack apps safely: each data write is checked against declared boundaries, risky actions need approval, and deploys fail closed.",
+      "Architected Bounded, a runtime that lets AI coding agents (Claude Code, Codex) build and deploy full-stack apps safely: each data write is checked against declared boundaries, risky actions need approval, and deploys are blocked if any check fails.",
       "Cut sandbox cold starts ~60% and scaled multi-tenant isolation to 5K+ concurrent sessions.",
       "Shipped multi-LLM routing across providers by task complexity, cutting AI infrastructure cost while holding quality.",
-      "Built test and eval harnesses for Claude Code, Codex, and MCP workflows, speeding delivery in the first 90 days.",
+      "Within the first 90 days, built test and eval harnesses for Claude Code, Codex, and MCP workflows to speed delivery.",
       "Own architecture, roadmap, and infrastructure cost model; primary technical voice with founders and investors.",
     ],
   },
@@ -82,9 +82,9 @@ export const experience: readonly ResumeRole[] = [
     title: "Senior Software Engineer II",
     org: "Dapper Labs",
     dates: "Apr 2022 - May 2023",
-    blurb: "Joined through the acquisition of Zay Codes; retained to lead technical integration.",
+    blurb: "Retained after the acquisition of Zay Codes to lead post-acquisition technical integration.",
     bullets: [
-      "Led post-acquisition technical integration and mentored engineers as the Flow smart-contract SME.",
+      "Mentored engineers as the Flow smart contract subject matter expert.",
       "Delivered the API integration used by Instagram to display Flow-based NFTs.",
     ],
   },
@@ -93,9 +93,9 @@ export const experience: readonly ResumeRole[] = [
     org: "Zay Codes",
     dates: "Jun 2021 - Apr 2022",
     blurb:
-      "Blockchain engineering studio, acquired by Dapper Labs. Team of 15.",
+      "Blockchain engineering studio building Flow apps for clients; acquired by Dapper Labs.",
     bullets: [
-      "Co-founded the company; recruited and led a 15-person engineering team and won 5 client contracts for Flow blockchain dApps.",
+      "Co-founded the company; recruited and led a 15-person engineering team and won 5 client contracts for Flow blockchain decentralized apps (dApps).",
       "Owned the P&L and led acquisition negotiations and legal workstreams end-to-end through the sale to Dapper Labs.",
       "Built the NFT Catalog (adopted as a Flow community-wide standard) and Flow Runner.",
       "Won $100K+ in hackathon prizes for open-source developer tools.",
@@ -108,13 +108,13 @@ export const experience: readonly ResumeRole[] = [
     blurb:
       "Helped scale the broader org from 10 to 100+ engineers across 20+ teams.",
     bullets: [
-      "Hand-picked by VP-level leadership to found the Proactive Security engineering organization: recruited and led 30+ engineers across 4 teams and owned security automation products org-wide.",
+      "Founded the Proactive Security engineering organization after being selected by VP-level leadership; recruited and led 30+ engineers across 4 teams and owned security automation products org-wide.",
       "Shipped an automated fuzzing and API-model-driven security testing framework covering all 15K+ public AWS APIs, eliminating manual security test authoring across service launches.",
-      "Embedded automated security review into the AWS secure SDLC (Java, Python), replacing a multi-month manual review process and significantly accelerating AWS service launches.",
+      "Embedded automated security review into the AWS secure SDLC (Java, Python), replacing a multi-month manual review process and accelerating AWS service launches.",
       "Drove development of the SSO/MFA authentication service protecting 1.5M+ Amazon employees.",
       "Built an operator authorization service (identity and access management) used across AWS safety-critical workflows.",
-      "Designed and shipped a web-based SSH client adopted by 15K+ daily users with a 4.4/5 CSAT.",
-      "Led an account management platform handling 50K daily users at 300+ TPS.",
+      "Designed and shipped a web-based SSH client adopted by 15K+ daily users with a 4.4/5 customer satisfaction score.",
+      "Led an account management platform handling 50K daily users at 300+ transactions per second.",
     ],
   },
 ] as const;
@@ -126,31 +126,31 @@ export const experience: readonly ResumeRole[] = [
 export const selectedProjects = [
   {
     name: "Bounded platform services",
-    text: "Built-in sign-in (users, sessions, roles, OAuth, email OTP), data and file storage with search, server functions and jobs with managed secrets, real-time data, payments (USDC or card), AI services, and hosting.",
+    text: "Architected built-in sign-in (users, sessions, roles, OAuth, email OTP), data and file storage with search, server functions and jobs with managed secrets, real-time data, payments (USDC or card), AI services, and hosting.",
   },
   {
     name: "Bounded safety controls",
-    text: "Writes that cross a declared boundary are refused, routed agent actions can be watched and approved, and a lock mode keeps later edits, including by agents, from weakening declared rules.",
+    text: "Designed the controls that refuse writes crossing a declared boundary, let teams watch and approve routed agent actions, and add a lock mode so later edits, including by agents, cannot weaken declared rules.",
   },
   {
     name: "Bounded agent workflow",
-    text: "CLI and agent skill install so a coding agent can set up, verify, and deploy a full app from one repo, with deliberate boundary-rejection checks before anything ships.",
+    text: "Designed the CLI and agent skill install that let a coding agent set up, verify, and deploy a full app from one repo, with deliberate boundary-rejection checks before anything ships.",
   },
   {
     name: "Bounded deployment and edge",
-    text: "Deployment and edge path with multi-tenant isolation and cost-efficient unit economics.",
+    text: "Built the deployment and edge path with multi-tenant isolation and cost-efficient unit economics.",
   },
   {
     name: "Bounded SDK",
-    text: "Web and React Native clients (@bounded-sh/client) for apps on bounded.page or custom domains.",
+    text: "Shipped web and React Native clients (@bounded-sh/client) for apps on custom domains or bounded.page.",
   },
   {
     name: "Team governance",
-    text: "Roles, approvals, and action observability for teams running apps on Bounded.",
+    text: "Added roles, approvals, and action observability for teams running apps on Bounded.",
   },
   {
     name: "OpenApps",
-    text: "Apps that stay running and openly governed after their makers step back, sharing hosting, auth, data, payments, and deploys on Bounded.",
+    text: "Apps on Bounded that stay running and openly governed after their makers step back.",
   },
 ] as const;
 
@@ -158,7 +158,7 @@ export const skillGroups = [
   {
     label: "Leadership",
     items:
-      "Technical strategy and roadmapping, org building and hiring, P&L ownership, M&A diligence and integration, fundraising and investor communication, cross-functional leadership, vendor management",
+      "Engineering leadership, technical strategy and roadmapping, AI/ML strategy, org building and hiring, P&L ownership, M&A diligence and integration, fundraising and investor communication, cross-functional leadership, vendor management",
   },
   {
     label: "Security & Identity",
@@ -168,7 +168,7 @@ export const skillGroups = [
   {
     label: "AI & Agents",
     items:
-      "Agent runtimes, agent guardrails and policy boundaries, MCP / Claude Code / Codex, eval harnesses, multi-model routing and LLM cost optimization, RAG, prompt engineering, LLMs (Claude, GPT)",
+      "Generative AI and LLM products, agent runtimes, agent guardrails and policy boundaries, MCP / Claude Code / Codex, eval harnesses, multi-model routing and LLM cost optimization, RAG, prompt engineering, LLMs (Claude, GPT)",
   },
   {
     label: "Architecture",
@@ -178,10 +178,6 @@ export const skillGroups = [
   {
     label: "Data",
     items: "DynamoDB, SQL data modeling, object storage, files and search, real-time data",
-  },
-  {
-    label: "Web3",
-    items: "Flow (Cadence), EVM (Solidity), smart contracts, dApp architecture, NFT standards",
   },
   {
     label: "Languages",
@@ -195,6 +191,10 @@ export const skillGroups = [
     label: "Cloud & DevOps",
     items:
       "AWS (EC2, S3, Lambda, DynamoDB, IAM, CloudWatch), Terraform, Docker, Cloudflare Workers, CI/CD (GitHub Actions), observability, Agile/Scrum, FinOps",
+  },
+  {
+    label: "Web3",
+    items: "Flow (Cadence), EVM (Solidity), smart contracts, dApp architecture, NFT standards",
   },
 ] as const;
 
