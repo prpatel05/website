@@ -64,6 +64,8 @@ describe("Resume page", () => {
     expect(screen.getByText("Amazon Web Services")).toBeInTheDocument();
     expect(screen.getByText(/U\.S\. Citizen/)).toBeInTheDocument();
     expect(screen.getByText("Aug 2010 - May 2014")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Selected Projects" })).toBeInTheDocument();
+    expect(screen.queryByText(/Overlapped AWS/)).toBeNull();
     const pdf = screen.getByRole("link", { name: /download resume\.pdf/i });
     expect(pdf.getAttribute("href")).toMatch(/resume\.pdf$/);
   });

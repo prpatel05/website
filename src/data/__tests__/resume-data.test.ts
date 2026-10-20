@@ -27,5 +27,6 @@ describe("resume data", () => {
     expect(allText).not.toMatch(/confirm|\[X|TODO/i);
     expect(allText).not.toMatch(/11\+ years/);
     expect(allText).not.toMatch(/Medalist/);
+    expect(allText).not.toMatch(/overlap|part-time|alongside AWS/i);
   });
 });

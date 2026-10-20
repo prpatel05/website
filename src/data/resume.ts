@@ -93,7 +93,7 @@ export const experience: readonly ResumeRole[] = [
     org: "Zay Codes",
     dates: "Jun 2021 - Apr 2022",
     blurb:
-      "Blockchain engineering studio, acquired by Dapper Labs. Team of 15. Overlapped AWS through Mar 2022.",
+      "Blockchain engineering studio, acquired by Dapper Labs. Team of 15.",
     bullets: [
       "Co-founded the company; recruited and led a 15-person engineering team and won 5 client contracts for Flow blockchain dApps.",
       "Owned the P&L and led acquisition negotiations and legal workstreams end-to-end through the sale to Dapper Labs.",
@@ -119,31 +119,82 @@ export const experience: readonly ResumeRole[] = [
   },
 ] as const;
 
+/**
+ * Detail on the current role that does not fit in its five bullets. Plain
+ * English versions of material from the earlier, longer Chief Architect entry.
+ */
+export const selectedProjects = [
+  {
+    name: "Bounded platform services",
+    text: "Built-in sign-in (users, sessions, roles, OAuth, email OTP), data and file storage with search, server functions and jobs with managed secrets, real-time data, payments (USDC or card), AI services, and hosting.",
+  },
+  {
+    name: "Bounded safety controls",
+    text: "Writes that cross a declared boundary are refused, routed agent actions can be watched and approved, and a lock mode keeps later edits, including by agents, from weakening declared rules.",
+  },
+  {
+    name: "Bounded agent workflow",
+    text: "CLI and agent skill install so a coding agent can set up, verify, and deploy a full app from one repo, with deliberate boundary-rejection checks before anything ships.",
+  },
+  {
+    name: "Bounded deployment and edge",
+    text: "Deployment and edge path with multi-tenant isolation and cost-efficient unit economics.",
+  },
+  {
+    name: "Bounded SDK",
+    text: "Web and React Native clients (@bounded-sh/client) for apps on bounded.page or custom domains.",
+  },
+  {
+    name: "Team governance",
+    text: "Roles, approvals, and action observability for teams running apps on Bounded.",
+  },
+  {
+    name: "OpenApps",
+    text: "Apps that stay running and openly governed after their makers step back, sharing hosting, auth, data, payments, and deploys on Bounded.",
+  },
+] as const;
+
 export const skillGroups = [
   {
     label: "Leadership",
     items:
-      "Technical strategy and roadmapping, org building and hiring, P&L ownership, M&A diligence and integration, fundraising and investor communication",
+      "Technical strategy and roadmapping, org building and hiring, P&L ownership, M&A diligence and integration, fundraising and investor communication, cross-functional leadership, vendor management",
   },
   {
     label: "Security & Identity",
     items:
-      "Identity and access management (SSO, MFA, OAuth, authorization), secure SDLC, fuzzing and automated security testing, HIPAA, SOC 2",
+      "Identity and access management (SSO, MFA, OAuth, authorization services), secure SDLC, fuzzing and API-model-driven security testing, policy enforcement, HIPAA, SOC 2",
   },
   {
     label: "AI & Agents",
     items:
-      "Agent runtimes, agent guardrails and policy boundaries, MCP / Claude Code / Codex, evals, multi-model routing and LLM cost optimization, RAG, LLMs (Claude, GPT)",
+      "Agent runtimes, agent guardrails and policy boundaries, MCP / Claude Code / Codex, eval harnesses, multi-model routing and LLM cost optimization, RAG, prompt engineering, LLMs (Claude, GPT)",
   },
   {
     label: "Architecture",
     items:
-      "Multi-tenant SaaS, distributed systems, serverless and edge, real-time systems",
+      "Platform engineering, multi-tenant SaaS, distributed systems, microservices, event-driven and API-first design, high availability, serverless and edge, real-time systems",
   },
   {
-    label: "Stack",
+    label: "Data",
+    items: "DynamoDB, SQL data modeling, object storage, files and search, real-time data",
+  },
+  {
+    label: "Web3",
+    items: "Flow (Cadence), EVM (Solidity), smart contracts, dApp architecture, NFT standards",
+  },
+  {
+    label: "Languages",
+    items: "TypeScript, JavaScript, Java, Python, Bash, Cadence, Solidity",
+  },
+  {
+    label: "Frameworks",
+    items: "React, React Native, Next.js, Node.js, Bun, Express, Playwright, REST APIs, GraphQL",
+  },
+  {
+    label: "Cloud & DevOps",
     items:
-      "TypeScript, React / Node, Java, Python, AWS, Terraform / Docker, Cloudflare Workers",
+      "AWS (EC2, S3, Lambda, DynamoDB, IAM, CloudWatch), Terraform, Docker, Cloudflare Workers, CI/CD (GitHub Actions), observability, Agile/Scrum, FinOps",
   },
 ] as const;
 

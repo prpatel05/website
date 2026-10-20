@@ -17,6 +17,7 @@ import {
   experience,
   publications,
   resumeMeta,
+  selectedProjects,
   skillGroups,
 } from "../src/data/resume.ts";
 
@@ -84,6 +85,10 @@ const skillsHtml = skillGroups
         g.items
       )}</div>`
   )
+  .join("\n");
+
+const projectsHtml = selectedProjects
+  .map((p) => `<li><strong>${esc(p.name)}:</strong> ${escKeep(p.text)}</li>`)
   .join("\n");
 
 const pubsHtml = publications
@@ -157,7 +162,7 @@ const html = `<!doctype html>
     }
     .summary p { margin: 0 0 3px; }
     .skills { margin: 0 0 2px; }
-    .skill { margin: 0 0 6px; }
+    .skill { margin: 0 0 10px; }
     .skill .label { font-weight: 700; }
     /* Allow long roles to continue across pages so both Letter pages fill. */
     .role { margin: 0 0 7px; break-inside: auto; page-break-inside: auto; }
@@ -203,6 +208,7 @@ const html = `<!doctype html>
     li { margin: 0 0 2px; }
     .edu { margin: 0 0 4px; }
     .edu:last-of-type { margin-bottom: 12px; }
+    .projects li { margin: 0 0 3px; }
     .edu-head { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
     .edu strong { font-weight: 700; }
     .edu .school { color: #222; }
@@ -222,6 +228,9 @@ const html = `<!doctype html>
 
   <h2>Experience</h2>
   ${rolesHtml}
+
+  <h2>Selected Projects</h2>
+  <ul class="projects">${projectsHtml}</ul>
 
   <h2>Skills</h2>
   <div class="skills">${skillsHtml}</div>

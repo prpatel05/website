@@ -12,6 +12,7 @@ import {
   experience,
   publications,
   resumeMeta,
+  selectedProjects,
   skillGroups,
 } from "@/data/resume";
 
@@ -224,6 +225,31 @@ const Resume = () => {
                 </li>
               ))}
             </ol>
+          </section>
+
+          <section className="mb-10" aria-labelledby="resume-projects">
+            <SectionLabel>{"// selected_projects"}</SectionLabel>
+            <h2
+              id="resume-projects"
+              className="font-display text-2xl font-bold mb-4 text-foreground"
+            >
+              Selected Projects
+            </h2>
+            <ul className="space-y-3">
+              {selectedProjects.map((project) => (
+                <li
+                  key={project.name}
+                  className="border border-border bg-card p-4 resume-avoid-break"
+                >
+                  <h3 className="font-mono text-xs text-primary tracking-widest mb-1">
+                    {project.name}
+                  </h3>
+                  <p className="font-mono text-sm text-muted-foreground leading-relaxed">
+                    {project.text}
+                  </p>
+                </li>
+              ))}
+            </ul>
           </section>
 
           <section className="mb-10 resume-block" aria-labelledby="resume-skills">
