@@ -35,7 +35,7 @@ function esc(s) {
 /** Keep hyphenated identifiers intact so ATS paste does not glue "@boundedsh/client". */
 function escKeep(s) {
   let out = esc(s);
-  for (const token of ["@bounded-sh/client", "policy-enforced", "policy.json", "bounded.page"]) {
+  for (const token of ["@bounded-sh/client", "policy-enforced", "policy.json", "bounded.page", "smart-contract", "4-team", "API-model-driven", "open-source", "multi-tenant", "multi-LLM", "full-stack", "HIPAA-compliant", "LLM-powered", "AI-powered", "Seed-stage", "end-to-end"]) {
     out = out.replaceAll(token, `<span class="nb">${token}</span>`);
   }
   return out;
@@ -43,6 +43,7 @@ function escKeep(s) {
 
 const contactLine = [
   esc(resumeMeta.location),
+  esc(resumeMeta.citizenship),
   esc(resumeMeta.phone),
   esc(resumeMeta.email),
 ].join(" | ");
@@ -92,6 +93,20 @@ const pubsHtml = publications
   )
   .join("\n");
 
+const eduHtml = education
+  .map(
+    (d) => `
+  <div class="edu">
+    <div class="edu-head">
+      <div><strong>${esc(d.degree)}</strong> | <span class="school">${esc(d.school)}</span>${
+        d.notes ? ` | ${esc(d.notes)}` : ""
+      }</div>
+      <div class="dates">${esc(d.dates)}</div>
+    </div>
+  </div>`
+  )
+  .join("\n");
+
 const summaryHtml = executiveSummary.map((p) => `<p>${escKeep(p)}</p>`).join("\n");
 
 const html = `<!doctype html>
@@ -105,7 +120,7 @@ const html = `<!doctype html>
     body {
       font-family: Helvetica, Arial, sans-serif;
       font-size: 10pt;
-      line-height: 1.32;
+      line-height: 1.27;
       color: #111;
       margin: 0;
       hyphens: none;
@@ -137,12 +152,12 @@ const html = `<!doctype html>
       text-transform: uppercase;
       border-bottom: 1px solid #222;
       padding-bottom: 2px;
-      margin: 11px 0 6px;
+      margin: 9px 0 5px;
       font-weight: 700;
     }
     .summary p { margin: 0 0 3px; }
     .skills { margin: 0 0 2px; }
-    .skill { margin: 0 0 10px; }
+    .skill { margin: 0 0 6px; }
     .skill .label { font-weight: 700; }
     /* Allow long roles to continue across pages so both Letter pages fill. */
     .role { margin: 0 0 7px; break-inside: auto; page-break-inside: auto; }
@@ -185,8 +200,10 @@ const html = `<!doctype html>
       padding-left: 15px;
       list-style-type: disc;
     }
-    li { margin: 0 0 2.5px; }
-    .edu { margin: 0 0 12px; }
+    li { margin: 0 0 2px; }
+    .edu { margin: 0 0 4px; }
+    .edu:last-of-type { margin-bottom: 12px; }
+    .edu-head { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
     .edu strong { font-weight: 700; }
     .edu .school { color: #222; }
     .edu div + div { margin-top: 1px; }
@@ -210,12 +227,7 @@ const html = `<!doctype html>
   <div class="skills">${skillsHtml}</div>
 
   <h2>Education</h2>
-  <div class="edu">
-    <div><strong>${esc(education.degree)}</strong> | <span class="school">${esc(
-      education.school
-    )}</span></div>
-    <div>${esc(education.notes)}</div>
-  </div>
+  ${eduHtml}
 
   <h2>Publications</h2>
   <ul>${pubsHtml}</ul>

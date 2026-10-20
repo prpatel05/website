@@ -16,7 +16,7 @@ import {
 } from "@/data/resume";
 
 const RESUME_DESCRIPTION =
-  "HTML resume for Pratik Patel - Chief Architect at OpenApps | Bounded | poof.new. Career across agent platforms, eddii, Dapper Labs, and AWS. Download the PDF anytime.";
+  "HTML resume for Pratik Patel, engineering and AI executive: Chief Architect at Bounded, former CTO of eddii, co-founder of Zay Codes (acquired by Dapper Labs), and builder of a 30+ engineer security org at AWS. Download the PDF anytime.";
 
 const resumePdfHref = `${import.meta.env.BASE_URL}resume.pdf`;
 
@@ -103,6 +103,8 @@ const Resume = () => {
             </p>
             <p className="font-mono text-xs text-muted-foreground leading-relaxed mb-2">
               {resumeMeta.location}
+              {" | "}
+              {resumeMeta.citizenship}
               {" | "}
               <a
                 href={resumeMeta.emailHref}
@@ -258,11 +260,25 @@ const Resume = () => {
             >
               Education
             </h2>
-            <div className="border border-border bg-card p-5">
-              <h3 className="font-mono text-sm text-foreground mb-1">{education.degree}</h3>
-              <p className="font-mono text-sm text-primary mb-1">{education.school}</p>
-              <p className="font-mono text-xs text-muted-foreground">{education.notes}</p>
-            </div>
+            <ul className="space-y-3">
+              {education.map((deg) => (
+                <li
+                  key={`${deg.degree}-${deg.dates}`}
+                  className="border border-border bg-card p-5 resume-avoid-break"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1 mb-1">
+                    <h3 className="font-mono text-sm text-foreground">{deg.degree}</h3>
+                    <span className="font-mono text-[10px] text-primary/80 print:text-primary tracking-widest shrink-0">
+                      {deg.dates}
+                    </span>
+                  </div>
+                  <p className="font-mono text-sm text-primary">{deg.school}</p>
+                  {deg.notes ? (
+                    <p className="font-mono text-xs text-muted-foreground mt-1">{deg.notes}</p>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
           </section>
 
           <section className="resume-block" aria-labelledby="resume-publications">
