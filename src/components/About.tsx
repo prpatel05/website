@@ -10,15 +10,15 @@ const skills = [
   { name: "Node.js / Bun", level: 90 },
   { name: "AWS / Cloud / Infra", level: 92 },
   { name: "AI / ML / LLMs", level: 88 },
-  { name: "Python / Go", level: 85 },
+  { name: "Java", level: 85 },
   { name: "Blockchain / Web3", level: 85 },
 ];
 
 const stats = [
-  { value: "30+", label: "eng_led" },
-  { value: "3x", label: "companies_built" },
-  { value: "1", label: "acquisition" },
+  { value: "3x", label: "startups_built" },
+  { value: "1", label: "exit" },
   { value: "50K+", label: "users_shipped" },
+  { value: "1.5M+", label: "sso_users" },
 ];
 
 const About = () => {
@@ -53,26 +53,27 @@ const About = () => {
                 </div>
                 <div className="mt-8 font-mono text-sm text-muted-foreground leading-relaxed space-y-4">
                   <p>
-                    Technology executive and hands-on architect focused on
-                    building and scaling engineering organizations and shipping
-                    products to hundreds of thousands of users.
+                    Hands-on architect and engineering leader focused on the
+                    platforms and guardrails that let AI agents ship to
+                    production.
                   </p>
                   <p>
-                    Three-time company builder: grew a 30-person engineering org at{" "}
-                    <span className="text-primary">AWS</span>, co-founded and sold a
-                    blockchain studio via acquisition by{" "}
+                    3x startup builder with an exit: co-founded a development
+                    studio acquired by{" "}
                     <span className="text-accent text-glow-accent">Dapper Labs</span>,
-                    and took a healthtech startup from napkin sketch to 50K+ users as
-                    founding CTO.
+                    rebuilt eddii's HIPAA platform as its first CTO and grew it to
+                    50K+ users, and joined Tarobase's founding team. Before that,{" "}
+                    <span className="text-primary">AWS</span> identity and
+                    security, including the SSO/MFA service Amazon's 1.5M+
+                    employees sign in through.
                   </p>
                   <p>
                     Currently Chief Architect at{" "}
-                    <span className="text-primary">OpenApps | Bounded | poof.new</span>
+                    <span className="text-primary">Tarobase</span>
                     {" "}
-                    (openapps.xyz | bounded.sh | poof.new), building the full-stack
-                    AI agent app builder and policy-enforced runtime. Proven ability
-                    to set technical strategy, recruit world-class teams, and raise
-                    venture capital.
+                    (OpenApps | Bounded | poof.new), leading the team behind
+                    the runtime where AI coding agents build, verify, and deploy
+                    production apps.
                   </p>
                 </div>
               </div>
@@ -80,8 +81,9 @@ const About = () => {
               {/* Stats */}
               {/*
                 Four-up needs a tile wide enough for the longest label:
-                `companies_built` paints a 97.5px run at `text-[10px]` and
-                cannot break, so it wants ~114px of tile once the border and
+                it was measured with `companies_built`, a 97.5px run at
+                `text-[10px]` (today's longest, `startups_built`, is a touch
+                narrower) that cannot break, so it wants ~114px of tile once the border and
                 padding are paid for. Below `lg` the stats own the full
                 container and get 132px at the narrowest. At `lg` the section
                 splits into two columns and the tile drops to 100px, which put

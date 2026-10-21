@@ -75,7 +75,7 @@ const VC = () => {
         isPartOf: { "@type": "WebSite", name: "Pratik Patel", url: "https://pratik.pa.tel" },
         about: {
           ...personRef,
-          jobTitle: "CTO & Chief Architect",
+          jobTitle: "Chief Architect",
           email: "pratik@pa.tel",
         },
       },

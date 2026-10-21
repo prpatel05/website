@@ -44,7 +44,7 @@ export const personJsonLd = [
     image: HEADSHOT_URL,
     jobTitle: "Chief Architect",
     description:
-      "Technology executive and hands-on architect focused on building and scaling engineering organizations. Three-time company builder with a successful acquisition.",
+      "Chief Architect focused on building AI agent platforms. 3x startup builder with an exit; ex-AWS identity and security.",
     worksFor: [
       {
         "@type": "Organization",
@@ -71,8 +71,8 @@ export const personJsonLd = [
       "React",
       "Node.js",
       "AWS",
-      "Python",
-      "Go",
+      "Java",
+      "Identity and Access Management",
       "Blockchain",
       "Engineering Leadership",
       "Startup Building",

@@ -7,8 +7,7 @@
 
 export const resumeMeta = {
   name: "Pratik Patel",
-  headline:
-    "Chief Architect | AI Agents & Agentic Platforms | Cloud | 3x Company Builder",
+  headline: "CTO & Chief Architect | 3x Startup Builder (1 Exit) | AI Agent Platforms | Ex-AWS Identity & Security",
   location: "Washington, DC (Open to Remote)",
   email: "pratik@pa.tel",
   phone: "(518) 636-9399",
@@ -16,7 +15,7 @@ export const resumeMeta = {
   emailHref: "mailto:pratik@pa.tel",
   site: "https://pratik.pa.tel",
   links: [
-    { label: "pa.tel", href: "https://pratik.pa.tel" },
+    { label: "pratik.pa.tel", href: "https://pratik.pa.tel" },
     { label: "linkedin.com/in/prpatel05", href: "https://www.linkedin.com/in/prpatel05/" },
     { label: "x.com/prpatel05", href: "https://x.com/prpatel05" },
     { label: "github.com/prpatel05", href: "https://github.com/prpatel05" },
@@ -24,9 +23,9 @@ export const resumeMeta = {
 } as const;
 
 export const executiveSummary = [
-  "Chief Architect for OpenApps, Bounded, and poof.new. Building AI agent platforms and the policy-enforced agent runtime so coding agents can ship real apps with verify/deploy gates, data boundaries, auth, functions, realtime, payments, and hosting.",
-  "Three-time company builder: grew a 30-person engineering org at AWS, co-founded and sold a blockchain studio via acquisition by Dapper Labs, and took a healthtech startup from napkin sketch to 50K+ users as founding CTO.",
-  "Hands-on platform architect for agentic systems: set technical strategy, ship the hard parts of the stack, and speak for the architecture with founders and investors.",
+  "Hands-on Chief Architect on Tarobase's founding team (OpenApps, Bounded, poof.new), leading engineering for the platform where AI coding agents build, verify, deploy, and run production apps; 5K+ apps to date.",
+  "3x startup builder with an exit: co-founded a 15-person development studio acquired by Dapper Labs, and as eddii's first CTO rebuilt its HIPAA platform and grew it from ~4K to 50K+ registered users within a year of national launch.",
+  "7 years at AWS: architected the SSO/MFA service Amazon's 1.5M+ employees sign in through today, designed authorization for 100K+ AWS accounts, and was founding tech lead of a security org that grew to 100+ engineers.",
 ] as const;
 
 export type ResumeOrgLink = {
@@ -46,68 +45,84 @@ export type ResumeRole = {
 export const experience: readonly ResumeRole[] = [
   {
     title: "Chief Architect",
-    org: "OpenApps | Bounded | poof.new",
+    org: "Tarobase (OpenApps, Bounded, poof.new)",
     dates: "Aug 2025 - Present",
     blurb:
-      "Full-stack AI agent platforms. OpenApps hosts autonomously run, openly governed apps that outlive their makers; Bounded is the policy-enforced runtime those apps run on; poof.new is the earlier product line the same team carried forward.",
+      "Venture-backed AI agent platform startup. Hired and now lead a ~5-engineer team.",
     orgLinks: [
       { label: "openapps.xyz", href: "https://openapps.xyz" },
       { label: "bounded.sh", href: "https://bounded.sh" },
       { label: "poof.new", href: "https://poof.new" },
     ],
     bullets: [
-      "Own the full-stack architecture for Bounded: agent app builder plus policy-enforced runtime spanning verify/deploy gates, promoted data boundaries and invariants, auth (users, sessions, roles, OAuth, email OTP), data/files, server functions with secrets and hooks, realtime/live queries, live room state, payments, AI services, and hosting.",
-      "Design the agent-runtime contract so coding agents (Claude Code, Codex, and peers) can build while Bounded enforces declared boundaries on every write: refused cross-boundary mutations, watched/approved routed actions, and deploy gates that keep apps safe to iterate (including lock mode so future edits cannot weaken declared invariants).",
-      "Ship the verify/deploy loop agents rely on: policy.json collections, rules, and invariants; bounded verify with concrete counterexamples before deploy; fail-closed server-side proof gates; web and React Native clients via the Bounded SDK (@bounded-sh/client) on bounded.page or custom domains.",
-      "Establish the agentic platform strategy and ship automated test and eval harnesses for Claude Code / Codex workflows and MCP integrations, accelerating feature velocity within the first 90 days.",
-      "Design agent-facing delivery so coding agents can initialize, verify, deploy, and exercise a full app from one repo: CLI + agent skill install, declare -> verify -> deploy with fail-closed proof gates, and intentional boundary-rejection checks before anything ships.",
-      "Design and ship multi-LLM routing that directs requests across model providers by task complexity, cutting AI infrastructure cost while holding output quality.",
-      "Carry deployment and edge foundations into Bounded: multi-tenant isolation with cost-efficient unit economics, plus cold-start work that cut sandbox starts ~60% and supported 5K+ concurrent sessions.",
-      "Advance OpenApps on that runtime: alliance-backed apps that stay autonomously run and openly governed after their makers step back, with shared hosting, auth, data, payments, and deploy path on Bounded; keep poof.new product lineage clear for the same team.",
-      "Cover the managed operator surface in one identity: files/search, Functions and jobs with secrets, realtime subscriptions and server-authoritative live rooms, managed AI/services, direct USDC or provider card payments, action observability, and team governance with roles and approvals.",
-      "Primary technical voice for architecture, roadmap, and infrastructure cost model across OpenApps, Bounded, and poof.new.",
+      "Own agentic platform strategy, full-stack architecture, roadmap, and infrastructure cost model for OpenApps, Bounded, and poof.new: one runtime (auth, data, functions, realtime, payments, hosting) behind 5K+ agent-built apps.",
+      "Architecting OpenApps, the company's upcoming flagship: community-owned apps that keep running after their creators step away, hosted on Bounded so the runtime, not the creator, holds every credential.",
+      "Designed guardrails for agent-written apps: the runtime enforces declared data boundaries and invariants on every write, and verification fails closed with concrete counterexamples before a bad change deploys.",
+      "Cut sandbox cold starts ~60% with a new deployment pipeline and edge caching layer, supporting 5K+ concurrent sessions with multi-tenant isolation.",
+      "Reduced LLM spend 25%+ via multi-LLM routing by task complexity, with no drop in production quality metrics.",
+      "Built eval harnesses for Claude Code, Codex, and MCP workflows and hill-climbed agent task success on them; co-maintain the Bounded TypeScript SDK (5K+ monthly npm downloads) and CLI.",
     ],
   },
   {
     title: "Chief Technology Officer",
     org: "eddii",
-    dates: "May 2023 - Aug 2025 (Advisor to Dec 2025)",
+    dates: "May 2023 - Aug 2025",
     blurb:
-      "Seed-stage healthtech building AI-powered diabetes management. Sole technical executive; team of 6.",
+      "Seed-stage healthtech: gamified, AI-powered diabetes app (Dexcom connected-app partner) and eddii-Care virtual endocrinology clinic. First CTO: set product and technology strategy, hired and led a team of 6, and presented to the board. Advisor through Dec 2025.",
     bullets: [
-      "Sole C-level technology leader: defined product and tech strategy, architected the full HIPAA-compliant platform from scratch, and delivered to market on time and 20% under budget.",
-      "Scaled the platform to 50K+ users in under 12 months, validating product-market fit and forging strategic partnerships with healthcare providers and insurers.",
-      "Pioneered the AI/ML strategy for diabetes care: integrated LLMs into an AI-powered chatbot that delivered personalized health insights and drove a 35% increase in daily active usage within 6 months.",
-      "Led investor-facing technical demos and narrative that directly contributed to closing $3.5M across multiple venture rounds; managed the full technology P&L and all engineering hiring.",
+      "Rebuilt the HIPAA-compliant platform from scratch; launched nationally Dec 2023 on time, 20% under budget.",
+      "Grew registered users from ~4K at national launch to 50K+ within 12 months.",
+      "Shipped an LLM companion chatbot for emotional support and diabetes coaching to every user, lifting daily active usage 35% within 6 months.",
+      "Delivered eddii-Care, the virtual endocrinology clinic, from appointment booking with licensed endocrinologists to the full revenue cycle: insurance eligibility, claims submission, payment posting, and patient billing.",
+      "Built the Dexcom continuous glucose monitor (CGM) pipeline behind real-time insights and in-app game features.",
+      "Led technical diligence and investor demos that helped raise ~$1.5M; owned the technology budget, all engineering hiring, and the engineering process built from zero (CI/CD, code review, on-call, releases).",
     ],
   },
   {
-    title: "Co-Founder & CTO -> Senior Software Engineer II",
-    org: "Dapper Labs (via Acq. of Zay Codes)",
-    dates: "Jun 2021 - May 2023",
-    blurb:
-      "Co-founded blockchain studio; acquired by Dapper Labs; retained to lead technical integration. Team of 15. Overlapped AWS through Mar 2022.",
+    title: "Co-Founder and Chief Technology Officer",
+    org: "Zay Codes",
+    dates: "Jun 2021 - Apr 2022",
+    blurb: "Flow blockchain development studio; acquired by Dapper Labs in Apr 2022 (acqui-hire).",
     bullets: [
-      "Co-founded the company, recruited and managed a 15-person engineering team, and secured 5 client contracts to design and ship production dApps on the Flow blockchain.",
-      "Won $100K+ in hackathon prizes building open-source developer tools, raising brand visibility across the Flow ecosystem and accelerating acquisition interest from Dapper Labs.",
-      "Managed full P&L and led all acquisition negotiations and legal workstreams end-to-end, culminating in a successful acqui-hire by Dapper Labs.",
-      "Built the NFT Catalog (adopted as a community-wide standard) and Flow Runner; delivered the API integration used by Instagram to display Flow-based NFTs.",
-      "Led post-acquisition technical integration into Dapper Labs and mentored engineers as the Flow smart-contract SME.",
+      "Recruited and managed a 15-person engineering team and landed 5 client contracts to design and ship production apps on the Flow blockchain.",
+      "Won $100K+ in hackathon prizes building open-source developer tools, drawing acquisition interest from Dapper Labs.",
+      "Owned the P&L and led the exit, negotiating the acquisition by Dapper Labs through close.",
     ],
   },
   {
-    title: "Senior SDE -> Lead, Proactive Security",
+    title: "Senior Software Engineer II",
+    org: "Dapper Labs",
+    dates: "Apr 2022 - Jun 2023",
+    blurb: "Joined through the acquisition of Zay Codes.",
+    bullets: [
+      "Led technical integration of the Zay Codes team into Dapper Labs; mentored engineers as the Flow smart-contract subject-matter expert.",
+      "Created Flow developer tooling and ran security and design reviews of Flow smart contracts.",
+      "Shipped product features for Dapper's consumer apps and helped partner companies integrate with Flow.",
+    ],
+  },
+  {
+    title: "Senior Software Development Engineer, Tech Lead",
     org: "Amazon Web Services",
-    dates: "Jan 2015 - Mar 2022",
-    blurb:
-      "Promoted from Senior SDE to build and lead a new security organization: 4 teams, 30+ engineers; helped scale the broader org from 10 to 100+ engineers across 20+ teams.",
+    dates: "Jun 2019 - Mar 2022",
+    blurb: "Proactive Security, a new org built to catch security issues before AWS launches.",
     bullets: [
-      "Hand-picked by VP-level leadership to build a new security engineering organization from the ground up: recruited and led 30+ engineers across 4 teams and owned delivery of automation products org-wide.",
-      "Shipped a fuzzing and API-model-driven security testing framework covering all 15K+ AWS public APIs, eliminating manual test authoring across service launches.",
-      "Injected automated security review into the AWS SDLC (Java, Python), replacing a multi-month manual process and significantly accelerating AWS service launches.",
-      "Designed and shipped a web-based SSH client adopted by 15K+ daily users with a 4.4/5 CSAT.",
-      "Led an account management platform handling 50K daily users at 300+ TPS.",
-      "Drove development of the SSO/MFA authentication service for 1.5M+ Amazon employees; built an operator authorization service used across AWS safety-critical workflows.",
+      "Founding tech lead, chosen by VP-level leadership: set the multi-year technical vision and led design across 4 teams (30+ engineers); ran hiring loops as it grew from 10 to 100+ engineers across 20+ teams.",
+      "Built API-model-driven fuzzing and security testing across all 15K+ AWS public APIs, replacing hand-written security tests for service launches.",
+      "Automated security review inside the AWS SDLC for every service launch, cutting reviews from months to days.",
+    ],
+  },
+  {
+    title: "Software Development Engineer",
+    org: "Amazon Web Services",
+    dates: "Feb 2015 - Jun 2019",
+    blurb:
+      "Security Tools and Platforms team; promoted twice, SDE I to Senior SDE. Identity and access for Amazon employees and AWS accounts.",
+    bullets: [
+      "Architected the core enterprise SSO/MFA service Amazon's workforce signs in through (1.5M+ employees today).",
+      "Led the rollout of phishing-resistant MFA (FIDO2 hardware security keys) to Amazon's corporate workforce with a zero-downtime cutover.",
+      "Designed the authorization model for the business-critical system gating employee access to 100K+ AWS accounts and safety-critical operator actions (50K daily users); hardened it and added audit logging and detection.",
+      "Owned reliability for the SSO/MFA and authorization systems, meeting a 99.999% availability SLA.",
+      "Designed and launched a browser-based SSH client adopted by 15K+ daily users, with a 4.4/5 satisfaction score.",
     ],
   },
 ] as const;
@@ -116,34 +131,40 @@ export const skillGroups = [
   {
     label: "Leadership",
     items:
-      "Technical strategy and roadmapping, org building, P&L ownership, M&A technical diligence, investor-facing architecture narrative",
+      "Technical strategy and roadmaps, hiring and team building, P&L and budgets, investor diligence and demos",
   },
   {
     label: "AI & Agents",
     items:
-      "Agent runtimes, MCP / Claude Code / Codex, policy boundaries, evals, multi-model routing, RAG, LLMs (Claude, GPT)",
+      "Agentic systems, agent runtimes, guardrails, sandboxing, agent orchestration, Model Context Protocol (MCP), Claude Code, Codex, evals and hill-climbing, multi-model routing, LLM cost control, RAG, LLMs (Claude, GPT)",
   },
   {
-    label: "Architecture",
+    label: "Architecture & Security",
     items:
-      "Multi-tenant platforms, verify/deploy gates, realtime and live rooms, HIPAA / SOC 2",
+      "Multi-tenant SaaS platforms, platform engineering, API design, data modeling (SQL, DynamoDB), distributed systems, high availability, observability, developer experience (SDKs, CLIs), identity and access management (IAM), authentication (SSO, MFA, OAuth), authorization, security automation and fuzzing, HIPAA",
   },
   {
     label: "Stack",
     items:
-      "TypeScript, React / Node, AWS, Terraform / Docker, Cloudflare Workers",
+      "TypeScript, Java, React, React Native, Node.js, AWS, Cloudflare Workers (serverless, edge), Terraform, Docker",
   },
 ] as const;
 
-export const education = {
-  degree: "M.S., Computer Science & Computer Engineering (Dual Major)",
-  school: "Rensselaer Polytechnic Institute",
-  notes: "GPA: 3.8 | Dean's List | RPI Medalist",
-} as const;
+export const education = [
+  { degree: "M.S. Computer Science", school: "Rensselaer Polytechnic Institute" },
+  {
+    degree: "B.S. Computer Science and Computer & Systems Engineering",
+    school: "Rensselaer Polytechnic Institute",
+  },
+] as const;
 
 export const publications = [
   {
     title: "Developing Elastic Software for the Cloud",
     text: "S. Imai, P. Patel, C. Varela. Encyclopedia of Cloud Computing, Ch. 50, Wiley-IEEE Press, 2016.",
+  },
+  {
+    title: "Essays on AI agents and engineering leadership",
+    text: "30+ posts at pratik.pa.tel, 2025-2026.",
   },
 ] as const;

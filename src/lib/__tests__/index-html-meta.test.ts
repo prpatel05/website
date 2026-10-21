@@ -10,7 +10,7 @@ import { readFileSync } from "fs";
 const html = readFileSync("index.html", "utf8");
 
 const HOME_DESCRIPTION =
-  "Technology executive and 3x company builder focused on scaling engineering orgs across AI, Cloud, and Web3. Currently Chief Architect at OpenApps | Bounded | poof.new.";
+  "Chief Architect at Tarobase (OpenApps, Bounded, poof.new) building AI agent platforms. 3x startup builder with an exit; ex-AWS identity and security.";
 
 describe("index.html default meta", () => {
   it("does not advertise a years count in description / OG / Twitter", () => {

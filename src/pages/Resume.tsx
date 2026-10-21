@@ -258,10 +258,13 @@ const Resume = () => {
             >
               Education
             </h2>
-            <div className="border border-border bg-card p-5">
-              <h3 className="font-mono text-sm text-foreground mb-1">{education.degree}</h3>
-              <p className="font-mono text-sm text-primary mb-1">{education.school}</p>
-              <p className="font-mono text-xs text-muted-foreground">{education.notes}</p>
+            <div className="border border-border bg-card p-5 space-y-3">
+              {education.map((ed) => (
+                <div key={ed.degree}>
+                  <h3 className="font-mono text-sm text-foreground mb-1">{ed.degree}</h3>
+                  <p className="font-mono text-sm text-primary mb-1">{ed.school}</p>
+                </div>
+              ))}
             </div>
           </section>
 

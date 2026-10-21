@@ -41,20 +41,22 @@ function escKeep(s) {
   return out;
 }
 
+const link = (href, label) => `<a href="${esc(href)}">${esc(label)}</a>`;
+
 const contactLine = [
   esc(resumeMeta.location),
-  esc(resumeMeta.phone),
-  esc(resumeMeta.email),
+  link(resumeMeta.phoneHref, resumeMeta.phone),
+  link(resumeMeta.emailHref, resumeMeta.email),
 ].join(" | ");
 
-const linksLine = resumeMeta.links.map((l) => esc(l.label)).join(" | ");
+const linksLine = resumeMeta.links.map((l) => link(l.href, l.label)).join(" | ");
 
 const rolesHtml = experience
   .map((role) => {
     const links =
       role.orgLinks && role.orgLinks.length
         ? `<div class="org-links">${role.orgLinks
-            .map((l) => esc(l.label))
+            .map((l) => link(l.href, l.label))
             .join(" | ")}</div>`
         : "";
     const bullets = role.bullets
@@ -92,6 +94,13 @@ const pubsHtml = publications
   )
   .join("\n");
 
+const educationHtml = education
+  .map(
+    (e) =>
+      `<div><strong>${esc(e.degree)}</strong> | <span class="school">${esc(e.school)}</span></div>`
+  )
+  .join("\n");
+
 const summaryHtml = executiveSummary.map((p) => `<p>${escKeep(p)}</p>`).join("\n");
 
 const html = `<!doctype html>
@@ -105,12 +114,15 @@ const html = `<!doctype html>
     body {
       font-family: Helvetica, Arial, sans-serif;
       font-size: 10pt;
-      line-height: 1.32;
+      line-height: 1.38;
       color: #111;
       margin: 0;
       hyphens: none;
       -webkit-hyphens: none;
+      /* Ligature glyphs extract as U+FB01 in ATS parsers ("Ofﬁcer"). */
+      font-variant-ligatures: none;
     }
+    a { color: inherit; text-decoration: none; }
     .nb { white-space: nowrap; }
     h1 {
       font-size: 17pt;
@@ -210,12 +222,7 @@ const html = `<!doctype html>
   <div class="skills">${skillsHtml}</div>
 
   <h2>Education</h2>
-  <div class="edu">
-    <div><strong>${esc(education.degree)}</strong> | <span class="school">${esc(
-      education.school
-    )}</span></div>
-    <div>${esc(education.notes)}</div>
-  </div>
+  <div class="edu">${educationHtml}</div>
 
   <h2>Publications</h2>
   <ul>${pubsHtml}</ul>

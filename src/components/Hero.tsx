@@ -13,8 +13,8 @@ import {
 
 const roles = [
   "CTO & Chief Architect",
-  "AI · Cloud · Web3",
-  "3x Company Builder",
+  "AI Agent Platforms",
+  "3x Startup Builder",
   "Startup Co-Founder (Acquired)",
 ];
 
@@ -314,9 +314,9 @@ const Hero = () => {
             transition={{ delay: 0.8, duration: 0.6 }}
             className="mt-6 sm:mt-8 font-mono text-xs sm:text-sm text-muted-foreground max-w-lg leading-relaxed"
           >
-            Technology executive and hands-on architect focused on building
-            and scaling engineering organizations. Three-time company builder
-            with a successful acquisition under the belt.
+            Hands-on architect focused on building the platforms where AI agents
+            ship to production. 3x startup builder with an exit; ex-AWS identity
+            and security.
           </m.p>
 
           {/*

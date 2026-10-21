@@ -36,18 +36,18 @@ export const ASCII_LOGO = `
 `;
 
 const ABOUT_TEXT = [
-  "Technology executive and hands-on architect with 11+ years",
-  "building and scaling engineering organizations and shipping",
-  "products to hundreds of thousands of users.",
+  "Hands-on architect and engineering leader focused on the platforms",
+  "and guardrails that let AI agents ship to production.",
   "",
-  "Three-time company builder: grew a 30-person engineering org at AWS,",
-  "co-founded and sold a blockchain studio via acquisition by Dapper Labs,",
-  "and took a healthtech startup from napkin sketch to 50K+ users as",
-  "founding CTO.",
+  "3x startup builder with an exit: co-founded a development studio",
+  "acquired by Dapper Labs, rebuilt eddii's HIPAA platform as its first",
+  "CTO and grew it to 50K+ users, and joined Tarobase's founding team.",
+  "Before that, AWS identity and security, including the SSO/MFA",
+  "service Amazon's 1.5M+ employees sign in through.",
   "",
-  "Currently Chief Architect at OpenApps | Bounded | poof.new",
-  "(openapps.xyz, bounded.sh, poof.new), building the full-stack",
-  "AI agent app builder and policy-enforced runtime.",
+  "Currently Chief Architect at Tarobase (OpenApps, Bounded, poof.new),",
+  "leading the team behind the runtime where AI coding agents build,",
+  "verify, and deploy production apps.",
 ];
 
 export type CommandResult =
@@ -276,7 +276,7 @@ export function processTerminalCommand(
       return wrapLines([
         { type: "output", text: ASCII_LOGO },
         { type: "system", text: "  Pratik Patel" },
-        { type: "output", text: "  Chief Architect | OpenApps | Bounded | poof.new" },
+        { type: "output", text: "  Chief Architect | Tarobase (OpenApps, Bounded, poof.new)" },
         { type: "output", text: "  11+ years | AI | Cloud | Web3" },
         { type: "output", text: "  Washington, DC | pratik@pa.tel" },
       ]);

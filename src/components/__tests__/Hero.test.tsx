@@ -62,8 +62,8 @@ import {
 
 const ROLES = [
   "CTO & Chief Architect",
-  "AI · Cloud · Web3",
-  "3x Company Builder",
+  "AI Agent Platforms",
+  "3x Startup Builder",
   "Startup Co-Founder (Acquired)",
 ];
 
@@ -185,7 +185,7 @@ describe("Hero – static content", () => {
 
   it("renders the bio paragraph without a years count", () => {
     renderHero();
-    const bio = screen.getByText(/Technology executive and hands-on architect/i);
+    const bio = screen.getByText(/Hands-on architect focused on building/i);
     expect(bio).toBeInTheDocument();
     expect(bio.textContent).toMatch(/focused on building/);
     expect(bio.textContent).not.toMatch(/11\+\s*years/i);

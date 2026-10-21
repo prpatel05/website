@@ -56,10 +56,10 @@ describe("Resume page", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "Pratik Patel" })
     ).toBeInTheDocument();
-    expect(screen.getByText(/Chief Architect \| AI Agents/)).toBeInTheDocument();
-    expect(screen.getByText("OpenApps | Bounded | poof.new")).toBeInTheDocument();
+    expect(screen.getByText(/Chief Architect \| 3x Startup Builder/)).toBeInTheDocument();
+    expect(screen.getByText("Tarobase (OpenApps, Bounded, poof.new)")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Chief Architect" })).toBeInTheDocument();
-    expect(screen.getByText("Amazon Web Services")).toBeInTheDocument();
+    expect(screen.getAllByText("Amazon Web Services")).toHaveLength(2);
     const pdf = screen.getByRole("link", { name: /download resume\.pdf/i });
     expect(pdf.getAttribute("href")).toMatch(/resume\.pdf$/);
   });
