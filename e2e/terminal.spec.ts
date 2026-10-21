@@ -75,7 +75,7 @@ test.describe("Interactive terminal", () => {
       await commandLine(page).fill("whoami");
       await page.keyboard.press("Enter");
 
-      await expect(page.getByText("Chief Architect | Tarobase (OpenApps, Bounded, poof.new)")).toBeVisible();
+      await expect(page.getByText("Chief Architect | OpenApps | Bounded | poof.new")).toBeVisible();
     });
 
     test("ls command shows site sections", async ({ page }) => {
@@ -434,12 +434,26 @@ test.describe("terminal defects a reader can reach", () => {
     await openTerminalByClick(page);
     await runCommand(page, "whoami");
 
-    const line = page.getByText("Chief Architect | Tarobase (OpenApps, Bounded, poof.new)");
+    const line = page.getByText("Chief Architect | OpenApps | Bounded | poof.new");
     await expect(line).toBeVisible();
     // The overlay animates in on a `y` offset; a box read mid-flight would put
     // the drag somewhere the text no longer is.
     await expectOverlayOpen(page, TERMINAL_DIALOG);
-    const box = (await line.boundingBox())!;
+    // Drag across the first rendered fragment of the text from "Chief" on, not
+    // the element's box: at phone widths the line wraps (how far depends on the
+    // platform's monospace metrics), and the middle of a two-line box is the
+    // gap between them, where a drag selects nothing. The leading indent is its
+    // own fragment, so the range starts at the text, not the element.
+    const box = await line.evaluate((el) => {
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      let node = walker.nextNode() as Text | null;
+      while (node && !node.data.includes("Chief")) node = walker.nextNode() as Text | null;
+      const range = document.createRange();
+      range.setStart(node!, node!.data.indexOf("Chief"));
+      range.setEnd(node!, node!.data.length);
+      const { x, y, width, height } = range.getClientRects()[0];
+      return { x, y, width, height };
+    });
 
     // `page.mouse` in viewport coordinates rather than a locator action:
     // `locator.click()` and `.focus()` both scroll the document, which would

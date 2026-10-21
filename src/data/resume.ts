@@ -112,7 +112,7 @@ export const experience: readonly ResumeRole[] = [
     ],
   },
   {
-    title: "Software Development Engineer",
+    title: "Senior Software Development Engineer",
     org: "Amazon Web Services",
     dates: "Feb 2015 - Jun 2019",
     blurb:

@@ -276,7 +276,7 @@ export function processTerminalCommand(
       return wrapLines([
         { type: "output", text: ASCII_LOGO },
         { type: "system", text: "  Pratik Patel" },
-        { type: "output", text: "  Chief Architect | Tarobase (OpenApps, Bounded, poof.new)" },
+        { type: "output", text: "  Chief Architect | OpenApps | Bounded | poof.new" },
         { type: "output", text: "  11+ years | AI | Cloud | Web3" },
         { type: "output", text: "  Washington, DC | pratik@pa.tel" },
       ]);
