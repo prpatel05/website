@@ -57,7 +57,7 @@ describe("Resume page", () => {
       screen.getByRole("heading", { level: 1, name: "Pratik Patel" })
     ).toBeInTheDocument();
     expect(screen.getByText(/^Engineering & AI Executive \|/)).toBeInTheDocument();
-    expect(screen.getByText("Bounded")).toBeInTheDocument();
+    expect(screen.getByText("OpenApps")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Chief Architect" })).toBeInTheDocument();
     expect(screen.getByText("Zay Codes")).toBeInTheDocument();
     expect(screen.getByText("Dapper Labs")).toBeInTheDocument();

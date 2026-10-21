@@ -26,7 +26,7 @@ export const resumeMeta = {
 
 export const executiveSummary = [
   "Engineering and AI executive who builds teams and platforms from zero. At AWS, built and led a new 30+ engineer, 4-team Proactive Security organization, shipped automated security testing across all 15K+ public AWS APIs, drove the SSO/MFA service for 1.5M+ Amazon employees, and helped scale the broader org from 10 to 100+ engineers.",
-  "As CTO of eddii, took a HIPAA-compliant AI health platform to 50K+ users in under 12 months and helped raise $3.5M while owning the technology P&L and all hiring. Co-founded Zay Codes (acquired by Dapper Labs). Now Chief Architect of Bounded, a policy-enforced runtime that lets AI coding agents ship production apps safely.",
+  "As CTO of eddii, took a HIPAA-compliant AI health platform to 50K+ users in under 12 months and helped raise $3.5M while owning the technology P&L and all hiring. Co-founded Zay Codes (acquired by Dapper Labs). Now Chief Architect of OpenApps, collectively owned apps run autonomously by AI agents on Bounded, a policy-enforced runtime.",
 ] as const;
 
 export type ResumeOrgLink = {
@@ -47,17 +47,18 @@ export type ResumeRole = {
 export const experience: readonly ResumeRole[] = [
   {
     title: "Chief Architect",
-    org: "Bounded",
+    org: "OpenApps",
     dates: "Aug 2025 - Present",
     blurb:
-      "AI agent platform: a runtime and hosting layer for apps built by AI coding agents. OpenApps runs on Bounded; poof.new was the team's earlier product.",
+      "Collectively owned apps run by AI agents; backers fund, govern, and earn. Runs on Bounded; poof.new was the earlier product.",
     orgLinks: [
-      { label: "bounded.sh", href: "https://bounded.sh" },
       { label: "openapps.xyz", href: "https://openapps.xyz" },
+      { label: "bounded.sh", href: "https://bounded.sh" },
       { label: "poof.new", href: "https://poof.new" },
     ],
     bullets: [
-      "Architected Bounded, a runtime that lets AI coding agents (Claude Code, Codex) build and deploy full-stack apps safely: each data write is checked against declared boundaries, risky actions need approval, and deploys are blocked if any check fails.",
+      "Architected OpenApps: apps that stay running and openly governed after their makers step back.",
+      "Architected Bounded, the runtime underneath, so AI coding agents (Claude Code, Codex) build and deploy apps safely: writes are checked against declared boundaries, risky actions need approval, and failed checks block deploys.",
       "Cut sandbox cold starts ~60% and scaled multi-tenant isolation to 5K+ concurrent sessions.",
       "Shipped multi-LLM routing across providers by task complexity, cutting AI infrastructure cost while holding quality.",
       "Within the first 90 days, built test and eval harnesses for Claude Code, Codex, and MCP workflows to speed delivery.",
@@ -71,7 +72,7 @@ export const experience: readonly ResumeRole[] = [
     blurb:
       "Seed-stage healthtech building AI-powered diabetes management. Sole technical executive; team of 6.",
     bullets: [
-      "Set product and tech strategy; architected the HIPAA-compliant platform from scratch; launched on time, 20% under budget.",
+      "Set product and tech strategy; built the HIPAA-compliant platform from scratch; launched on time, 20% under budget.",
       "Scaled to 50K+ users in under 12 months; forged strategic partnerships with healthcare providers and insurers.",
       "Led AI/ML strategy: shipped an LLM-powered diabetes care chatbot that lifted daily active usage 35% in 6 months.",
       "Led investor tech demos that helped close $3.5M over multiple venture rounds; owned the tech P&L and all hiring.",
@@ -120,10 +121,15 @@ export const experience: readonly ResumeRole[] = [
 ] as const;
 
 /**
- * Detail on the current role that does not fit in its five bullets. Plain
+ * Detail on the current role that does not fit in its bullets. OpenApps leads;
+ * Bounded is the infrastructure it runs on. Plain
  * English versions of material from the earlier, longer Chief Architect entry.
  */
 export const selectedProjects = [
+  {
+    name: "OpenApps backing model",
+    text: "Anyone can create or back an Open App, then fund, govern, and earn as it grows.",
+  },
   {
     name: "Bounded platform services",
     text: "Architected built-in sign-in (users, sessions, roles, OAuth, email OTP), data and file storage with search, server functions and jobs with managed secrets, real-time data, payments (USDC or card), AI services, and hosting.",
@@ -147,10 +153,6 @@ export const selectedProjects = [
   {
     name: "Team governance",
     text: "Added roles, approvals, and action observability for teams running apps on Bounded.",
-  },
-  {
-    name: "OpenApps",
-    text: "Apps on Bounded that stay running and openly governed after their makers step back.",
   },
 ] as const;
 
