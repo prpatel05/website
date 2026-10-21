@@ -29,4 +29,16 @@ describe("resume data", () => {
     expect(allText).not.toMatch(/Medalist/);
     expect(allText).not.toMatch(/overlap|part-time|alongside AWS/i);
   });
+
+  it("never credits a founder role at eddii", () => {
+    // Co-founder credit belongs to Zay Codes only. eddii was a CTO role.
+    expect(allText).not.toMatch(/founding CTO/i);
+    expect(allText).not.toMatch(/found\w*[^.;"]{0,60}eddii|eddii[^.;"]{0,60}found/i);
+    const eddii = resume.experience.find((r) => r.org === "eddii");
+    expect(eddii).toBeDefined();
+    expect(JSON.stringify(eddii)).not.toMatch(/found/i);
+    expect(resume.resumeMeta.headline).toMatch(/Co-Founder,? (of )?Zay Codes/);
+    const zay = resume.experience.find((r) => r.org === "Zay Codes");
+    expect(zay?.title).toMatch(/Co-Founder/);
+  });
 });

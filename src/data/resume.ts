@@ -8,7 +8,7 @@
 export const resumeMeta = {
   name: "Pratik Patel",
   headline:
-    "Engineering & AI Executive | AI Agent Platforms & Security | Built 30+ Engineer Org at AWS | Co-Founder (Acquired)",
+    "Engineering & AI Executive | AI Agents & Security | Built 30+ Engineer Org at AWS | Co-Founder, Zay Codes (Acquired)",
   location: "Washington, DC (Open to Remote)",
   citizenship: "U.S. Citizen",
   email: "pratik@pa.tel",
@@ -26,7 +26,7 @@ export const resumeMeta = {
 
 export const executiveSummary = [
   "Engineering and AI executive who builds teams and platforms from zero. At AWS, built and led a new 30+ engineer, 4-team Proactive Security organization, shipped automated security testing across all 15K+ public AWS APIs, drove the SSO/MFA service for 1.5M+ Amazon employees, and helped scale the broader org from 10 to 100+ engineers.",
-  "As founding CTO of eddii, took a HIPAA-compliant AI health platform to 50K+ users in under 12 months and helped raise $3.5M while owning the technology P&L and all hiring. Co-founded Zay Codes (acquired by Dapper Labs). Now Chief Architect of Bounded, a policy-enforced runtime that lets AI coding agents ship production apps safely.",
+  "As CTO of eddii, took a HIPAA-compliant AI health platform to 50K+ users in under 12 months and helped raise $3.5M while owning the technology P&L and all hiring. Co-founded Zay Codes (acquired by Dapper Labs). Now Chief Architect of Bounded, a policy-enforced runtime that lets AI coding agents ship production apps safely.",
 ] as const;
 
 export type ResumeOrgLink = {

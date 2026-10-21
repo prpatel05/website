@@ -63,7 +63,7 @@ const About = () => {
                     blockchain studio via acquisition by{" "}
                     <span className="text-accent text-glow-accent">Dapper Labs</span>,
                     and took a healthtech startup from napkin sketch to 50K+ users as
-                    founding CTO.
+                    CTO.
                   </p>
                   <p>
                     Currently Chief Architect at{" "}
