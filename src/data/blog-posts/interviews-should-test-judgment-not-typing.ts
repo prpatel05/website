@@ -8,6 +8,6 @@ export const interviewsShouldTestJudgmentNotTyping: BlogPost = {
   date: "2026.11",
   dateISO: "2026-11-10",
   readTime: "8 min",
-  tags: ["ai", "agents", "hiring", "career"],
+  tags: ["ai", "agents", "career", "engineering"],
   image: "/images/blog-interviews-should-test-judgment-not-typing.webp",
 };
