@@ -71,6 +71,7 @@ function llmsTxt(posts) {
     `- [Blog](${SITE_URL}/blog/): Full archive of published posts.`,
     `- [Resume](${SITE_URL}/resume/): HTML resume (PDF at ${SITE_URL}/resume.pdf).`,
     `- [Angel investing](${SITE_URL}/vc/): Angel / advisor lens and founder pitch form.`,
+    `- [Book a call](${SITE_URL}/book/): 30 minute call with ${AUTHOR}, booked through Cal.com.`,
     `- [RSS feed](${SITE_URL}/rss.xml): Machine-readable feed of the same posts.`,
   ].join("\n");
 

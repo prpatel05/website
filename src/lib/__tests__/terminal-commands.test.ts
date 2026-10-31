@@ -270,6 +270,19 @@ describe("processTerminalCommand", () => {
     expect(result.path).toBe("/vc/");
   });
 
+  it.each(["book", "open book", "cd book", "BOOK"])("navigates to the booking page for '%s'", (cmd) => {
+    const result = processTerminalCommand(cmd);
+    expect(result.action).toBe("navigate");
+    if (result.action !== "navigate") return;
+    expect(result.path).toBe("/book/");
+  });
+
+  it("lists book/ in ls output", () => {
+    const result = processTerminalCommand("ls");
+    if (result.action !== "lines") throw new Error("expected lines");
+    expect(result.lines.map((l) => l.text).join("\n")).toContain("book/");
+  });
+
   it("navigates to the archive for 'open blog'", () => {
     const result = processTerminalCommand("open blog");
     expect(result.action).toBe("navigate");
@@ -314,13 +327,13 @@ describe("processTerminalCommand", () => {
   });
 
 describe("COMMANDS constant", () => {
-  it("has 18 commands", () => {
-    expect(Object.keys(COMMANDS).length).toBe(18);
+  it("has 19 commands", () => {
+    expect(Object.keys(COMMANDS).length).toBe(19);
   });
 
   it("includes all documented commands", () => {
     const expected = [
-      "help", "about", "blog", "contact", "resume",
+      "help", "about", "blog", "contact", "resume", "vc", "book",
       "open", "cd", "cat",
       "socials", "skills", "clear", "whoami", "neofetch",
       "ls", "pwd", "date", "echo",

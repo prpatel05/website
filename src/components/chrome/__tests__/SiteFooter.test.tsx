@@ -32,6 +32,7 @@ describe("SiteFooter", () => {
     expect(screen.getByRole("link", { name: "series" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "resume" })).toHaveAttribute("href", "/resume/");
     expect(screen.getByRole("link", { name: "vc" })).toHaveAttribute("href", "/vc/");
+    expect(screen.getByRole("link", { name: "book" })).toHaveAttribute("href", "/book/");
     expect(screen.queryByRole("link", { name: "resume.pdf" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "llms.txt" })).not.toBeInTheDocument();
     // Status meta lives inside the same footer (one contentinfo).

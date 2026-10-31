@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { posts } from "@/data/blog-posts/registry";
 import {
   BLOG_TITLE,
+  BOOK_TITLE,
   HOME_TITLE,
   NOT_FOUND_TITLE,
   RESUME_TITLE,
@@ -24,6 +25,8 @@ describe("routeTitle", () => {
     expect(routeTitle("/resume/")).toBe(RESUME_TITLE);
     expect(routeTitle("/vc")).toBe(VC_TITLE);
     expect(routeTitle("/vc/")).toBe(VC_TITLE);
+    expect(routeTitle("/book")).toBe(BOOK_TITLE);
+    expect(routeTitle("/book/")).toBe(BOOK_TITLE);
     expect(routeTitle("/blog/series/agent-reliability")).toBe(SERIES_TITLE);
     expect(routeTitle("/blog/series/agent-reliability/")).toBe(SERIES_TITLE);
   });

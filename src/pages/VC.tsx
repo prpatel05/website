@@ -1,6 +1,6 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { m } from "framer-motion";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import PageShell from "@/components/chrome/PageShell";
 import SEO from "@/components/SEO";
 import { useEntrance } from "@/hooks/useEntrance";
@@ -239,7 +239,14 @@ const VC = () => {
               >
                 pratik@pa.tel
               </a>
-              . I read these personally.
+              . I read these personally. Rather talk it through first?{" "}
+              <Link
+                to="/book/"
+                className="inline-flex items-center min-h-6 text-primary underline underline-offset-2 hover:text-foreground transition-colors"
+              >
+                Book a call
+              </Link>
+              .
             </p>
 
             {sent ? (

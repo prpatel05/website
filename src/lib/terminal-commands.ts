@@ -12,7 +12,8 @@ export const COMMANDS: Record<string, string> = {
   contact: "Navigate to contact section",
   resume: "Open HTML resume",
   vc: "Open angel investing / pitch page",
-  open: "open resume | open resume.pdf | open blog | open vc",
+  book: "Book a 30 minute call",
+  open: "open resume | open resume.pdf | open blog | open vc | open book",
   cd: "cd blog — open the archive",
   cat: "cat about — read the bio",
   socials: "List social links",
@@ -155,6 +156,13 @@ export function processTerminalCommand(
         lines: wrapLines([{ type: "system", text: "-> Opening /vc/..." }]).lines,
       };
 
+    case "book":
+      return {
+        action: "navigate" as const,
+        path: "/book/",
+        lines: wrapLines([{ type: "system", text: "-> Opening /book/..." }]).lines,
+      };
+
     case "open": {
       if (pathArg === "resume.pdf") {
         return {
@@ -184,15 +192,22 @@ export function processTerminalCommand(
           lines: wrapLines([{ type: "system", text: "-> Opening /vc/..." }]).lines,
         };
       }
+      if (pathArg === "book") {
+        return {
+          action: "navigate" as const,
+          path: "/book/",
+          lines: wrapLines([{ type: "system", text: "-> Opening /book/..." }]).lines,
+        };
+      }
       if (!pathArg) {
         return wrapLines([
           { type: "error", text: "  open: missing operand" },
-          { type: "output", text: "  usage: open resume | open blog | open vc" },
+          { type: "output", text: "  usage: open resume | open blog | open vc | open book" },
         ]);
       }
       return wrapLines([
         { type: "error", text: `  open: ${args}: nothing to open` },
-        { type: "output", text: "  try: open resume | open blog | open vc" },
+        { type: "output", text: "  try: open resume | open blog | open vc | open book" },
       ]);
     }
 
@@ -204,6 +219,13 @@ export function processTerminalCommand(
           lines: wrapLines([{ type: "system", text: "-> cd /blog/..." }]).lines,
         };
       }
+      if (pathArg === "book") {
+        return {
+          action: "navigate" as const,
+          path: "/book/",
+          lines: wrapLines([{ type: "system", text: "-> cd /book/..." }]).lines,
+        };
+      }
       if (!pathArg || pathArg === "~" || pathArg === "home" || pathArg === "") {
         return {
           action: "navigate" as const,
@@ -213,7 +235,7 @@ export function processTerminalCommand(
       }
       return wrapLines([
         { type: "error", text: `  cd: ${args}: No such file or directory` },
-        { type: "output", text: "  try: cd blog" },
+        { type: "output", text: "  try: cd blog | cd book" },
       ]);
     }
 
@@ -321,6 +343,7 @@ export function processTerminalCommand(
       return wrapLines([
         { type: "output", text: "  drwxr-xr-x  about/" },
         { type: "output", text: "  drwxr-xr-x  blog/" },
+        { type: "output", text: "  drwxr-xr-x  book/" },
         { type: "output", text: "  drwxr-xr-x  contact/" },
         { type: "output", text: "  drwxr-xr-x  resume/" },
         { type: "output", text: "  drwxr-xr-x  vc/" },
