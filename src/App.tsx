@@ -9,7 +9,7 @@ import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 import { useRouteFocusReset } from "@/hooks/useRouteFocusReset";
 import { useRouteAnnouncement } from "@/hooks/useRouteAnnouncement";
 import { markMotionFeaturesReady } from "@/lib/motion-ready";
-import { BlogPostRoute, POST_PATH } from "./routes";
+import { BlogPostRoute, BOOK_PATH, BookRoute, POST_PATH } from "./routes";
 import Index from "./pages/Index.tsx";
 import Blog from "./pages/Blog.tsx";
 import BlogSeries from "./pages/BlogSeries.tsx";
@@ -194,6 +194,21 @@ const AnimatedRoutes = () => {
           dist/vc/index.html. Pitch form posts to FormSubmit (static-host safe).
         */}
         <Route path="/vc" element={<PageTransition><VC /></PageTransition>} />
+        {/*
+          Trailing-slash directory route, prerendered to dist/book/index.html.
+          Lazy (src/routes.ts), and the Cal.com embed is a further dynamic
+          import inside <CalEmbed />, so neither touches the entry chunk.
+        */}
+        <Route
+          path={BOOK_PATH}
+          element={
+            <PageTransition>
+              <RouteBoundary>
+                <BookRoute />
+              </RouteBoundary>
+            </PageTransition>
+          }
+        />
         <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
       </Routes>
     </AnimatePresence>

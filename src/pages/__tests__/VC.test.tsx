@@ -65,6 +65,11 @@ function renderVC(path = "/vc/") {
 }
 
 describe("VC page", () => {
+  it("offers a call next to the pitch form", () => {
+    renderVC();
+    expect(screen.getByRole("link", { name: "Book a call" })).toHaveAttribute("href", "/book/");
+  });
+
   it("renders thesis and pitch form wired for email submit", () => {
     renderVC();
     expect(

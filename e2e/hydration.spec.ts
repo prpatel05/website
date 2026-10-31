@@ -28,6 +28,8 @@ const ROUTES = [
   { name: "blog index", path: "/blog/" },
   { name: "series hub", path: "/blog/series/agent-reliability/" },
   { name: "post page", path: `/blog/${firstPost}/` },
+  // The Cal.com embed mounts after hydration, beside React's tree rather than in it.
+  { name: "book page", path: "/book/" },
 ];
 
 type Survival = {

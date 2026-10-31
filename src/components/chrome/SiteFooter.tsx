@@ -6,7 +6,7 @@ import StatusBar from "./StatusBar";
 /**
  * Sitewide compact mono foot. One contentinfo: restrained sitemap row plus a
  * quiet meta line (copyright + build/newest/crt). Shared so blog / series /
- * post / 404 / home / resume / vc do not each invent a footer.
+ * post / 404 / home / resume / vc / book do not each invent a footer.
  *
  * RSS stays visible for feed discovery (llms.txt remains in <head>). HTML
  * resume is the footer link; PDF lives on the resume page. Border and muted
@@ -21,6 +21,7 @@ const SiteFooter = () => {
     { to: SERIES_HREF, label: "series" },
     { to: "/resume/", label: "resume" },
     { to: "/vc/", label: "vc" },
+    { to: "/book/", label: "book" },
     { href: "/rss.xml", label: "rss" },
   ];
 

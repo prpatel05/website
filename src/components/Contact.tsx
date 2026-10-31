@@ -1,5 +1,6 @@
 import { m } from "framer-motion";
-import { Mail, Phone } from "lucide-react";
+import { CalendarDays, Mail, Phone } from "lucide-react";
+import { Link } from "react-router-dom";
 import { socials } from "@/data/socials";
 import { useEntrance, useEntranceGate } from "@/hooks/useEntrance";
 import { useParallax } from "@/hooks/useParallax";
@@ -101,6 +102,20 @@ const Contact = () => {
                 </span>
               </div>
             </a>
+            {/* Internal route, so a client-side navigation like the nav links.
+                The Cal.com embed only loads once /book/ mounts. */}
+            <Link
+              to="/book/"
+              className="group flex items-center gap-4 border border-border bg-card p-5 hover:border-primary/40 hover:box-glow transition-all duration-500"
+            >
+              <CalendarDays className="w-5 h-5 text-primary shrink-0" />
+              <div>
+                <span className="font-mono text-[10px] text-muted-foreground block">30 min call</span>
+                <span className="font-mono text-sm text-foreground group-hover:text-primary transition-colors">
+                  Book a call
+                </span>
+              </div>
+            </Link>
           </m.div>
 
           {/* Social grid */}

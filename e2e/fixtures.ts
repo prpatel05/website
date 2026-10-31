@@ -22,9 +22,20 @@ import { isTelemetryRequest } from "../scripts/telemetry-blocklist.mjs";
 type TelemetryFixtures = {
   /** Telemetry URLs the guard aborted during the current test. */
   blockedTelemetry: string[];
+  /** Cal.com URLs the guard aborted during the current test. */
+  blockedCal: string[];
   /** Slows the renderer so hydration races are reproducible locally. */
   cpuThrottle: void;
 };
+
+/**
+ * Cal.com's embed (embed.js plus the booking iframe) is the only third-party
+ * app the site loads, and only on /book/. The suite stays hermetic: a live
+ * scheduler would make every /book/ assertion depend on cal.com's uptime and
+ * hand axe an iframe whose markup the site does not own. Blocked requests also
+ * exercise the fallback path, which is the one that has to work.
+ */
+export const CAL_HOST = /^https:\/\/([a-z0-9-]+\.)*cal\.com\//i;
 
 export const test = base.extend<TelemetryFixtures>({
   /**
@@ -49,6 +60,17 @@ export const test = base.extend<TelemetryFixtures>({
     },
     { auto: true },
   ],
+  blockedCal: [
+    async ({ context }, use) => {
+      const blocked: string[] = [];
+      await context.route(CAL_HOST, (route) => {
+        blocked.push(route.request().url());
+        return route.abort();
+      });
+      await use(blocked);
+    },
+    { auto: true },
+  ],
   blockedTelemetry: [
     async ({ context }, use) => {
       const blocked: string[] = [];
@@ -59,7 +81,10 @@ export const test = base.extend<TelemetryFixtures>({
           blocked.push(url);
           return route.abort();
         }
-        return route.continue();
+        // `fallback`, not `continue`: hands the request to any narrower route
+        // registered alongside this one (the Cal.com block below), and is a
+        // plain continue when there is none.
+        return route.fallback();
       });
 
       await use(blocked);

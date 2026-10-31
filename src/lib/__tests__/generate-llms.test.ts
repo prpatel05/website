@@ -136,10 +136,16 @@ describe("generate-llms", () => {
     );
   });
 
+  it("lists the booking page with the other static pages", () => {
+    expect(llms).toContain(
+      "- [Book a call](https://pratik.pa.tel/book/): 30 minute call with Pratik Patel, booked through Cal.com."
+    );
+  });
+
   it("orders posts newest first, matching the feed", () => {
     const titles = [...llms.matchAll(/^- \[([^\]]+)\]\(/gm)]
       .map((m) => m[1])
-      .filter((t) => !["Home", "Blog", "Resume", "Angel investing", "RSS feed", "llms-full.txt", "Sitemap"].includes(t));
+      .filter((t) => !["Home", "Blog", "Resume", "Angel investing", "Book a call", "RSS feed", "llms-full.txt", "Sitemap"].includes(t));
     expect(titles).toEqual([
       "Today Post",
       'Newer & "Quoted"',
