@@ -17,8 +17,6 @@ const OWNED = new Set([
   "resume-mobile.png",
   "resume-pdf-page1.png",
   "resume-pdf-page2.png",
-  "about-section.png",
-  "about-print.png",
   "walkthrough.mp4",
 ]);
 for (const name of readdirSync(OUT)) {
@@ -58,25 +56,6 @@ async function shot(page, name, fullPage = false) {
   await page.goto(baseURL + "/resume/", { waitUntil: "networkidle" });
   await page.getByRole("heading", { level: 1, name: "Pratik Patel" }).waitFor();
   await shot(page, "resume-mobile.png");
-  await page.close();
-}
-
-{
-  const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-  await page.addInitScript(() => {
-    try {
-      localStorage.setItem("pratik.hero-boot-seen", "1");
-    } catch {
-      /* ignore */
-    }
-  });
-  await page.goto(baseURL + "/", { waitUntil: "networkidle" });
-  await page.locator("#about").scrollIntoViewIfNeeded();
-  await page.getByText("about.md").waitFor();
-  await shot(page, "about-section.png");
-  await page.emulateMedia({ media: "print" });
-  await page.waitForTimeout(400);
-  await shot(page, "about-print.png", true);
   await page.close();
 }
 
@@ -150,5 +129,5 @@ await browser.close();
 }
 
 console.log(
-  "wrote .pr-preview/ resume-desktop.png, resume-experience.png, resume-print.png, resume-mobile.png, resume-pdf-page1.png, resume-pdf-page2.png, about-section.png, about-print.png, walkthrough.mp4"
+  "wrote .pr-preview/ resume-desktop.png, resume-experience.png, resume-print.png, resume-mobile.png, resume-pdf-page1.png, resume-pdf-page2.png, walkthrough.mp4"
 );

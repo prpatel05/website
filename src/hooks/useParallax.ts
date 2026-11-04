@@ -118,7 +118,7 @@ export function useParallax<T extends string | number>(
  * own section, but on a client-side arrival the ref was still null and it got a
  * `ScrollTimeline` over the whole document instead. The fade then ran over
  * ~4000px of document rather than the section's ~850px, so the hero was still
- * 77% opaque where the design has it gone, sitting over the top of About —
+ * 77% opaque where the design has it gone, sitting over the next section,
  * while the gate, computed here in JS off the correct `progress`, slammed shut
  * at the section boundary and made it pop. Gate and paint had drifted onto two
  * different ranges, which is exactly what this hook promises cannot happen

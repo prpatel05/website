@@ -18,7 +18,7 @@ import { test, expect, type Page } from "./fixtures";
  * Once it fills the viewport it must be fully painted.
  */
 
-const SECTIONS = ["#about", "#writing", "#contact"] as const;
+const SECTIONS = ["#writing", "#contact"] as const;
 
 /** A section fills enough of the viewport that the reader is reading it. */
 const READING_COVERAGE = 0.5;

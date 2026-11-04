@@ -11,7 +11,8 @@ test.describe("Homepage", () => {
 
   test("renders desktop nav links", async ({ page, viewport }) => {
     test.skip(viewport !== null && viewport.width < 768, "Desktop nav hidden on mobile");
-    await expect(page.locator("text=about()").first()).toBeVisible();
+    // The About section is gone, and its nav link with it.
+    await expect(page.locator("text=about()")).toHaveCount(0);
     await expect(page.locator("text=writing()").first()).toBeVisible();
     await expect(page.locator("text=contact()").first()).toBeVisible();
   });
@@ -21,12 +22,10 @@ test.describe("Homepage", () => {
     await expect(page.locator("text=Patel").first()).toBeVisible();
   });
 
-  test("renders the about section", async ({ page }) => {
-    const about = page.locator("#about");
-    await expect(about).toBeAttached();
-    await about.scrollIntoViewIfNeeded();
-    await expect(page.getByText("sso_users")).toBeVisible();
-    await expect(page.getByText("startups_built")).toBeVisible();
+  test("no longer renders the about section", async ({ page }) => {
+    await expect(page.locator("#about")).toHaveCount(0);
+    await expect(page.locator('a[href="#about"]')).toHaveCount(0);
+    await expect(page.getByText("sso_users")).toHaveCount(0);
   });
 
   test("renders the blog preview (writing) section", async ({ page }) => {

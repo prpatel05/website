@@ -1,5 +1,4 @@
 import Hero from "@/components/Hero";
-import About from "@/components/About";
 import BlogPreview from "@/components/BlogPreview";
 import Contact from "@/components/Contact";
 import PageShell from "@/components/chrome/PageShell";
@@ -19,7 +18,7 @@ const Index = () => {
     <PageShell jumpRail terminal>
       <SEO
         title={HOME_TITLE}
-        description="Chief Architect at Tarobase (OpenApps, Bounded, poof.new) building AI agent platforms. 3x startup builder with an exit; ex-AWS identity and security."
+        description="Chief Architect focused on building AI agent platforms. 3x startup builder with an exit; ex-AWS identity and security."
         canonical="https://pratik.pa.tel/"
         ogImage={SITE_CARD.url}
         ogImageAlt="Pratik Patel - Chief Architect - pratik.pa.tel"
@@ -29,7 +28,6 @@ const Index = () => {
       />
       <main {...mainContentProps}>
         <Hero />
-        <About />
         <BlogPreview />
         <Contact />
       </main>

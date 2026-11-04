@@ -49,9 +49,9 @@ async function shot(page, name, fullPage = false) {
 
 async function revealJumpRail(page) {
   await page.evaluate(() => {
-    const about = document.getElementById("about");
-    if (!about) throw new Error("#about missing");
-    const y = about.getBoundingClientRect().top + window.scrollY - 64;
+    const writing = document.getElementById("writing");
+    if (!writing) throw new Error("#writing missing");
+    const y = writing.getBoundingClientRect().top + window.scrollY - 64;
     window.scrollTo(0, Math.max(0, y));
     window.dispatchEvent(new Event("scroll"));
   });

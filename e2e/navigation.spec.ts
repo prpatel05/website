@@ -27,11 +27,11 @@ test.describe("Navigation between routes", () => {
     await expect(page).toHaveURL("/");
   });
 
-  test("clicking about() scrolls to about section", async ({ page, viewport }) => {
+  test("clicking writing() scrolls to writing section", async ({ page, viewport }) => {
     test.skip(viewport !== null && viewport.width < 768, "Desktop nav hidden on mobile");
     await page.goto("/");
-    await page.locator('a[href="#about"]').first().click();
-    await expect(page.locator("#about")).toBeInViewport();
+    await page.locator('a[href="#writing"]').first().click();
+    await expect(page.locator("#writing")).toBeInViewport();
   });
 
   test("clicking contact() scrolls to contact section", async ({ page, viewport }) => {

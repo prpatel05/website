@@ -7,7 +7,7 @@ export interface TerminalLine {
 
 export const COMMANDS: Record<string, string> = {
   help: "Show available commands",
-  about: "Navigate to about section",
+  about: "Read the bio (same as cat about)",
   blog: "Open blog archive",
   contact: "Navigate to contact section",
   resume: "Open HTML resume",
@@ -41,14 +41,20 @@ const ABOUT_TEXT = [
   "and guardrails that let AI agents ship to production.",
   "",
   "3x startup builder with an exit: co-founded a development studio",
-  "acquired by Dapper Labs, rebuilt eddii's HIPAA platform as its first",
-  "CTO and grew it to 50K+ users, and joined Tarobase's founding team.",
+  "acquired by Dapper Labs, and rebuilt eddii's HIPAA platform as its",
+  "first CTO, growing it to 50K+ users.",
+  "",
   "Before that, AWS identity and security, including the SSO/MFA",
   "service Amazon's 1.5M+ employees sign in through.",
-  "",
-  "Currently Chief Architect at Tarobase (OpenApps, Bounded, poof.new),",
-  "leading the team behind the runtime where AI coding agents build,",
-  "verify, and deploy production apps.",
+];
+
+const aboutLines = (): TerminalLine[] => [
+  { type: "system", text: "── about.md ───────────────────────────" },
+  ...ABOUT_TEXT.map((line) => ({
+    type: "output" as const,
+    text: line ? `  ${line}` : "",
+  })),
+  { type: "system", text: "───────────────────────────────────────" },
 ];
 
 export type CommandResult =
@@ -104,10 +110,10 @@ export function processTerminalCommand(
         { type: "output", text: "  Tip: Ctrl+K to toggle terminal" },
       ]);
 
-    // `->`, not `→`. These four lines are the only place in this file where a
+    // `->`, not `→`. These lines are the only place in this file where a
     // symbol shares a text node with words, and U+2192 is in neither brand
     // subset — Google's latin cut carries U+2191 and U+2193 and omits it. So the
-    // arrow painted in Menlo while "Navigating to #about..." beside it painted
+    // arrow painted in Menlo while "Navigating to #contact..." beside it painted
     // in JetBrains Mono: one sentence, two typefaces, with `getComputedStyle`
     // reporting our family throughout, because font matching falls back per
     // glyph. `75a54ec` took the same character out of a published post for the
@@ -118,13 +124,6 @@ export function processTerminalCommand(
     // change typeface against. They are recorded in SYSTEM_STACK_BY_DESIGN in
     // e2e/font-glyph-coverage.spec.ts, which is also what goes red if a new
     // arrow lands here.
-    case "about":
-      return {
-        action: "scroll" as const,
-        id: "about",
-        lines: wrapLines([{ type: "system", text: "-> Navigating to #about..." }]).lines,
-      };
-
     case "contact":
       return {
         action: "scroll" as const,
@@ -239,16 +238,14 @@ export function processTerminalCommand(
       ]);
     }
 
+    // The homepage no longer has an About section to scroll to, so the bare
+    // `about` verb prints the same bio as `cat about`.
+    case "about":
+      return wrapLines(aboutLines());
+
     case "cat": {
       if (pathArg === "about" || pathArg === "about.md") {
-        return wrapLines([
-          { type: "system", text: "── about.md ───────────────────────────" },
-          ...ABOUT_TEXT.map((line) => ({
-            type: "output" as const,
-            text: line ? `  ${line}` : "",
-          })),
-          { type: "system", text: "───────────────────────────────────────" },
-        ]);
+        return wrapLines(aboutLines());
       }
       if (pathArg === "resume" || pathArg === "resume.pdf") {
         return {
@@ -341,7 +338,6 @@ export function processTerminalCommand(
         ]);
       }
       return wrapLines([
-        { type: "output", text: "  drwxr-xr-x  about/" },
         { type: "output", text: "  drwxr-xr-x  blog/" },
         { type: "output", text: "  drwxr-xr-x  book/" },
         { type: "output", text: "  drwxr-xr-x  contact/" },

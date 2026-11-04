@@ -128,7 +128,7 @@ test.describe("Mobile menu holds the page still", () => {
           return r.top >= 0 && r.bottom <= window.innerHeight;
         });
 
-    for (const name of ["resume()", "about()"]) {
+    for (const name of ["resume()", "writing()"]) {
       await page.getByRole("link", { name }).scrollIntoViewIfNeeded();
       expect(await onScreen(name), `${name} could not be scrolled into view`).toBe(true);
     }

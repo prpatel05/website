@@ -86,7 +86,8 @@ test.describe("Interactive terminal", () => {
       // immediately above `// latest`, and Playwright substring-matches that
       // concatenation as `blog/`, which trips strict mode against the ls row.
       const log = page.locator(TERMINAL_LOG);
-      await expect(log.getByText("about/")).toBeVisible();
+      await expect(log.getByText("about/")).toHaveCount(0);
+      await expect(log.getByText("-rw-r--r--  about.md")).toBeVisible();
       await expect(log.getByText("blog/")).toBeVisible();
       await expect(log.getByText("contact/")).toBeVisible();
       await expect(log.getByText("vc/")).toBeVisible();
@@ -105,11 +106,19 @@ test.describe("Interactive terminal", () => {
       await commandLine(page).fill("cat about");
       await page.keyboard.press("Enter");
 
-      // Scope to the terminal log — the About section also paints "about.md"
-      // in its fake window chrome, which would trip strict mode.
       const log = page.locator(TERMINAL_LOG);
       await expect(log.getByText(/── about\.md/)).toBeVisible();
-      await expect(log.getByText(/Bounded/)).toBeVisible();
+      await expect(log.getByText(/engineering leader/)).toBeVisible();
+      await expect(log.getByText(/Tarobase/)).toHaveCount(0);
+    });
+
+    test("about prints the bio now that the homepage has no #about", async ({ page }) => {
+      await commandLine(page).fill("about");
+      await page.keyboard.press("Enter");
+
+      const log = page.locator(TERMINAL_LOG);
+      await expect(log.getByText(/── about\.md/)).toBeVisible();
+      await expect(page).not.toHaveURL(/#about/);
     });
 
     test("pwd command shows working directory", async ({ page }) => {

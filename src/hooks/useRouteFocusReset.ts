@@ -13,8 +13,8 @@ import { resetTabOrder } from "@/lib/tab-order";
  * the skip link in App.tsx, so the next Tab resumes past it:
  *
  * ```
- * fresh load /            ["Skip to main content", "pratik.pa.tel", "about()", ...]
- * /blog/ -> / via link    ["pratik.pa.tel", "about()", "writing()", ...]
+ * fresh load /            ["Skip to main content", "pratik.pa.tel", "writing()", ...]
+ * /blog/ -> / via link    ["pratik.pa.tel", "writing()", "contact()", ...]
  * ```
  *
  * Shift+Tab still reaches the link, which is how we know it is present and
