@@ -42,11 +42,11 @@ test.describe("Navigation landmarks are all named", () => {
     await expect(page.getByRole("navigation")).toHaveCount(2);
 
     await page.evaluate(() => {
-      const about = document.getElementById("about");
-      if (!about) throw new Error("#about missing");
-      // Park about under the fixed nav so the jump rail's reveal predicate
+      const writing = document.getElementById("writing");
+      if (!writing) throw new Error("#writing missing");
+      // Park writing under the fixed nav so the jump rail's reveal predicate
       // (top <= 64) is true, then dispatch scroll so the listener runs.
-      const y = about.getBoundingClientRect().top + window.scrollY - 64;
+      const y = writing.getBoundingClientRect().top + window.scrollY - 64;
       window.scrollTo(0, Math.max(0, y));
       window.dispatchEvent(new Event("scroll"));
     });

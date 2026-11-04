@@ -134,7 +134,7 @@ test.describe("Fixed chrome tracks the viewport", () => {
       });
 
       // The assertion `toBeVisible()` cannot make. Every link, in the viewport.
-      for (const name of ["about()", "writing()", "contact()", "resume()", "vc()"]) {
+      for (const name of ["writing()", "contact()", "resume()", "vc()"]) {
         await expect(page.getByRole("link", { name })).toBeInViewport();
       }
     });

@@ -4,14 +4,13 @@ import { scrollBehavior } from "@/lib/scroll-behavior";
 import { chromeAccent, chromeSep } from "./chrome-tokens";
 
 const SECTIONS = [
-  { id: "about", label: "about" },
   { id: "writing", label: "writes" },
   { id: "contact", label: "contact" },
 ] as const;
 
 /**
- * Sticky mono jump list for the homepage one-pager. Revealed once `#about` has
- * crossed mid-viewport — not on a raw scrollY threshold — so short viewports
+ * Sticky mono jump list for the homepage one-pager. Revealed once `#writing`,
+ * the first section after the hero, has reached the fixed nav, not on a raw scrollY threshold, so short viewports
  * and the hero CTAs stay clear of a second fixed strip while the reader is
  * still in the hero. Highlights the section in view; reduced-motion safe.
  */
@@ -22,12 +21,12 @@ const SectionJumpRail = () => {
 
   useEffect(() => {
     const update = () => {
-      const about = document.getElementById("about");
-      if (!about) {
+      const first = document.getElementById(SECTIONS[0].id);
+      if (!first) {
         setVisible(false);
         return;
       }
-      setVisible(about.getBoundingClientRect().top <= 64);
+      setVisible(first.getBoundingClientRect().top <= 64);
     };
     update();
     window.addEventListener("scroll", update, { passive: true });

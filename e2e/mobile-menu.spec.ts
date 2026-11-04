@@ -18,12 +18,11 @@ test.describe("Mobile menu", () => {
   });
 
   test("opens mobile menu and shows navigation links", async ({ page }) => {
-    // `openMobileMenu` is the gate that means it: `toBeVisible()` on these four
+    // `openMobileMenu` is the gate that means it: `toBeVisible()` on these
     // links passed against both PRA-884 (opacity 0) and PRA-902 (2273px below
     // the fold). See `expectOverlayOpen` in ./fixtures.
     await openMobileMenu(page);
 
-    await expect(page.getByText("about()").nth(1)).toBeVisible();
     await expect(page.getByText("writing()").nth(1)).toBeVisible();
     await expect(page.getByText("contact()").nth(1)).toBeVisible();
     await expect(page.getByText("resume()").nth(1)).toBeVisible();
@@ -34,7 +33,7 @@ test.describe("Mobile menu", () => {
     await openMobileMenu(page);
 
     // Click a link in the mobile overlay
-    await page.locator(".font-display.text-4xl").filter({ hasText: "about()" }).click();
+    await page.locator(".font-display.text-4xl").filter({ hasText: "writing()" }).click();
 
     await expectOverlayClosed(page, SITE_MENU);
   });

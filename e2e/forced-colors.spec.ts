@@ -128,48 +128,9 @@ test.describe("forced colours", () => {
     expect(width, "post-body error CTA has no border in forced colours").toBeGreaterThan(0);
   });
 
-  test("the skill meters still paint a fill and a track", async ({ page }) => {
-    await forced(page);
-
-    await page.evaluate(() => document.querySelector("#about")?.scrollIntoView());
-    // The fill animates its width on entrance; settle past delay + duration
-    // (0.6 + 6*0.08 + 0.8s) before measuring, or a mid-flight width reads as the
-    // resting one.
-    await page.waitForTimeout(2200);
-
-    const bars = await page.evaluate(() =>
-      [...document.querySelectorAll('[class*="bg-gradient-to-r"]')].map((f) => {
-        const cs = getComputedStyle(f);
-        const track = f.parentElement as HTMLElement;
-        const ts = getComputedStyle(track);
-        const alpha = (cs.backgroundColor.match(/[\d.]+/g) ?? [])[3];
-        return {
-          // The gradient is gone in this mode by definition; what matters is
-          // that something opaque replaced it.
-          fillOpaque: cs.backgroundImage === "none" ? alpha === undefined || parseFloat(alpha) > 0 : true,
-          trackBorder: parseFloat(ts.borderTopWidth),
-          fillWidth: f.getBoundingClientRect().width,
-          trackWidth: track.getBoundingClientRect().width,
-        };
-      })
-    );
-
-    expect(bars.length, "found no skill meters to measure").toBeGreaterThan(0);
-    for (const b of bars) {
-      expect(b.fillOpaque, `meter fill paints nothing in forced colours: ${JSON.stringify(b)}`).toBe(true);
-      expect(b.trackBorder, `meter track has no outline: ${JSON.stringify(b)}`).toBeGreaterThan(0);
-      // A fill that fills its track conveys no level. That is a real failure
-      // mode here, not a hypothetical one: the resting width lives in `style`
-      // precisely because without it every skill read 100% until hydration
-      // scrolled it into view (see the comment in About.tsx).
-      expect(b.fillWidth).toBeLessThan(b.trackWidth);
-      expect(b.fillWidth).toBeGreaterThan(0);
-    }
-  });
-
   test("our own palette is untouched by the fix", async ({ page }) => {
     // The `forced-colors:` variants must not leak into the ordinary regime: the
-    // meters keep their gradient and the CTA keeps its borderless fill.
+    // CTA keeps its borderless fill.
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/", { waitUntil: "load" });
 
@@ -177,12 +138,5 @@ test.describe("forced colours", () => {
       .getByRole("link", { name: "./contact --init" })
       .evaluate((el) => getComputedStyle(el).borderTopWidth);
     expect(cta).toBe("0px");
-
-    await page.evaluate(() => document.querySelector("#about")?.scrollIntoView());
-    await page.waitForTimeout(2200);
-    const img = await page.evaluate(
-      () => getComputedStyle(document.querySelector('[class*="bg-gradient-to-r"]')!).backgroundImage
-    );
-    expect(img).toContain("linear-gradient");
   });
 });

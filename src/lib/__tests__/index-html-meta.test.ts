@@ -5,12 +5,12 @@ import { readFileSync } from "fs";
  * and prerender rewrites route HTML. The shell still ships in the first response
  * for any path that falls back to it, and crawlers that only skim the template
  * still see these defaults. Keep them aligned with Index.tsx / #215 (no years
- * count; OpenApps | Bounded | poof.new voice).
+ * count, and no current-employer lead).
  */
 const html = readFileSync("index.html", "utf8");
 
 const HOME_DESCRIPTION =
-  "Chief Architect at Tarobase (OpenApps, Bounded, poof.new) building AI agent platforms. 3x startup builder with an exit; ex-AWS identity and security.";
+  "Chief Architect focused on building AI agent platforms. 3x startup builder with an exit; ex-AWS identity and security.";
 
 describe("index.html default meta", () => {
   it("does not advertise a years count in description / OG / Twitter", () => {

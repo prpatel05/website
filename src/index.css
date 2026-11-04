@@ -352,18 +352,17 @@
   }
 
   /*
-   * Resume + About print polish: keep role cards, skill groups, and the About
-   * bio/skills windows from splitting mid-card. About starts on a fresh sheet
-   * when the homepage is printed so the bio is not glued under the hero CTAs.
+   * Resume print polish: keep role cards and skill groups from splitting
+   * mid-card. On the homepage, the first section after the hero (#writing)
+   * starts on a fresh sheet so it is not glued under the hero CTAs.
    */
   .resume-block,
-  .resume-avoid-break,
-  #about .border.bg-card {
+  .resume-avoid-break {
     break-inside: avoid;
     page-break-inside: avoid;
   }
 
-  #about {
+  #writing {
     break-before: page;
     page-break-before: always;
   }

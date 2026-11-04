@@ -6,7 +6,6 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 import { useOverlayEntrance } from "@/hooks/useEntrance";
 
 const links = [
-  { label: "about()", href: "#about" },
   { label: "writing()", href: "#writing" },
   { label: "contact()", href: "#contact" },
   {

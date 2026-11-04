@@ -27,7 +27,7 @@ import { test, expect,
  * the next regression, not a backlog.
  *
  * Both Playwright projects matter, as in `target-size.spec.ts`: Navbar's
- * `about()`/`writing()`/`contact()` row is `hidden md:flex` and only exists on
+ * `writing()`/`contact()` row is `hidden md:flex` and only exists on
  * desktop, while the `[menu]` overlay is mobile-only.
  *
  * `best-practice` is deliberately excluded. It is axe's non-normative advice

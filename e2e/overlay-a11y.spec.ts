@@ -109,7 +109,7 @@ test.describe("Mobile menu accessibility", () => {
     // Guards the e.target === e.currentTarget check: a bubbled click from a
     // child must not be mistaken for a backdrop click, and the link's own
     // handler must still close the menu.
-    await page.getByRole("link", { name: "about()" }).click();
+    await page.getByRole("link", { name: "writing()" }).click();
     await expectOverlayClosed(page, SITE_MENU);
   });
 

@@ -15,12 +15,17 @@ describe("processTerminalCommand", () => {
   });
 
   // --- about ---
-  it("returns scroll action for 'about'", () => {
+  // The homepage has no #about section any more, so `about` prints the bio.
+  it("prints the bio for 'about', same as 'cat about'", () => {
     const result = processTerminalCommand("about");
-    expect(result.action).toBe("scroll");
-    if (result.action !== "scroll") return;
-    expect(result.id).toBe("about");
-    expect(result.lines.some((l) => l.text.includes("Navigating to #about"))).toBe(true);
+    expect(result.action).toBe("lines");
+    if (result.action !== "lines") return;
+    const text = result.lines.map((l) => l.text).join("\n");
+    expect(text).toContain("about.md");
+    expect(text).not.toContain("#about");
+    const cat = processTerminalCommand("cat about");
+    if (cat.action !== "lines") throw new Error("cat about should print lines");
+    expect(result.lines.slice(1)).toEqual(cat.lines.slice(1));
   });
 
   // --- contact ---
@@ -125,7 +130,8 @@ describe("processTerminalCommand", () => {
     expect(result.action).toBe("lines");
     if (result.action !== "lines") return;
     const text = result.lines.map((l) => l.text).join("\n");
-    expect(text).toContain("about/");
+    expect(text).not.toContain("about/");
+    expect(text).toContain("about.md");
     expect(text).toContain("blog/");
     expect(text).toContain("contact/");
     expect(text).toContain("resume.pdf");
@@ -303,7 +309,9 @@ describe("processTerminalCommand", () => {
     if (result.action !== "lines") return;
     const text = result.lines.map((l) => l.text).join("\n");
     expect(text).toContain("about.md");
-    expect(text).toContain("Bounded");
+    expect(text).toContain("engineering leader");
+    expect(text).toContain("CTO");
+    expect(text).not.toContain("Tarobase");
   });
 
   it("lists post files for 'ls blog'", () => {

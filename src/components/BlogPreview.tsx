@@ -87,6 +87,16 @@ const BlogPreview = () => {
         >
           {latest ? (
             <div className="mt-2 mb-12">
+              {/*
+                The card title is an h3 and the visible "Selected writing" h2
+                sits below it, so without this the page outline jumps from the
+                hero's h1 straight to an h3 (Lighthouse heading-order). The
+                About section's h2 used to fill that gap. `font-bold` keeps it
+                on the preloaded bold face: an sr-only heading still lays out,
+                and at the default weight it pulls the 400 face onto the
+                critical path.
+              */}
+              <h2 className="sr-only font-bold">Latest post</h2>
               <PreviewCard index={0}>
                 <Link
                   to={`/blog/${latest.slug}/`}
@@ -94,9 +104,9 @@ const BlogPreview = () => {
                   data-latest-post
                 >
                   {/*
-                    Terminal window chrome — same traffic-light bar voice as
-                    About's about.md card, so Latest reads as chrome rather than
-                    another Selected row.
+                    Terminal window chrome (the traffic-light bar the terminal
+                    uses), so Latest reads as chrome rather than another
+                    Selected row.
                   */}
                   <div className="h-8 bg-muted border-b border-border flex items-center px-4 gap-2">
                     <span aria-hidden="true" className="w-2.5 h-2.5 rounded-full bg-destructive/60" />

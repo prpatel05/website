@@ -5,7 +5,7 @@ import { test, expect, type Page } from "./fixtures";
  * actually sees.
  *
  * The prerendered homepage once shipped its entire body below the hero at
- * inline `opacity: 0`: About, Recent writes and Contact were all present in the
+ * inline `opacity: 0`: About (since removed), Recent writes and Contact were all present in the
  * HTML and all invisible until React had downloaded, hydrated and had an
  * IntersectionObserver fire. Every other homepage test scrolls the section into
  * view with JavaScript running first, which is exactly the state that hides the
@@ -40,8 +40,6 @@ test.describe("prerendered page is visible without JavaScript", () => {
     // leaves a reader looking at nothing.
     for (const selector of [
       "h1",
-      "#about .container",
-      "#about .container [class*='grid']",
       "#writing .container",
       "#writing article",
       "#contact .container",
@@ -61,41 +59,5 @@ test.describe("prerendered page is visible without JavaScript", () => {
     );
 
     expect(transparent).toEqual([]);
-  });
-
-  /**
-   * Opacity is not the only resting state the prerender can get wrong, and the
-   * skill bars are the case that proves it. They animate `width`, and
-   * `useEntrance` suppresses `initial` on first load — which for opacity and
-   * transforms lands on the correct value, because "no inline style" already
-   * means opacity 1 and no offset. `width` has no such default: with the style
-   * absent the bar fills its track, so all seven read 100% while the numbers
-   * beside them said 95/92/90/92/88/85/85.
-   *
-   * Compared against each bar's own label rather than a hardcoded list, so
-   * editing a skill level cannot quietly make this vacuous.
-   */
-  test("each skill bar is as long as the number beside it", async ({ page }) => {
-    await page.goto("/");
-
-    const bars = await page.evaluate(() =>
-      [...document.querySelectorAll("#about .h-full.bg-gradient-to-r")].map((bar) => {
-        const track = bar.parentElement!;
-        const spans = track.parentElement!.querySelectorAll("span");
-        const trackWidth = track.getBoundingClientRect().width;
-        return {
-          skill: spans[0]?.textContent?.trim() ?? "?",
-          label: spans[1]?.textContent?.trim() ?? "?",
-          rendered: trackWidth
-            ? `${Math.round((bar.getBoundingClientRect().width / trackWidth) * 100)}%`
-            : "no-track",
-        };
-      })
-    );
-
-    expect(bars.length).toBeGreaterThan(0);
-    for (const bar of bars) {
-      expect(bar.rendered, bar.skill).toBe(bar.label);
-    }
   });
 });

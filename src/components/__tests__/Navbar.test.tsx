@@ -36,7 +36,8 @@ describe("Navbar", () => {
   it("renders the site name and navigation links", () => {
     render(<Navbar />);
     expect(screen.getByText("pratik.pa.tel")).toBeInTheDocument();
-    expect(screen.getByText("about()")).toBeInTheDocument();
+    // The homepage About section is gone, so there is nothing for about() to jump to.
+    expect(screen.queryByText("about()")).not.toBeInTheDocument();
     expect(screen.getByText("writing()")).toBeInTheDocument();
     expect(screen.getByText("contact()")).toBeInTheDocument();
     expect(screen.getByText("resume()")).toBeInTheDocument();
@@ -45,7 +46,6 @@ describe("Navbar", () => {
 
   it("renders correct href attributes for links", () => {
     render(<Navbar />);
-    expect(screen.getByText("about()").closest("a")).toHaveAttribute("href", "#about");
     expect(screen.getByText("writing()").closest("a")).toHaveAttribute("href", "#writing");
     expect(screen.getByText("contact()").closest("a")).toHaveAttribute("href", "#contact");
     expect(screen.getByText("resume()").closest("a")).toHaveAttribute("href", "/resume/");
@@ -103,7 +103,7 @@ describe("Navbar", () => {
     render(<Navbar />);
     fireEvent.click(screen.getByText("[menu]"));
     // In the overlay, links appear as large text
-    const overlayLinks = screen.getAllByText("about()");
+    const overlayLinks = screen.getAllByText("writing()");
     expect(overlayLinks.length).toBeGreaterThanOrEqual(2); // nav + overlay
   });
 
@@ -112,12 +112,12 @@ describe("Navbar", () => {
     fireEvent.click(screen.getByText("[menu]"));
 
     // The overlay has links; click one
-    const overlayLinks = screen.getAllByText("about()");
+    const overlayLinks = screen.getAllByText("writing()");
     const overlayLink = overlayLinks[overlayLinks.length - 1];
     fireEvent.click(overlayLink);
 
     // After clicking, overlay should close — only the nav link remains
-    const remaining = screen.getAllByText("about()");
+    const remaining = screen.getAllByText("writing()");
     expect(remaining.length).toBe(1);
   });
 
@@ -128,7 +128,7 @@ describe("Navbar", () => {
     const closeBtn = screen.getByTestId("x-icon").closest("button");
     fireEvent.click(closeBtn!);
 
-    const remaining = screen.getAllByText("about()");
+    const remaining = screen.getAllByText("writing()");
     expect(remaining.length).toBe(1);
   });
 
@@ -155,13 +155,13 @@ describe("Navbar", () => {
   it("closes the mobile menu on Escape", () => {
     render(<Navbar />);
     fireEvent.click(screen.getByText("[menu]"));
-    expect(screen.getAllByText("about()").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText("writing()").length).toBeGreaterThanOrEqual(2);
 
     // From the focused node, not from `window`: the trap listens on `document`
     // in the capture phase, and an event dispatched *at* `window` visits no
     // node below it.
     fireEvent.keyDown(document.activeElement!, { key: "Escape" });
 
-    expect(screen.getAllByText("about()").length).toBe(1);
+    expect(screen.getAllByText("writing()").length).toBe(1);
   });
 });
