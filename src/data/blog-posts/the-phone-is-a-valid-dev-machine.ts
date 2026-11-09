@@ -10,4 +10,5 @@ export const thePhoneIsAValidDevMachine: BlogPost = {
   readTime: "9 min",
   tags: ["ai", "agents", "mobile"],
   image: "/images/blog-the-phone-is-a-valid-dev-machine.webp",
+  series: "ship-with-agents",
 };

@@ -7,22 +7,33 @@ import SEO from "@/components/SEO";
 import { SITE_CARD } from "@/lib/social-cards";
 import { useEntrance } from "@/hooks/useEntrance";
 import { mainContentProps } from "@/lib/skip-target";
-import { SERIES_TITLE } from "@/lib/route-title";
+import { seriesTitle } from "@/lib/route-title";
 import { personRef } from "@/lib/person-jsonld";
 import { ARCHIVE_HREF } from "@/lib/blog-tags";
 import {
-  SERIES_DESCRIPTION,
-  SERIES_HREF,
-  SERIES_NAME,
-  SERIES_PATH,
+  AGENT_RELIABILITY,
+  getSeries,
   seriesMembers,
+  type SeriesId,
 } from "@/lib/blog-series";
+import NotFound from "@/pages/NotFound";
 import { postDescription } from "@/lib/post-description";
 
-const members = seriesMembers(posts);
+type BlogSeriesProps = {
+  /** Which hub to render. Defaults to Agent reliability, the original one. */
+  seriesId?: SeriesId;
+};
 
-const BlogSeries = () => {
+const BlogSeries = ({ seriesId = AGENT_RELIABILITY.id }: BlogSeriesProps) => {
   const entrance = useEntrance();
+  const series = getSeries(seriesId);
+  const {
+    name: SERIES_NAME,
+    description: SERIES_DESCRIPTION,
+    href: SERIES_HREF,
+    path: SERIES_PATH,
+  } = series;
+  const members = seriesMembers(posts, seriesId);
   const seriesUrl = `https://pratik.pa.tel${SERIES_HREF}`;
   const [seriesLead, ...seriesRest] = SERIES_NAME.split(" ");
 
@@ -101,22 +112,27 @@ const BlogSeries = () => {
     },
   ];
 
+  // A hub with no published members yet (Agents in Production before its
+  // first post lands) is not a page. prerender.mjs skips it for the same
+  // reason, so the static 404 and the client agree.
+  if (members.length === 0) return <NotFound />;
+
   return (
     <PageShell
       breadcrumbs={[
         { label: "blog", to: "/blog/" },
         { label: "series" },
-        { label: "agent-reliability" },
+        { label: series.id },
       ]}
     >
       <SEO
-        title={SERIES_TITLE}
+        title={seriesTitle(series)}
         description={SERIES_DESCRIPTION}
         // Same shape as Blog.tsx: bare path; SEO.tsx's canonicalUrl adds the
         // trailing slash GitHub Pages serves.
         canonical={`https://pratik.pa.tel${SERIES_PATH}`}
         ogImage={SITE_CARD.url}
-        ogImageAlt={`${SERIES_NAME} — Pratik Patel — pratik.pa.tel`}
+        ogImageAlt={`${SERIES_NAME} | Pratik Patel | pratik.pa.tel`}
         ogImageWidth={SITE_CARD.width}
         ogImageHeight={SITE_CARD.height}
         jsonLd={seriesJsonLd}

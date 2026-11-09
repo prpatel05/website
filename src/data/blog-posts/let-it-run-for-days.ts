@@ -10,4 +10,5 @@ export const letItRunForDays: BlogPost = {
   readTime: "7 min",
   tags: ["ai", "agents", "shipping", "tools"],
   image: "/images/blog-let-it-run-for-days.webp",
+  series: "ship-with-agents",
 };

@@ -116,13 +116,26 @@ export function discoverPosts() {
       findPostFields(
         filePath,
         ["slug", "title", "subtitle", "dateISO", "image"],
-        ["description", "tags"]
+        ["description", "tags", "series"]
       )
     )
     .sort(
       (a, b) =>
         b.dateISO.localeCompare(a.dateISO) || a.slug.localeCompare(b.slug)
     );
+}
+
+// Series hubs the prerender should write. Agent reliability is tag-derived and
+// always has members; every other hub exists once at least one post sets
+// `series: "<id>"` on its own file (see src/lib/blog-series.ts). A hub with no
+// members yet is not written, and the app renders its 404 to match.
+export const TAG_SERIES_IDS = ["agent-reliability"];
+
+export function discoverSeriesHubIds() {
+  const explicit = discoverPosts()
+    .map((post) => post.series)
+    .filter(Boolean);
+  return [...new Set([...TAG_SERIES_IDS, ...explicit])];
 }
 
 // Bodies live beside the metadata as markdown. The feed reads them here so it

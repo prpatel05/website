@@ -10,4 +10,5 @@ export const parallelAgentsNeedOwnershipToo: BlogPost = {
   readTime: "8 min",
   tags: ["ai", "agents", "shipping", "tools"],
   image: "/images/blog-parallel-agents-need-ownership-too.webp",
+  series: "ship-with-agents",
 };

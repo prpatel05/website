@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  SERIES_HREF,
   SERIES_NAME,
   isSeriesMember,
   seriesMembers,
@@ -82,7 +83,9 @@ describe("seriesPosition", () => {
 
   it("reports k of n and the series neighbours, not the archive neighbours", () => {
     expect(seriesPosition(posts, "second")).toEqual({
+      id: "agent-reliability",
       name: SERIES_NAME,
+      href: SERIES_HREF,
       current: members[1],
       previous: members[0],
       next: members[2],

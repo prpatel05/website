@@ -16,7 +16,7 @@ import BlogSeries from "./pages/BlogSeries.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Resume from "./pages/Resume.tsx";
 import VC from "./pages/VC.tsx";
-import { SERIES_PATH } from "@/lib/blog-series";
+import { SERIES } from "@/lib/blog-series";
 
 /* ---------- Error Boundary ---------- */
 
@@ -170,10 +170,17 @@ const AnimatedRoutes = () => {
           More specific than POST_PATH (`/blog/:slug`). Without this, the hub
           would 404 — `:slug` only eats one segment, and `series` is not a post.
         */}
-        <Route
-          path={SERIES_PATH}
-          element={<PageTransition><BlogSeries /></PageTransition>}
-        />
+        {SERIES.map((series) => (
+          <Route
+            key={series.id}
+            path={series.path}
+            element={
+              <PageTransition>
+                <BlogSeries seriesId={series.id} />
+              </PageTransition>
+            }
+          />
+        ))}
         <Route
           path={POST_PATH}
           element={

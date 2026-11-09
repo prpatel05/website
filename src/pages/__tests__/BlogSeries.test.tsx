@@ -76,6 +76,28 @@ const { testPosts } = vi.hoisted(() => ({
       image: "/images/p.png",
     },
     {
+      slug: "slate-two",
+      title: "Slate Two",
+      subtitle: "Second on the slate",
+      date: "2026.10",
+      dateISO: "2026-10-13",
+      readTime: "6 min",
+      tags: ["ai", "agents", "tools"],
+      series: "ship-with-agents",
+      image: "/images/s2.png",
+    },
+    {
+      slug: "slate-one",
+      title: "Slate One",
+      subtitle: "First on the slate",
+      date: "2026.09",
+      dateISO: "2026-09-22",
+      readTime: "7 min",
+      tags: ["ai", "agents", "shipping"],
+      series: "ship-with-agents",
+      image: "/images/s1.png",
+    },
+    {
       slug: "series-a",
       title: "Series A",
       subtitle: "First chapter",
@@ -94,14 +116,28 @@ vi.mock("@/data/blog-posts/registry", async (importOriginal) => {
 });
 
 import BlogSeries from "../BlogSeries";
-import { SERIES_DESCRIPTION, SERIES_HREF, SERIES_NAME } from "@/lib/blog-series";
-import { SERIES_TITLE } from "@/lib/route-title";
+import {
+  AGENTS_IN_PRODUCTION,
+  SERIES_DESCRIPTION,
+  SERIES_HREF,
+  SERIES_NAME,
+  SHIP_WITH_AGENTS,
+} from "@/lib/blog-series";
+import { SERIES_TITLE, seriesTitle } from "@/lib/route-title";
 import { SITE_CARD } from "@/lib/social-cards";
 
 function renderSeries() {
   return render(
     <MemoryRouter initialEntries={[SERIES_HREF]}>
       <BlogSeries />
+    </MemoryRouter>
+  );
+}
+
+function renderHub(id: "ship-with-agents" | "agents-in-production") {
+  return render(
+    <MemoryRouter initialEntries={[`/blog/series/${id}/`]}>
+      <BlogSeries seriesId={id} />
     </MemoryRouter>
   );
 }
@@ -190,5 +226,41 @@ describe("BlogSeries hub", () => {
       "https://pratik.pa.tel/blog/",
       `https://pratik.pa.tel${SERIES_HREF}`,
     ]);
+  });
+});
+
+describe("other series hubs", () => {
+  it("Ship With Agents lists only its explicit members, oldest first", () => {
+    const { container } = renderHub("ship-with-agents");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Ship With Agents");
+    expect(screen.getByText(SHIP_WITH_AGENTS.description)).toBeInTheDocument();
+    expect(screen.getByText("2 posts · oldest first")).toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual([
+      "Slate One",
+      "Slate Two",
+    ]);
+
+    const helmet = screen.getByTestId("helmet");
+    expect(helmet.querySelector("title")?.textContent).toBe(seriesTitle(SHIP_WITH_AGENTS));
+    expect(helmet.querySelector('link[rel="canonical"]')?.getAttribute("href")).toBe(
+      "https://pratik.pa.tel/blog/series/ship-with-agents/"
+    );
+    const collection = seriesJsonLd(container).find((n) => n["@type"] === "CollectionPage");
+    expect(collection?.name).toBe("Ship With Agents");
+    expect(collection?.url).toBe("https://pratik.pa.tel/blog/series/ship-with-agents/");
+    expect(collection?.mainEntity?.numberOfItems).toBe(2);
+  });
+
+  it("the reliability hub drops posts that set an explicit series", () => {
+    renderSeries();
+    expect(within(screen.getByRole("main")).queryByText("Slate One")).toBeNull();
+  });
+
+  it("an empty hub renders the 404 instead of a hollow list", () => {
+    renderHub("agents-in-production");
+    expect(screen.queryByText(AGENTS_IN_PRODUCTION.description)).toBeNull();
+    expect(screen.getByRole("heading", { level: 1 })).not.toHaveTextContent(
+      "Agents in Production"
+    );
   });
 });

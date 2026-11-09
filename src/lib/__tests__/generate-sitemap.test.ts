@@ -181,6 +181,29 @@ describe("generate-sitemap", () => {
     expect(locs).toContain("https://pratik.pa.tel/blog/taste-is-your-moat/");
   });
 
+  it("lists every prerendered series hub once, and skips one with no page", () => {
+    const dir = mkdtempSync(join(tmpdir(), "sitemap-hubs-"));
+    created.push(dir);
+    mkdirSync(join(dir, "scripts"));
+    copyFileSync(SCRIPT, join(dir, "scripts/generate-sitemap.mjs"));
+    for (const id of ["agent-reliability", "ship-with-agents"]) {
+      mkdirSync(join(dir, "dist/blog/series", id), { recursive: true });
+      writeFileSync(join(dir, "dist/blog/series", id, "index.html"), "<html></html>");
+    }
+    // A hub with no members is not prerendered, so it has no index.html.
+    mkdirSync(join(dir, "dist/blog/series/agents-in-production"), { recursive: true });
+
+    execFileSync("node", ["scripts/generate-sitemap.mjs"], { cwd: dir });
+    const xml = readFileSync(join(dir, "dist/sitemap.xml"), "utf-8");
+    const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+
+    expect(
+      locs.filter((l) => l === "https://pratik.pa.tel/blog/series/agent-reliability/")
+    ).toHaveLength(1);
+    expect(locs).toContain("https://pratik.pa.tel/blog/series/ship-with-agents/");
+    expect(locs).not.toContain("https://pratik.pa.tel/blog/series/agents-in-production/");
+  });
+
   // scripts/blog-automerge.sh publishes a post the day before the date it
   // displays, so on that deploy the prerendered article:published_time is
   // tomorrow. A <lastmod> in the future is the documented reason a crawler
