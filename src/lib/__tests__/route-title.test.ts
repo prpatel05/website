@@ -29,6 +29,9 @@ describe("routeTitle", () => {
     expect(routeTitle("/book/")).toBe(BOOK_TITLE);
     expect(routeTitle("/blog/series/agent-reliability")).toBe(SERIES_TITLE);
     expect(routeTitle("/blog/series/agent-reliability/")).toBe(SERIES_TITLE);
+    expect(routeTitle("/blog/series/ship-with-agents/")).toBe(
+      "Ship With Agents — Pratik Patel"
+    );
   });
 
   it("names a post from the registry", () => {

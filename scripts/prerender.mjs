@@ -4,7 +4,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { isTelemetryRequest } from "./telemetry-blocklist.mjs";
-import { discoverPostSlugs } from "./blog-posts.mjs";
+import { discoverPostSlugs, discoverSeriesHubIds } from "./blog-posts.mjs";
 import {
   stripMotionPreload,
   waitForHydration,
@@ -20,10 +20,11 @@ const ROUTES = [
   "/resume",
   "/vc",
   "/book",
-  // Hub for the agent-reliability arc. Nested under /blog/series/ so it does
-  // not collide with a post slug, and listed before the per-post routes only
-  // for readability — order here is write order, not match order.
-  "/blog/series/agent-reliability",
+  // Series hubs (agent-reliability, ship-with-agents, agents-in-production).
+  // Nested under /blog/series/ so they do not collide with a post slug, and
+  // listed before the per-post routes only for readability; order here is
+  // write order, not match order. A hub with no members yet is skipped.
+  ...discoverSeriesHubIds().map((id) => `/blog/series/${id}`),
   ...discoverPostSlugs().map((slug) => `/blog/${slug}`),
   // Matches the app's `path="*"` route. Written to dist/404.html, which is the
   // file GitHub Pages serves — with a real 404 status — for any URL that has no

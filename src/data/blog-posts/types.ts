@@ -1,3 +1,12 @@
+/**
+ * Formal series a post can belong to. Mirrors `SERIES` in
+ * src/lib/blog-series.ts; a unit test keeps the two in step.
+ */
+export type SeriesId =
+  | "agent-reliability"
+  | "ship-with-agents"
+  | "agents-in-production";
+
 export interface BlogPost {
   slug: string;
   title: string;
@@ -18,4 +27,12 @@ export interface BlogPost {
   readTime: string;
   tags: string[];
   image: string;
+  /**
+   * Explicit series membership. Set it on the post's own file to join a series
+   * hub and its prev/next rail; order inside the series is `dateISO`. Wins over
+   * the Agent reliability tag rule, so a post tagged `agents` + `reliability`
+   * with `series: "agents-in-production"` is only in Agents in Production.
+   * Leave it unset for a standalone post (or to let the tag rule decide).
+   */
+  series?: SeriesId;
 }

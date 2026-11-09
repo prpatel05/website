@@ -10,4 +10,5 @@ export const yourStackIsATeamNotASubscription: BlogPost = {
   readTime: "9 min",
   tags: ["ai", "agents", "tools"],
   image: "/images/blog-your-stack-is-a-team-not-a-subscription.webp",
+  series: "ship-with-agents",
 };

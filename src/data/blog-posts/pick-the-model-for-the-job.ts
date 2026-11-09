@@ -10,4 +10,5 @@ export const pickTheModelForTheJob: BlogPost = {
   readTime: "8 min",
   tags: ["ai", "agents", "tools"],
   image: "/images/blog-pick-the-model-for-the-job.webp",
+  series: "ship-with-agents",
 };

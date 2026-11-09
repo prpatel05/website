@@ -44,7 +44,7 @@ const { testPosts } = vi.hoisted(() => ({
       date: "Feb 2, 2026",
       dateISO: "2026-02-02",
       readTime: "4 min read",
-      tags: ["agents"],
+      tags: ["agents", "reliability"],
       image: "/images/second.png",
       content: "body",
     },
@@ -57,6 +57,7 @@ const { testPosts } = vi.hoisted(() => ({
       readTime: "5 min read",
       tags: ["testing", "vitest"],
       image: "https://cdn.example.com/first.png",
+      series: "ship-with-agents",
       content: "body",
     },
   ],
@@ -308,6 +309,17 @@ describe("Blog archive", () => {
     expect(
       screen.getByRole("navigation", { name: "Filter by tag" })
     ).not.toContainElement(entry);
+  });
+
+  it("lists one hub entry per series that has members, and none for an empty one", () => {
+    renderBlog();
+    expect(
+      screen.getByRole("link", { name: /series · Ship With Agents/i })
+    ).toHaveAttribute("href", "/blog/series/ship-with-agents/");
+    // No fixture post sets `series: "agents-in-production"`, so no dead link.
+    expect(
+      screen.queryByRole("link", { name: /series · Agents in Production/i })
+    ).toBeNull();
   });
 
   it("derives filter chips from the posts rather than a hardcoded list", () => {

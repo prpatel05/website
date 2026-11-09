@@ -13,7 +13,7 @@ import { mainContentProps } from "@/lib/skip-target";
 import { BLOG_TITLE } from "@/lib/route-title";
 import { postDescription } from "@/lib/post-description";
 import { ARCHIVE_HREF, postsWithTag, uniqueTags } from "@/lib/blog-tags";
-import { SERIES_HREF, SERIES_NAME } from "@/lib/blog-series";
+import { SERIES, seriesMembers } from "@/lib/blog-series";
 import { personRef } from "@/lib/person-jsonld";
 
 const BLOG_DESCRIPTION =
@@ -155,14 +155,20 @@ const Blog = () => {
             already knows the arc can jump the archive; everyone else still
             finds it from a member post's series rail.
           */}
-          <p className="mb-10 print:hidden">
-            <Link
-              to={SERIES_HREF}
-              className="font-mono text-xs text-primary/60 print:text-primary tracking-widest hover:text-primary transition-colors inline-flex items-center min-h-6"
-            >
-              {"// series"} · {SERIES_NAME}
-            </Link>
-          </p>
+          <ul className="mb-10 flex flex-wrap gap-x-6 gap-y-1 list-none print:hidden">
+            {SERIES.filter((series) => seriesMembers(posts, series.id).length > 0).map(
+              (series) => (
+                <li key={series.id}>
+                  <Link
+                    to={series.href}
+                    className="font-mono text-xs text-primary/60 print:text-primary tracking-widest hover:text-primary transition-colors inline-flex items-center min-h-6"
+                  >
+                    {"// series"} · {series.name}
+                  </Link>
+                </li>
+              )
+            )}
+          </ul>
 
           {activeTag != null && visible.length === 0 ? (
             <div role="status" className="border border-border bg-card p-6 lg:p-8">

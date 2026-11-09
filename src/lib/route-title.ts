@@ -1,6 +1,12 @@
 import { matchPath } from "react-router-dom";
 import { getPostBySlug } from "@/data/blog-posts/registry";
-import { SERIES_NAME, SERIES_PATH } from "@/lib/blog-series";
+import {
+  SERIES,
+  SERIES_NAME,
+  seriesMembers,
+  type SeriesDefinition,
+} from "@/lib/blog-series";
+import { posts } from "@/data/blog-posts/registry";
 import { POST_PATH } from "@/routes";
 
 /**
@@ -29,6 +35,8 @@ const SITE_NAME = "Pratik Patel";
 export const HOME_TITLE = `${SITE_NAME} — CTO & Chief Architect`;
 export const BLOG_TITLE = `Blog — ${SITE_NAME}`;
 export const SERIES_TITLE = `${SERIES_NAME} — ${SITE_NAME}`;
+export const seriesTitle = (series: Pick<SeriesDefinition, "name">): string =>
+  `${series.name} — ${SITE_NAME}`;
 export const RESUME_TITLE = `Resume — ${SITE_NAME}`;
 export const VC_TITLE = `Angel Investing — ${SITE_NAME}`;
 export const BOOK_TITLE = `Book a Call — ${SITE_NAME}`;
@@ -54,7 +62,14 @@ export const routeTitle = (pathname: string): string => {
   if (matchPath("/resume", pathname)) return RESUME_TITLE;
   if (matchPath("/vc", pathname)) return VC_TITLE;
   if (matchPath("/book", pathname)) return BOOK_TITLE;
-  if (matchPath(SERIES_PATH, pathname)) return SERIES_TITLE;
+  for (const series of SERIES) {
+    if (matchPath(series.path, pathname)) {
+      // An empty hub renders the 404 (see BlogSeries), so announce that.
+      return seriesMembers(posts, series.id).length > 0
+        ? seriesTitle(series)
+        : NOT_FOUND_TITLE;
+    }
+  }
 
   const match = matchPath(POST_PATH, pathname);
   const post = match?.params.slug ? getPostBySlug(match.params.slug) : undefined;

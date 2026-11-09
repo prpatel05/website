@@ -27,6 +27,7 @@ const ROUTES = [
   { name: "homepage", path: "/" },
   { name: "blog index", path: "/blog/" },
   { name: "series hub", path: "/blog/series/agent-reliability/" },
+  { name: "ship with agents hub", path: "/blog/series/ship-with-agents/" },
   { name: "post page", path: `/blog/${firstPost}/` },
   // The Cal.com embed mounts after hydration, beside React's tree rather than in it.
   { name: "book page", path: "/book/" },

@@ -130,6 +130,25 @@ function discoverMarkdownAliases() {
     });
 }
 
+// Hubs beyond agent-reliability are discovered from what the prerender wrote:
+// dist/blog/series/<id>/index.html exists only once a hub has a member, so an
+// empty hub never reaches the sitemap. agent-reliability stays in
+// STATIC_ROUTES above and is skipped here so it is not listed twice.
+function discoverSeriesHubs() {
+  const seriesDir = join(DIST, "blog", "series");
+  if (!existsSync(seriesDir)) return [];
+
+  const listed = new Set(STATIC_ROUTES.map((r) => r.loc));
+  return readdirSync(seriesDir, { withFileTypes: true })
+    .filter(
+      (d) => d.isDirectory() && existsSync(join(seriesDir, d.name, "index.html"))
+    )
+    .map((d) => `https://pratik.pa.tel/blog/series/${d.name}/`)
+    .filter((loc) => !listed.has(loc))
+    .sort()
+    .map((loc) => ({ loc, changefreq: "weekly", priority: "0.7" }));
+}
+
 function generateSitemap(today) {
   const blogPosts = discoverBlogPosts();
   const markdownAliases = discoverMarkdownAliases();
@@ -151,7 +170,7 @@ function generateSitemap(today) {
     alias.lastmod = clampToBuildDate(alias.published, today);
   }
   const allRoutes = [
-    ...STATIC_ROUTES.map((r) => ({
+    ...[...STATIC_ROUTES, ...discoverSeriesHubs()].map((r) => ({
       ...r,
       lastmod: clampToBuildDate(newest ?? null, today),
     })),

@@ -15,7 +15,8 @@ const cellLink =
   "group flex min-h-6 items-start gap-2 py-1 text-muted-foreground transition-colors hover:text-foreground";
 
 /**
- * Compact series pager for posts in the agent-reliability arc.
+ * Compact series pager for a post in one of the formal series
+ * (`blog-series.ts`): Agent reliability, Ship With Agents, Agents in Production.
  *
  * Same component at the top of a member post (under the hero) and again above
  * the site-wide newer/older cards. Membership and order live in
@@ -31,6 +32,7 @@ const PostSeriesRail = ({ position, className, placement }: PostSeriesRailProps)
   if (!position) return null;
 
   const { name, current, previous, next, index, total } = position;
+  const hubHref = position.href ?? SERIES_HREF;
 
   return (
     <nav
@@ -44,7 +46,7 @@ const PostSeriesRail = ({ position, className, placement }: PostSeriesRailProps)
         </p>
         <p className="text-muted-foreground">
           <Link
-            to={SERIES_HREF}
+            to={hubHref}
             className="inline-flex items-center min-h-6 text-foreground transition-colors hover:text-primary"
           >
             {name}
