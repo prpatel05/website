@@ -10,4 +10,5 @@ export const aRetryIsNotAReplay: BlogPost = {
   readTime: "8 min",
   tags: ["ai", "agents", "reliability", "engineering"],
   image: "/images/blog-a-retry-is-not-a-replay.webp",
+  series: "agents-in-production",
 };
