@@ -153,6 +153,20 @@ describe("the live registry", () => {
     );
   });
 
+  it("A Stuck Agent Looks Exactly Like a Busy One, once present, is in Agents in Production only", () => {
+    const stuck = registryPosts.find(
+      (p) => p.slug === "a-stuck-agent-looks-exactly-like-a-busy-one"
+    );
+    if (!stuck) return;
+    expect(seriesIdOf(stuck)).toBe("agents-in-production");
+    expect(seriesMembers(registryPosts).map((p) => p.slug)).not.toContain(
+      "a-stuck-agent-looks-exactly-like-a-busy-one"
+    );
+    expect(
+      seriesMembers(registryPosts, "agents-in-production").map((p) => p.slug)
+    ).toContain("a-stuck-agent-looks-exactly-like-a-busy-one");
+  });
+
   it("prerender writes a hub only for series that have members", () => {
     const hubs = discoverSeriesHubIds();
     for (const s of SERIES) {
