@@ -10,6 +10,7 @@ import {
   PORTRAIT_SRC,
   PORTRAIT_SRCSET,
 } from "@/lib/portrait";
+import LatestPostCard from "./LatestPostCard";
 
 const roles = [
   "CTO & Chief Architect",
@@ -77,8 +78,8 @@ const Hero = () => {
   // It carries `pointer-events` and `visibility` alongside the opacity so the
   // faded-out column stops taking taps it is far too transparent to be asking
   // for; see `useParallaxFade`. Spread into all three of the styles below —
-  // the status rail and the scroll cue are absolutely positioned over the page
-  // and would go on covering it just as invisibly.
+  // the status rail is absolutely positioned over the page and would go on
+  // covering it just as invisibly.
   const fade = useParallaxFade(scrollYProgress, [0, 0.8], [1, 0], holdStill);
   const scale = useParallax(scrollYProgress, [0, 1], [1, 0.92], holdStill);
   const statusX = useParallax(scrollYProgress, [0, 1], ["0px", "-40px"], holdStill);
@@ -115,8 +116,10 @@ const Hero = () => {
     return () => clearTimeout(timeout);
   }, [displayText, isDeleting, roleIndex, reduceMotion, boot]);
 
+  // `pt-16` reserves the fixed nav so a taller column (intro + latest card)
+  // stays centered in the remaining viewport instead of sliding under the bar.
   return (
-    <section ref={sectionRef} className="relative min-h-screen flex items-center overflow-hidden grid-bg px-4 sm:px-0">
+    <section ref={sectionRef} className="relative min-h-screen flex items-center overflow-hidden grid-bg pt-16 px-4 sm:px-0">
       {/*
         Parallax floating geometric elements.
 
@@ -254,12 +257,18 @@ const Hero = () => {
         content inside it fits. This box is the content.
       */}
       <m.div ref={columnRef} className="container relative z-10" style={{ y: textY, scale, ...fade }}>
-        <div className="max-w-4xl">
+        {/*
+          Portrait is absolutely pinned to this wrapper, not the whole column,
+          so the latest-post card can sit under the intro without the photo
+          dropping onto it.
+        */}
+        <div className="relative">
+          <div className="max-w-4xl">
           <m.div
             initial={entrance({ opacity: 0 })}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
-            className="font-mono text-xs text-primary/60 print:text-primary mb-6 tracking-widest"
+            className="font-mono text-xs text-primary/60 print:text-primary mb-3 sm:mb-6 tracking-widest"
           >
             {'>'} initializing portfolio...
           </m.div>
@@ -279,7 +288,7 @@ const Hero = () => {
             initial={entrance({ opacity: 0 })}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5, duration: 0.5 }}
-            className="mt-6 sm:mt-8 font-mono text-base sm:text-xl text-muted-foreground"
+            className="mt-4 sm:mt-8 font-mono text-base sm:text-xl text-muted-foreground"
           >
             {/*
               Both glyphs on this line are `aria-hidden`: they are shell
@@ -312,7 +321,7 @@ const Hero = () => {
             initial={entrance({ opacity: 0, y: 20 })}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8, duration: 0.6 }}
-            className="mt-6 sm:mt-8 font-mono text-xs sm:text-sm text-muted-foreground max-w-lg leading-relaxed"
+            className="mt-4 sm:mt-8 font-mono text-xs sm:text-sm text-muted-foreground max-w-lg leading-relaxed"
           >
             Hands-on architect focused on building the platforms where AI agents
             ship to production. 3x startup builder with an exit; ex-AWS identity
@@ -333,7 +342,7 @@ const Hero = () => {
             initial={entrance({ opacity: 0, y: 20 })}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1, duration: 0.6 }}
-            className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4"
+            className="mt-5 sm:mt-10 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4"
           >
             <a
               href="#contact"
@@ -370,9 +379,9 @@ const Hero = () => {
               cat resume.pdf
             </a>
           </m.div>
-        </div>
+          </div>
 
-        {/* Photo with parallax */}
+          {/* Photo with parallax */}
         <m.div
           initial={entrance({ opacity: 0, scale: 0.8, rotate: 5 })}
           animate={{ opacity: 1, scale: 1, rotate: 0 }}
@@ -413,28 +422,15 @@ const Hero = () => {
             </div>
           </div>
         </m.div>
-      </m.div>
+        </div>
 
-      {/* Scroll indicator. Entrance nested inside the fade — see the status bar. */}
-      <m.div
-        style={{ ...fade }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2"
-      >
-        <m.div
-          initial={entrance({ opacity: 0 })}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.5, duration: 0.5 }}
-          className="flex flex-col items-center gap-2"
-        >
-          <span className="font-mono text-[10px] text-muted-foreground tracking-widest">SCROLL</span>
-          {/* Another endless loop — see the note on the drifting shapes above. */}
-          <m.div
-            animate={{ y: [0, 8, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-            className="w-px h-8 bg-gradient-to-b from-primary/50 to-transparent"
-            suppressHydrationWarning
-          />
-        </m.div>
+        {/*
+          No entrance animation: this card is in the first viewport, and a
+          delayed fade would hide a large hit target on land. The SCROLL cue
+          used to occupy this lower edge; the card is the path that cue was
+          pointing at.
+        */}
+        <LatestPostCard />
       </m.div>
     </section>
   );

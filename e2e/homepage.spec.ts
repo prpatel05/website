@@ -28,6 +28,13 @@ test.describe("Homepage", () => {
     await expect(page.getByText("sso_users")).toHaveCount(0);
   });
 
+  test("renders the latest post card on the hero", async ({ page }) => {
+    const latest = page.locator("a[data-latest-post]");
+    await expect(latest).toBeVisible();
+    await expect(latest).toHaveAttribute("href", /\/blog\/.+\/$/);
+    await expect(latest.getByText("read post")).toBeVisible();
+  });
+
   test("renders the blog preview (writing) section", async ({ page }) => {
     const writing = page.locator("#writing");
     await expect(writing).toBeAttached();

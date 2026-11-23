@@ -196,6 +196,14 @@ describe("Hero – static content", () => {
     expect(screen.getByText("./contact --init")).toBeInTheDocument();
     expect(screen.getByText("cat resume.pdf")).toBeInTheDocument();
   });
+
+  it("renders the latest post card as a path off the hero", () => {
+    const { container } = renderHero();
+    const latestLink = container.querySelector("a[data-latest-post]");
+    expect(latestLink).not.toBeNull();
+    expect(latestLink).toHaveAttribute("href", expect.stringMatching(/^\/blog\/.+\/$/));
+    expect(screen.getByText("read post")).toBeInTheDocument();
+  });
 });
 
 describe("Hero – portrait", () => {

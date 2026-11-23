@@ -51,22 +51,19 @@ const selectedPosts = SELECTED_WRITING_SLUGS.map((slug) => {
 const selectedWithoutLatest = selectedPosts.filter((post) => post.slug !== latestPost.slug);
 
 describe("BlogPreview", () => {
-  it("features posts[0] as the Latest card with a trailing-slash permalink", () => {
+  it("does not repeat the latest post; that card now lives in the hero", () => {
     const { container } = render(
       <MemoryRouter>
         <BlogPreview />
       </MemoryRouter>
     );
 
-    expect(screen.getByText("// latest")).toBeInTheDocument();
-    expect(screen.getByText(latestPost.title)).toBeInTheDocument();
-
-    const latestLink = container.querySelector("a[data-latest-post]");
-    expect(latestLink).not.toBeNull();
-    expect(latestLink).toHaveAttribute("href", `/blog/${latestPost.slug}/`);
+    expect(screen.queryByText("// latest")).not.toBeInTheDocument();
+    expect(container.querySelector("a[data-latest-post]")).toBeNull();
+    expect(screen.queryByText(latestPost.title)).not.toBeInTheDocument();
   });
 
-  it("renders the curated Selected writing posts under Latest, not newest-N", () => {
+  it("renders the curated Selected writing posts, not newest-N", () => {
     const { container } = render(
       <MemoryRouter>
         <BlogPreview />
@@ -77,22 +74,18 @@ describe("BlogPreview", () => {
     expect(screen.getByText("writing")).toBeInTheDocument();
     expect(screen.queryByText("Recent")).not.toBeInTheDocument();
 
-    // Latest + Selected (minus overlap) — never the raw newest-five list.
+    // Selected only (minus the post already featured in the hero).
     const postLinks = container.querySelectorAll("article a");
-    expect(postLinks).toHaveLength(1 + selectedWithoutLatest.length);
+    expect(postLinks).toHaveLength(selectedWithoutLatest.length);
 
     for (const post of selectedWithoutLatest) {
       expect(screen.getByText(post.title)).toBeInTheDocument();
     }
-
-    // If latest is also curated, it appears once (Latest only), not twice.
-    const titleMatches = screen.getAllByText(latestPost.title);
-    expect(titleMatches).toHaveLength(1);
   });
 
   // Every pratik.pa.tel path 301s to its trailing-slash form, so a slashless
   // href is a link the crawler has to follow twice. The homepage carries the
-  // Latest permalink, the archive link, the series hub, and the curated posts.
+  // archive link, the series hub, and the curated posts.
   it("points every internal link at its non-redirecting trailing-slash form", () => {
     const { container } = render(
       <MemoryRouter>
@@ -105,7 +98,6 @@ describe("BlogPreview", () => {
     );
 
     expect(hrefs).toEqual([
-      `/blog/${latestPost.slug}/`,
       "/blog/",
       SERIES_HREF,
       ...selectedWithoutLatest.map((post) => `/blog/${post.slug}/`),
