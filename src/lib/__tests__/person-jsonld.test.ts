@@ -18,4 +18,12 @@ describe("person JSON-LD", () => {
     expect(person?.description).toMatch(/focused on building/);
     expect(String(person?.description)).not.toMatch(/11\+\s*years/i);
   });
+
+  it("keeps homepage Person JSON-LD free of product pitches", () => {
+    const person = personJsonLd.find((n) => n["@type"] === "Person");
+    expect(person?.jobTitle).toBe("CTO & Chief Architect");
+    expect(person).not.toHaveProperty("worksFor");
+    const blob = JSON.stringify(person);
+    expect(blob).not.toMatch(/OpenApps|Bounded|poof\.new|Tarobase/i);
+  });
 });

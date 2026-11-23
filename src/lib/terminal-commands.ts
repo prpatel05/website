@@ -41,8 +41,8 @@ const ABOUT_TEXT = [
   "and guardrails that let AI agents ship to production.",
   "",
   "3x startup builder with an exit: co-founded a development studio",
-  "acquired by Dapper Labs, and rebuilt eddii's HIPAA platform as its",
-  "first CTO, growing it to 50K+ users.",
+  "acquired by Dapper Labs, and as CTO at eddii, rebuilt its HIPAA",
+  "platform, growing it to 50K+ users.",
   "",
   "Before that, AWS identity and security, including the SSO/MFA",
   "service Amazon's 1.5M+ employees sign in through.",
@@ -295,7 +295,7 @@ export function processTerminalCommand(
       return wrapLines([
         { type: "output", text: ASCII_LOGO },
         { type: "system", text: "  Pratik Patel" },
-        { type: "output", text: "  Chief Architect | OpenApps | Bounded | poof.new" },
+        { type: "output", text: "  CTO & Chief Architect" },
         { type: "output", text: "  11+ years | AI | Cloud | Web3" },
         { type: "output", text: "  Washington, DC | pratik@pa.tel" },
       ]);

@@ -75,7 +75,7 @@ test.describe("Interactive terminal", () => {
       await commandLine(page).fill("whoami");
       await page.keyboard.press("Enter");
 
-      await expect(page.getByText("Chief Architect | OpenApps | Bounded | poof.new")).toBeVisible();
+      await expect(page.getByText("CTO & Chief Architect")).toBeVisible();
     });
 
     test("ls command shows site sections", async ({ page }) => {
@@ -109,6 +109,8 @@ test.describe("Interactive terminal", () => {
       const log = page.locator(TERMINAL_LOG);
       await expect(log.getByText(/── about\.md/)).toBeVisible();
       await expect(log.getByText(/engineering leader/)).toBeVisible();
+      await expect(log.getByText(/as CTO at eddii/)).toBeVisible();
+      await expect(log.getByText(/first CTO/)).toHaveCount(0);
       await expect(log.getByText(/Tarobase/)).toHaveCount(0);
     });
 
@@ -443,7 +445,7 @@ test.describe("terminal defects a reader can reach", () => {
     await openTerminalByClick(page);
     await runCommand(page, "whoami");
 
-    const line = page.getByText("Chief Architect | OpenApps | Bounded | poof.new");
+    const line = page.getByText("CTO & Chief Architect");
     await expect(line).toBeVisible();
     // The overlay animates in on a `y` offset; a box read mid-flight would put
     // the drag somewhere the text no longer is.
