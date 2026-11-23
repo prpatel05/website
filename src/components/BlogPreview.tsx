@@ -85,60 +85,11 @@ const BlogPreview = () => {
           titleRight="writing"
           titleRightClass="text-accent text-glow-accent"
         >
-          {latest ? (
-            <div className="mt-2 mb-12">
-              {/*
-                The card title is an h3 and the visible "Selected writing" h2
-                sits below it, so without this the page outline jumps from the
-                hero's h1 straight to an h3 (Lighthouse heading-order). The
-                About section's h2 used to fill that gap. `font-bold` keeps it
-                on the preloaded bold face: an sr-only heading still lays out,
-                and at the default weight it pulls the 400 face onto the
-                critical path.
-              */}
-              <h2 className="sr-only font-bold">Latest post</h2>
-              <PreviewCard index={0}>
-                <Link
-                  to={`/blog/${latest.slug}/`}
-                  className="group block border border-primary/40 print:border-primary bg-card hover:border-primary/70 hover:box-glow transition-all duration-500 overflow-hidden"
-                  data-latest-post
-                >
-                  {/*
-                    Terminal window chrome (the traffic-light bar the terminal
-                    uses), so Latest reads as chrome rather than another
-                    Selected row.
-                  */}
-                  <div className="h-8 bg-muted border-b border-border flex items-center px-4 gap-2">
-                    <span aria-hidden="true" className="w-2.5 h-2.5 rounded-full bg-destructive/60" />
-                    <span aria-hidden="true" className="w-2.5 h-2.5 rounded-full bg-primary/40" />
-                    <span aria-hidden="true" className="w-2.5 h-2.5 rounded-full bg-primary/60" />
-                    <span className="font-mono text-[10px] text-primary/70 print:text-primary ml-3 tracking-widest">
-                      // latest
-                    </span>
-                  </div>
-                  <div className="p-6 lg:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    {/*
-                      Same wrap rule as the Selected cards and archive (PRA-977):
-                      post-derived title/subtitle/tags need `anywhere` inside flex.
-                    */}
-                    <div className="flex-1 [overflow-wrap:anywhere]">
-                      <PostMeta post={latest} tagLimit={3} />
-                      <h3 className="font-display text-2xl lg:text-3xl font-bold text-foreground group-hover:text-primary transition-colors">
-                        {latest.title}
-                      </h3>
-                      <p className="font-mono text-sm text-muted-foreground mt-2">
-                        {latest.subtitle}
-                      </p>
-                    </div>
-                    <div className="w-10 h-10 border border-primary/40 print:border-primary flex items-center justify-center text-primary group-hover:border-primary group-hover:bg-primary/10 transition-all shrink-0">
-                      <ArrowUpRight className="w-4 h-4" />
-                    </div>
-                  </div>
-                </Link>
-              </PreviewCard>
-            </div>
-          ) : null}
-
+          {/*
+            The latest post now lives in the hero, so this section is only the
+            curated Selected writing list. `latest` is still used below to
+            keep that post from appearing twice.
+          */}
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-12 gap-4">
             <h2 className="font-display text-3xl sm:text-4xl lg:text-6xl font-bold">
               <span className="text-foreground">Selected</span>{" "}
@@ -164,7 +115,7 @@ const BlogPreview = () => {
 
         <div className="space-y-4">
           {cards.map((post, i) => (
-            <PreviewCard key={post.slug} index={i + 1}>
+            <PreviewCard key={post.slug} index={i}>
               <Link
                 to={`/blog/${post.slug}/`}
                 className="group block border border-border bg-card hover:border-primary/30 transition-all duration-500 p-6 lg:p-8"
