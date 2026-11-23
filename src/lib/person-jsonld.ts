@@ -42,26 +42,9 @@ export const personJsonLd = [
     name: PERSON_NAME,
     url: PERSON_URL,
     image: HEADSHOT_URL,
-    jobTitle: "Chief Architect",
+    jobTitle: "CTO & Chief Architect",
     description:
       "Chief Architect focused on building AI agent platforms. 3x startup builder with an exit; ex-AWS identity and security.",
-    worksFor: [
-      {
-        "@type": "Organization",
-        name: "OpenApps",
-        url: "https://openapps.xyz",
-      },
-      {
-        "@type": "Organization",
-        name: "Bounded",
-        url: "https://bounded.sh",
-      },
-      {
-        "@type": "Organization",
-        name: "poof.new",
-        url: "https://poof.new",
-      },
-    ],
     knowsAbout: [
       "Artificial Intelligence",
       "Agent Platforms",

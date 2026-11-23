@@ -23,8 +23,8 @@ export const resumeMeta = {
 } as const;
 
 export const executiveSummary = [
-  "Hands-on Chief Architect on Tarobase's founding team (OpenApps, Bounded, poof.new), leading engineering for the platform where AI coding agents build, verify, deploy, and run production apps; 5K+ apps to date.",
-  "3x startup builder with an exit: co-founded a 15-person development studio acquired by Dapper Labs, and as eddii's first CTO rebuilt its HIPAA platform and grew it from ~4K to 50K+ registered users within a year of national launch.",
+  "Hands-on Chief Architect at OpenApps, building the platform (on Bounded infrastructure) where AI coding agents build, verify, deploy, and run production apps; 5K+ apps to date.",
+  "3x startup builder with an exit: co-founded a 15-person development studio acquired by Dapper Labs, and as CTO at eddii, rebuilt its HIPAA platform and grew it from ~4K to 50K+ registered users within a year of national launch.",
   "7 years at AWS: architected the SSO/MFA service Amazon's 1.5M+ employees sign in through today, designed authorization for 100K+ AWS accounts, and was founding tech lead of a security org that grew to 100+ engineers.",
 ] as const;
 
@@ -45,17 +45,16 @@ export type ResumeRole = {
 export const experience: readonly ResumeRole[] = [
   {
     title: "Chief Architect",
-    org: "Tarobase (OpenApps, Bounded, poof.new)",
+    org: "OpenApps (on Bounded)",
     dates: "Aug 2025 - Present",
     blurb:
       "Venture-backed AI agent platform startup. Hired and now lead a ~5-engineer team.",
     orgLinks: [
       { label: "openapps.xyz", href: "https://openapps.xyz" },
       { label: "bounded.sh", href: "https://bounded.sh" },
-      { label: "poof.new", href: "https://poof.new" },
     ],
     bullets: [
-      "Own agentic platform strategy, full-stack architecture, roadmap, and infrastructure cost model for OpenApps, Bounded, and poof.new: one runtime (auth, data, functions, realtime, payments, hosting) behind 5K+ agent-built apps.",
+      "Own agentic platform strategy, full-stack architecture, roadmap, and infrastructure cost model for OpenApps (on Bounded infrastructure): one runtime (auth, data, functions, realtime, payments, hosting) behind 5K+ agent-built apps.",
       "Architecting OpenApps, the company's upcoming flagship: community-owned apps that keep running after their creators step away, hosted on Bounded so the runtime, not the creator, holds every credential.",
       "Designed guardrails for agent-written apps: the runtime enforces declared data boundaries and invariants on every write, and verification fails closed with concrete counterexamples before a bad change deploys.",
       "Cut sandbox cold starts ~60% with a new deployment pipeline and edge caching layer, supporting 5K+ concurrent sessions with multi-tenant isolation.",
@@ -68,7 +67,7 @@ export const experience: readonly ResumeRole[] = [
     org: "eddii",
     dates: "May 2023 - Aug 2025",
     blurb:
-      "Seed-stage healthtech: gamified, AI-powered diabetes app (Dexcom connected-app partner) and eddii-Care virtual endocrinology clinic. First CTO: set product and technology strategy, hired and led a team of 6, and presented to the board. Advisor through Dec 2025.",
+      "Seed-stage healthtech: gamified, AI-powered diabetes app (Dexcom connected-app partner) and eddii-Care virtual endocrinology clinic. As CTO, set product and technology strategy, hired and led a team of 6, and presented to the board. Advisor through Dec 2025.",
     bullets: [
       "Rebuilt the HIPAA-compliant platform from scratch; launched nationally Dec 2023 on time, 20% under budget.",
       "Grew registered users from ~4K at national launch to 50K+ within 12 months.",
