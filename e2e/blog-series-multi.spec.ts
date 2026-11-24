@@ -1,5 +1,5 @@
 import { test, expect } from "./fixtures";
-import { discoverPostSlugs } from "../scripts/blog-posts.mjs";
+import { discoverPosts } from "../scripts/blog-posts.mjs";
 
 /**
  * The formal series beyond Agent reliability. Each rail is a navigation
@@ -27,8 +27,15 @@ const SLATE = [
   },
 ];
 
-const RETRY = "a-retry-is-not-a-replay";
-const retryPresent = discoverPostSlugs().includes(RETRY);
+// Oldest first, matching the hub. Members are whatever this branch actually
+// has: main has none, this PR has the Dec 1 post, and after #241 merges both
+// series posts are present.
+const aipMembers = discoverPosts()
+  .filter((p) => p.series === "agents-in-production")
+  .slice()
+  .sort(
+    (a, b) => a.dateISO.localeCompare(b.dateISO) || a.slug.localeCompare(b.slug)
+  );
 
 test.describe("Ship With Agents series", () => {
   test("hub lists the five-post slate oldest first", async ({ page }) => {
@@ -86,31 +93,43 @@ test.describe("Agents in Production series", () => {
     await expect(rail(page, "Agents in Production")).toHaveCount(0);
   });
 
-  test("the reliability hub never lists A Retry Is Not a Replay", async ({ page }) => {
+  test("the reliability hub never lists Agents in Production posts", async ({ page }) => {
     await page.goto(AR_HUB);
-    await expect(page.locator("main ol h2 a")).not.toContainText(["A Retry Is Not a Replay"]);
+    await expect(page.locator("main ol h2 a")).not.toContainText([
+      "A Retry Is Not a Replay",
+      "A Stuck Agent Looks Exactly Like a Busy One",
+    ]);
   });
 
-  test("hub is a 404 until its first post exists, then lists it", async ({ page }) => {
+  test("hub is a 404 until a member exists, then lists members oldest first", async ({
+    page,
+  }) => {
     await page.goto(AIP_HUB);
-    if (!retryPresent) {
+    if (aipMembers.length === 0) {
       await expect(page.getByRole("heading", { name: "404" })).toBeVisible();
       return;
     }
     await expect(page).toHaveTitle("Agents in Production — Pratik Patel");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Agents in Production");
-    await expect(page.locator("main ol h2 a").first()).toHaveText("A Retry Is Not a Replay");
+    await expect(page.locator("main ol h2 a")).toHaveText(aipMembers.map((p) => p.title));
   });
 
-  test("A Retry Is Not a Replay rails on Agents in Production only", async ({ page }) => {
-    test.skip(!retryPresent, "post lives on PR #241 until it merges");
-    await page.goto(`/blog/${RETRY}/`);
-    const rails = rail(page, "Agents in Production");
-    await expect(rails).toHaveCount(2);
-    await expect(rails.first()).toContainText("1 of");
-    await expect(
-      rails.first().getByRole("link", { name: "Agents in Production" })
-    ).toHaveAttribute("href", AIP_HUB);
-    await expect(rail(page, "Agent reliability")).toHaveCount(0);
-  });
+  for (const [i, member] of aipMembers.entries()) {
+    test(`${member.slug} rails on Agents in Production only`, async ({ page }) => {
+      await page.goto(`/blog/${member.slug}/`);
+      const rails = rail(page, "Agents in Production");
+      await expect(rails).toHaveCount(2);
+      await expect(rails.first()).toContainText(`${i + 1} of ${aipMembers.length}`);
+      await expect(
+        rails.first().getByRole("link", { name: "Agents in Production" })
+      ).toHaveAttribute("href", AIP_HUB);
+      const prev = rails.first().getByRole("link", { name: /previous/ });
+      const next = rails.first().getByRole("link", { name: /next/ });
+      if (i === 0) await expect(prev).toHaveCount(0);
+      else await expect(prev).toHaveAttribute("href", `/blog/${aipMembers[i - 1].slug}/`);
+      if (i === aipMembers.length - 1) await expect(next).toHaveCount(0);
+      else await expect(next).toHaveAttribute("href", `/blog/${aipMembers[i + 1].slug}/`);
+      await expect(rail(page, "Agent reliability")).toHaveCount(0);
+    });
+  }
 });
