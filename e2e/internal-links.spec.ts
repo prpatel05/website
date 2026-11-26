@@ -37,6 +37,19 @@ const DIST = fileURLToPath(new URL("../dist", import.meta.url));
 /** The production origin, so absolute self-links are checked like relative ones. */
 const SITE_ORIGIN = "https://pratik.pa.tel";
 
+/**
+ * Posts already approved and queued on an earlier open blog PR, so a later
+ * post cut from main can cross-link them before their files exist on this
+ * branch. The href is the live trailing-slash form and will 200 once that PR
+ * merges. Only a missing path is skipped; if the file is on disk, the usual
+ * 200 / 301 check still applies. Drop an entry when its target is on main.
+ *
+ * - /blog/a-stuck-agent-looks-exactly-like-a-busy-one/  (PR #245, publishes 2026-12-01)
+ */
+const QUEUED_ON_EARLIER_PR = new Set([
+  "/blog/a-stuck-agent-looks-exactly-like-a-busy-one/",
+]);
+
 type Resolution = "ok" | "redirect" | "missing";
 
 /**
@@ -96,7 +109,10 @@ test.describe("internal links resolve without a redirect", () => {
 
     const broken = [...links.entries()]
       .map(([pathname, sources]) => ({ pathname, sources, state: resolve(pathname) }))
-      .filter(({ state }) => state !== "ok")
+      .filter(
+        ({ pathname, state }) =>
+          state !== "ok" && !(state === "missing" && QUEUED_ON_EARLIER_PR.has(pathname))
+      )
       .map(
         ({ pathname, sources, state }) =>
           `${pathname} — ${
