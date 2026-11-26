@@ -22,14 +22,14 @@ const LatestPostCard = () => {
   // toggle (`fixed bottom-6 right-6 w-12 h-12`), which would otherwise
   // sit on the card's corner at 360x640.
   return (
-    <article className="mt-5 sm:mt-6 max-w-xl mr-12 sm:mr-0">
+    <article className="mt-4 sm:mt-6 max-w-xl mr-12 sm:mr-0">
       <Link
         to={`/blog/${latest.slug}/`}
         data-latest-post
         aria-label={`Read the latest post: ${latest.title}`}
-        className="group block border border-primary/40 print:border-primary bg-card hover:border-primary/70 hover:box-glow transition-all duration-500 p-3.5 sm:p-4"
+        className="group block border border-primary/40 print:border-primary bg-card hover:border-primary/70 hover:box-glow transition-all duration-500 p-3 sm:p-4"
       >
-        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mb-1.5">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mb-1 sm:mb-1.5">
           <span className="font-mono text-[10px] text-primary/70 print:text-primary tracking-widest">
             // latest
           </span>
@@ -45,14 +45,17 @@ const LatestPostCard = () => {
           `font-bold` keeps the title on the preloaded bold face. An h2 at the
           default weight pulls the 400 face onto the critical path; the same
           reason the old sr-only "Latest post" heading in BlogPreview was bold.
+          Small-screen type and a two-line clamp keep a long title inside the
+          360x640 first viewport. The Dec 8 title wrapped a second line and
+          overflowed that budget by 10px at text-lg / leading-snug.
         */}
-        <h2 className="font-display text-lg sm:text-xl font-bold text-foreground group-hover:text-primary transition-colors [overflow-wrap:anywhere] leading-snug">
+        <h2 className="font-display text-base sm:text-xl font-bold text-foreground group-hover:text-primary transition-colors [overflow-wrap:anywhere] leading-tight line-clamp-2">
           {latest.title}
         </h2>
-        <p className="font-mono text-xs sm:text-sm text-muted-foreground mt-1.5 line-clamp-1 [overflow-wrap:anywhere]">
+        <p className="font-mono text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-1.5 line-clamp-1 [overflow-wrap:anywhere]">
           {teaser}
         </p>
-        <span className="mt-2.5 inline-flex items-center gap-1 font-mono text-xs text-primary">
+        <span className="mt-2 sm:mt-2.5 inline-flex items-center gap-1 font-mono text-xs text-primary">
           read post <ArrowUpRight className="w-3 h-3" aria-hidden="true" />
         </span>
       </Link>
